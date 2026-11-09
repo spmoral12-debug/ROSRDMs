@@ -36,9 +36,9 @@
     "feature": "store"
   },
   "changeNicknameWithCard": {
-    "count": 4,
+    "count": 5,
     "last_args": [
-      "TITENGBALUKTOT"
+      "[DEV] RADMO"
     ]
   },
   "changeOccupation": {
@@ -157,7 +157,7 @@
     "last_args": []
   },
   "reqPayedPartnerRel": {
-    "count": 33,
+    "count": 34,
     "last_args": [],
     "feature": "topup"
   },
@@ -240,7 +240,7 @@
     ]
   },
   "requestShareAddtionShow": {
-    "count": 16,
+    "count": 17,
     "last_args": [
       2
     ]
@@ -311,9 +311,9 @@
     "feature": "depot"
   },
   "setNationalFlag": {
-    "count": 7,
+    "count": 8,
     "last_args": [
-      "AZ"
+      "DZ"
     ]
   },
   "setPortrait": {

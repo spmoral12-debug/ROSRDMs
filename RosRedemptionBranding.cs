@@ -23,6 +23,9 @@ namespace RosRedemptionBranding {
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, int wParam, IntPtr lParam);
 
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, string lParam);
+
         [DllImport("user32.dll")]
         static extern IntPtr SetClassLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
 
@@ -31,6 +34,7 @@ namespace RosRedemptionBranding {
 
         delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
+        const uint WM_SETTEXT = 0x000C;
         const uint WM_SETICON = 0x0080;
         const int ICON_SMALL = 0;
         const int ICON_BIG = 1;
@@ -56,21 +60,14 @@ namespace RosRedemptionBranding {
                 } catch { }
             }
 
-            int notRunningCount = 0;
-
             while (true) {
                 try {
-                    Process[] rosProcs = Process.GetProcessesByName("ros64");
-                    if (rosProcs == null || rosProcs.Length == 0) {
-                        notRunningCount++;
-                        // If ros64 is not running for 60 seconds (120 * 500ms), exit
-                        if (notRunningCount > 120) {
-                            break;
-                        }
-                    } else {
-                        notRunningCount = 0;
+                    var rosProcs = new System.Collections.Generic.List<Process>();
+                    rosProcs.AddRange(Process.GetProcessesByName("ros64"));
+                    rosProcs.AddRange(Process.GetProcessesByName("ros"));
 
-                        // Find all windows belonging to ros64
+                    if (rosProcs.Count > 0) {
+                        // Find all windows belonging to ros64 or ros
                         foreach (var proc in rosProcs) {
                             uint pid = (uint)proc.Id;
                             EnumWindows((hWnd, lParam) => {
@@ -81,9 +78,15 @@ namespace RosRedemptionBranding {
                                     GetWindowText(hWnd, sb, 256);
                                     string currentTitle = sb.ToString();
 
-                                    // If window has a title and it's not already our target title
+                                    // If window has a title and it matches known ROS titles
                                     if (!string.IsNullOrEmpty(currentTitle) && currentTitle != TARGET_TITLE) {
-                                        SetWindowText(hWnd, TARGET_TITLE);
+                                        if (currentTitle.IndexOf("Rules of Survival", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            currentTitle.IndexOf("DieHard", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            currentTitle.IndexOf("1.610660", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            currentTitle.IndexOf("ROS", StringComparison.OrdinalIgnoreCase) >= 0) {
+                                            SetWindowText(hWnd, TARGET_TITLE);
+                                            SendMessage(hWnd, WM_SETTEXT, IntPtr.Zero, TARGET_TITLE);
+                                        }
                                     }
 
                                     // Apply custom icon

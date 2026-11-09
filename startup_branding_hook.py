@@ -6,6 +6,19 @@ def _set_ros_window_title():
         import os
         user32 = ctypes.windll.user32
         target_title = u"ROS REDEMPTION"
+        
+        # Explicit 64-bit safe ctypes signatures to prevent HWND truncation
+        user32.FindWindowW.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p]
+        user32.FindWindowW.restype = ctypes.c_void_p
+        user32.SetWindowTextW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p]
+        user32.SetWindowTextW.restype = ctypes.c_bool
+        user32.GetWindowTextW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_int]
+        user32.GetWindowTextW.restype = ctypes.c_int
+        user32.GetWindowThreadProcessId.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_ulong)]
+        user32.GetWindowThreadProcessId.restype = ctypes.c_ulong
+        user32.IsWindowVisible.argtypes = [ctypes.c_void_p]
+        user32.IsWindowVisible.restype = ctypes.c_bool
+
         # 1. Direct search by known titles
         for name in (u"Rules of Survival 1.610660.519384", u"Rules of Survival", u"ROS", u"DieHard ROS", u"ROS Redemption 1.610660.519384", u"ROS Redemption"):
             try:
@@ -14,6 +27,7 @@ def _set_ros_window_title():
                     user32.SetWindowTextW(h, target_title)
             except Exception:
                 pass
+
         # 2. Enum all windows for current pid
         self_pid = os.getpid()
         def enum_cb(hwnd, extra):
@@ -24,7 +38,7 @@ def _set_ros_window_title():
                     buf = ctypes.create_unicode_buffer(512)
                     user32.GetWindowTextW(hwnd, buf, 512)
                     txt = buf.value
-                    if any(k in txt for k in (u"Rules of Survival", u"DieHard", u"ROS")):
+                    if any(k in txt for k in (u"Rules of Survival", u"DieHard", u"ROS", u"1.610660")):
                         if txt != target_title:
                             user32.SetWindowTextW(hwnd, target_title)
             except Exception:
@@ -76,12 +90,12 @@ def _redemption_patch_screen_tick(tick=0):
     if tick < 400:
         call_later(0.15, _redemption_patch_screen_tick, tick + 1)
     else:
-        call_later(1.0, _redemption_continuous_title_guard)
+        call_later(0.5, _redemption_continuous_title_guard)
 
 
 def _redemption_continuous_title_guard():
     _set_ros_window_title()
-    call_later(1.0, _redemption_continuous_title_guard)
+    call_later(0.5, _redemption_continuous_title_guard)
 
 
 call_later(0.05, _redemption_patch_screen_tick)

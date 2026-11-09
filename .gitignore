@@ -42,3 +42,6 @@ index.lock
 *.log
 *.tmp
 
+
+# Nested git folder
+ROS REDEMPTION/

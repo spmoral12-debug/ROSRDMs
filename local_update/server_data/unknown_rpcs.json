@@ -36,7 +36,7 @@
     "feature": "store"
   },
   "changeNicknameWithCard": {
-    "count": 5,
+    "count": 6,
     "last_args": [
       "[DEV] RADMO"
     ]
@@ -157,7 +157,7 @@
     "last_args": []
   },
   "reqPayedPartnerRel": {
-    "count": 34,
+    "count": 35,
     "last_args": [],
     "feature": "topup"
   },
@@ -240,7 +240,7 @@
     ]
   },
   "requestShareAddtionShow": {
-    "count": 17,
+    "count": 18,
     "last_args": [
       2
     ]
@@ -311,9 +311,9 @@
     "feature": "depot"
   },
   "setNationalFlag": {
-    "count": 8,
+    "count": 9,
     "last_args": [
-      "DZ"
+      "AG"
     ]
   },
   "setPortrait": {

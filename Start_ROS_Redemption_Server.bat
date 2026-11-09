@@ -11,12 +11,17 @@ echo [INFO] Web Admin API : http://127.0.0.1:8790/admin
 echo [INFO] Controller UI : http://127.0.0.1:8888
 echo ===================================================================
 
-set "ROS_GAME_DIR=C:\DieHardROS"
+set "ROS_GAME_DIR=%~dp0"
 set "ROS_RT_KEY=f7491bdbce9412b42ff5aa04a311e319d9b24c387902d85974c786fc282d5eaf"
 set "PYTHONIOENCODING=utf-8"
 set "PYTHONUNBUFFERED=1"
 set "PYTHONDONTWRITEBYTECODE=1"
 
-cd /d "C:\Users\seanj\AppData\Local\DieHardROSHook\runtime\2026.10.28.0025-diehard25\app"
-"..\python\python.exe" "start_game.pyc" --server-only
+if exist "%~dp0runtime\app\start_game.pyc" (
+    cd /d "%~dp0runtime\app"
+    "..\python\python.exe" "start_game.pyc" --server-only
+) else (
+    cd /d "C:\Users\seanj\AppData\Local\DieHardROSHook\runtime\2026.10.28.0025-diehard25\app"
+    "..\python\python.exe" "start_game.pyc" --server-only
+)
 pause

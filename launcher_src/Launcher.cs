@@ -108,7 +108,7 @@ namespace RosRedemptionNativeLauncher {
         [DllImport("user32.dll")]
         public static extern bool ReleaseCapture();
 
-        public static string BaseDir = @"C:\DieHardROS";
+        public static string BaseDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
         public static string DbPath = Path.Combine(BaseDir, "local_update", "server_data", "accounts.db");
         public static string PythonExe = Path.Combine(BaseDir, "runtime", "python", "python.exe");
         public static string AppDir = Path.Combine(BaseDir, "runtime", "app");

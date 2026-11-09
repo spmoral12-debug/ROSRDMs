@@ -40,7 +40,7 @@ namespace RosRedemptionBranding {
         const string TARGET_TITLE = "ROS Redemption";
 
         static void Main(string[] args) {
-            string icoPath = @"C:\DieHardROS\ros_redemption.ico";
+            string icoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ros_redemption.ico");
             Icon iconBig = null;
             Icon iconSmall = null;
 

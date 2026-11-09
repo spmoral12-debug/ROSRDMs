@@ -1,0 +1,75 @@
+================================================================================
+ROSRDMs - MGA FILES NA HINDI KASAMA SA GITHUB (MANUAL ASSET TRANSFER)
+================================================================================
+
+PAUNAWA:
+Ang GitHub ay may 100MB limit bawat file at 1GB limit para sa Git LFS. 
+Dahil dito, ang mga malalaking game files (mga .npk na 1GB-2GB) ay HINDI 
+naka-upload sa GitHub repo. Ang nasa GitHub lamang ay ang source code, 
+scripts, launchers, server files, at modding tools.
+
+Upang mapagana ng kaibigan mo ang buong laro, kailangan mong i-send sa kanya 
+(via Google Drive, Mega, o Flash Drive) ang mga sumusunod na folders at files:
+
+--------------------------------------------------------------------------------
+1. PANGUNAHING GAME ASSETS (IMPORTANTE PARA BUMUKAS ANG LARO):
+--------------------------------------------------------------------------------
+* Folder: "res\" (Kabuuang laki: ~6.1 GB)
+  Naglalaman ng:
+  - character.npk (~1.7 GB)
+  - character2.npk (~980 MB)
+  - effect.npk (~619 MB)
+  - vehicle.npk (~540 MB)
+  - ui.npk at ui.npk.patched1 (~400 MB bawat isa)
+  - scene.npk (~365 MB)
+  - model.npk (~288 MB)
+  - weapon.npk (~285 MB)
+  - item.npk (~260 MB)
+  - at iba pang mga sub-asset ng laro
+
+* Folder: "Documents\res\" (Kabuuang laki: ~2.0 GB)
+  Naglalaman ng:
+  - next_gen_res.npk (~1.0 GB)
+  - dlc8k.npk (~635 MB)
+  - dlcfps.npk (~187 MB)
+
+* Mga Root .NPK files:
+  - script.npk (~50 MB)
+  - assets.npk
+
+--------------------------------------------------------------------------------
+2. RUNTIME AT BINARIES (KUNG GAGAMIT NG FRIDA / PYTHON HOOKS):
+--------------------------------------------------------------------------------
+* Folder: "runtime\" (~220 MB)
+  - May kasamang python runtime at _frida.pyd (126 MB)
+
+* Folder: "ROS_Redemption_Server_Package\python\"
+  - May kasamang site-packages at _frida.pyd (126 MB)
+
+* Folder: "x64\" (~226 MB)
+  - Naglalaman ng ros64_dump.exe (90 MB) at memory dumps
+
+--------------------------------------------------------------------------------
+3. DEV & REVERSE ENGINEERING TOOLS (OPSIYONAL):
+--------------------------------------------------------------------------------
+* Folder: "ghidra\" (~1.5 GB)
+  - Ghidra decompilation project at databases (kailangan lang kung 
+    magde-decompile o magre-reverse engineer ng game binaries).
+
+================================================================================
+INSTRUCTIONS PARA SA KAIBIGAN MO:
+================================================================================
+1. I-clone muna ang GitHub repository:
+   https://github.com/spmoral12-debug/ROSRDMs
+
+2. I-download ang "res" at "Documents\res" na sinend mula sa Google Drive / Drive.
+
+3. I-paste ang mga ito sa loob ng na-clone na ROSRDMs folder sa tamang path:
+   - ROSRDMs\res\
+   - ROSRDMs\Documents\res\
+   - ROSRDMs\runtime\ (kung gagamitin)
+
+Dahil naka-set up ang .gitignore sa repo, HINDI magagalaw o mag-e-error ang 
+GitHub Desktop kapag inilagay ang mga files na ito.
+================================================================================
+

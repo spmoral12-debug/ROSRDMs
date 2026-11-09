@@ -56,7 +56,7 @@ def set_ros_redemption_window():
         import ctypes
         import sys
         user32 = ctypes.windll.user32
-        target_title = u"ROS Redemption 1.610660.519384"
+        target_title = u"ROS REDEMPTION"
         icon_path = os.path.abspath(r"C:\\DieHardROS\\ros_redemption.ico")
 
         # 1. Find window by known ROS titles first

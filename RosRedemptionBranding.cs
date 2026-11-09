@@ -38,10 +38,14 @@ namespace RosRedemptionBranding {
         const int GCLP_HICONSM = -34;
         const int SW_HIDE = 0;
 
-        const string TARGET_TITLE = "ROS Redemption 1.610660.519384";
+        const string TARGET_TITLE = "ROS REDEMPTION";
 
         static void Main(string[] args) {
-            string icoPath = @"C:\DieHardROS\ros_redemption.ico";
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string icoPath = Path.Combine(baseDir, "ros_redemption.ico");
+            if (!File.Exists(icoPath)) {
+                icoPath = @"C:\DieHardROS\ros_redemption.ico";
+            }
             Icon iconBig = null;
             Icon iconSmall = null;
 

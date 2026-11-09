@@ -70,7 +70,7 @@ namespace RosRedemption {
                 } catch {}
             }
 
-            string targetTitle = "ROS Redemption 1.610660.519384";
+            string targetTitle = "ROS REDEMPTION";
 
             while (true) {
                 try {

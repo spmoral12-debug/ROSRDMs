@@ -1,7 +1,11 @@
 @echo off
 setlocal
-title DieHardROS Local Playtest
+title ROS REDEMPTION - Local Playtest
 cd /d "%~dp0"
+
+:: Start branding suite to watch window titles and apply ROS Redemption branding
+tasklist /fi "imagename eq RosRedemptionBrandingSuite.exe" 2>nul | find /i "RosRedemptionBrandingSuite.exe" >nul || start "" "%~dp0RosRedemptionBrandingSuite.exe"
+
 set "ROS_GAME_DIR=%CD%"
 set "PYTHONIOENCODING=utf-8"
 set "PYTHONUNBUFFERED=1"

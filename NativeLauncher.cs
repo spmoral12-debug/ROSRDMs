@@ -133,7 +133,7 @@ namespace RosRedemptionNativeLauncher {
         const int ICON_BIG_IDX = 1;
         const int GCLP_HICON_IDX = -14;
         const int GCLP_HICONSM_IDX = -34;
-        const string GAME_WINDOW_TITLE = "ROS Redemption 1.610660.519384";
+        const string GAME_WINDOW_TITLE = "ROS REDEMPTION";
 
         // Colors
         private Color ValDark = Color.FromArgb(15, 25, 35);
@@ -1004,6 +1004,59 @@ namespace RosRedemptionNativeLauncher {
                 RefreshAccountList();
                 cboAccounts.SelectedItem = u;
                 SwitchTab(0);
+            }
+        }
+
+        public void DoQuickRename() {
+            string username = cboAccounts.SelectedItem != null ? cboAccounts.SelectedItem.ToString() : "";
+            if (string.IsNullOrEmpty(username)) return;
+            using (Form prompt = new Form()) {
+                prompt.Width = 360;
+                prompt.Height = 170;
+                prompt.FormBorderStyle = FormBorderStyle.FixedDialog;
+                prompt.Text = "Rename Character (" + username + ")";
+                prompt.StartPosition = FormStartPosition.CenterParent;
+                prompt.BackColor = ValDark;
+                prompt.ForeColor = Color.White;
+                Label textLabel = new Label() { Left = 20, Top = 15, Text = "New Nickname:", AutoSize = true, ForeColor = Color.White };
+                TextBox textBox = new TextBox() { Left = 20, Top = 40, Width = 300, BackColor = ValPanel, ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                Button confirmation = new Button() { Text = "Save", Left = 220, Width = 100, Top = 80, DialogResult = DialogResult.OK, BackColor = ValCyan, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat };
+                prompt.Controls.Add(textBox);
+                prompt.Controls.Add(confirmation);
+                prompt.Controls.Add(textLabel);
+                prompt.AcceptButton = confirmation;
+                if (prompt.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(textBox.Text.Trim())) {
+                    string newNick = textBox.Text.Trim().Replace("'", "''");
+                    WinSqlite.Query(DbPath, "UPDATE characters SET nickname='" + newNick + "' WHERE account_id IN (SELECT id FROM accounts WHERE username='" + username + "');");
+                    UpdateSelectedAccountDisplay();
+                    MessageBox.Show("Nickname updated to " + newNick + "!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        public void DoQuickFlag() {
+            string username = cboAccounts.SelectedItem != null ? cboAccounts.SelectedItem.ToString() : "";
+            if (string.IsNullOrEmpty(username)) return;
+            using (Form prompt = new Form()) {
+                prompt.Width = 360;
+                prompt.Height = 170;
+                prompt.FormBorderStyle = FormBorderStyle.FixedDialog;
+                prompt.Text = "Set National Flag (" + username + ")";
+                prompt.StartPosition = FormStartPosition.CenterParent;
+                prompt.BackColor = ValDark;
+                prompt.ForeColor = Color.White;
+                Label textLabel = new Label() { Left = 20, Top = 15, Text = "Flag Code (e.g. PH, US, JP, KR):", AutoSize = true, ForeColor = Color.White };
+                TextBox textBox = new TextBox() { Left = 20, Top = 40, Width = 300, BackColor = ValPanel, ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, CharacterCasing = CharacterCasing.Upper };
+                Button confirmation = new Button() { Text = "Save", Left = 220, Width = 100, Top = 80, DialogResult = DialogResult.OK, BackColor = ValRed, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+                prompt.Controls.Add(textBox);
+                prompt.Controls.Add(confirmation);
+                prompt.Controls.Add(textLabel);
+                prompt.AcceptButton = confirmation;
+                if (prompt.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(textBox.Text.Trim())) {
+                    string flag = textBox.Text.Trim().ToUpper().Replace("'", "''");
+                    WinSqlite.Query(DbPath, "UPDATE characters SET national_flag='" + flag + "' WHERE account_id IN (SELECT id FROM accounts WHERE username='" + username + "');");
+                    MessageBox.Show("Flag updated to " + flag + "!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 

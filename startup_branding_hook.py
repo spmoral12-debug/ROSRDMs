@@ -1,6 +1,44 @@
 # Appended to the client lobby hook before injection (embedded Python 2.7).
+
+def _set_ros_window_title():
+    try:
+        import ctypes
+        import os
+        user32 = ctypes.windll.user32
+        target_title = u"ROS REDEMPTION"
+        # 1. Direct search by known titles
+        for name in (u"Rules of Survival 1.610660.519384", u"Rules of Survival", u"ROS", u"DieHard ROS", u"ROS Redemption 1.610660.519384", u"ROS Redemption"):
+            try:
+                h = user32.FindWindowW(None, name)
+                if h:
+                    user32.SetWindowTextW(h, target_title)
+            except Exception:
+                pass
+        # 2. Enum all windows for current pid
+        self_pid = os.getpid()
+        def enum_cb(hwnd, extra):
+            try:
+                pid = ctypes.c_ulong()
+                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                if pid.value == self_pid and user32.IsWindowVisible(hwnd):
+                    buf = ctypes.create_unicode_buffer(512)
+                    user32.GetWindowTextW(hwnd, buf, 512)
+                    txt = buf.value
+                    if any(k in txt for k in (u"Rules of Survival", u"DieHard", u"ROS")):
+                        if txt != target_title:
+                            user32.SetWindowTextW(hwnd, target_title)
+            except Exception:
+                pass
+            return True
+        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+        user32.EnumWindows(WNDENUMPROC(enum_cb), 0)
+    except Exception:
+        pass
+
+
 def _redemption_patch_screen_tick(tick=0):
     import re
+    _set_ros_window_title()
     try:
         import Globals
         manager = getattr(Globals, 'uiMgr', None)
@@ -37,6 +75,13 @@ def _redemption_patch_screen_tick(tick=0):
         log_error('local-redemption-patch-screen-error')
     if tick < 400:
         call_later(0.15, _redemption_patch_screen_tick, tick + 1)
+    else:
+        call_later(1.0, _redemption_continuous_title_guard)
+
+
+def _redemption_continuous_title_guard():
+    _set_ros_window_title()
+    call_later(1.0, _redemption_continuous_title_guard)
 
 
 call_later(0.05, _redemption_patch_screen_tick)

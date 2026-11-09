@@ -133,7 +133,7 @@ namespace RosRedemptionNativeLauncher {
         const int ICON_BIG_IDX = 1;
         const int GCLP_HICON_IDX = -14;
         const int GCLP_HICONSM_IDX = -34;
-        const string GAME_WINDOW_TITLE = "ROS Redemption 1.610660.519384";
+        const string GAME_WINDOW_TITLE = "ROS REDEMPTION";
 
         // Colors
         private Color ValDark = Color.FromArgb(15, 25, 35);

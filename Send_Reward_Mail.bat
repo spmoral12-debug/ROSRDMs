@@ -9,3 +9,4 @@ if not exist %PY% set PY=python
 %PY% "%~dp0send_reward_mail.py"
 echo.
 pause
+

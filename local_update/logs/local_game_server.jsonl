@@ -7997,3 +7997,12 @@
 {"timestamp":"2026-11-09T17:29:27.397975+00:00","event":"tcp-connected","peer":"127.0.0.1:55427","server":10501}
 {"timestamp":"2026-11-09T17:29:27.398980+00:00","event":"tcp-disconnected","peer":"127.0.0.1:55427","server":10501}
 {"timestamp":"2026-11-09T17:29:30.947755+00:00","event":"stopped"}
+{"timestamp":"2026-11-09T17:38:23.345519+00:00","event":"listening","servers":[{"id":10501,"name":"ROS-Redemption-Official","port":19000,"zone":"ROS-Redemption"}],"transports":["udp","tcp"]}
+{"timestamp":"2026-11-09T17:38:23.727074+00:00","event":"tcp-connected","peer":"127.0.0.1:55581","server":10501}
+{"timestamp":"2026-11-09T17:38:23.789854+00:00","event":"tcp-disconnected","peer":"127.0.0.1:55581","server":10501}
+{"timestamp":"2026-11-09T17:38:26.223455+00:00","event":"tcp-connected","peer":"127.0.0.1:55584","server":10501}
+{"timestamp":"2026-11-09T17:38:26.224456+00:00","event":"tcp-disconnected","peer":"127.0.0.1:55584","server":10501}
+{"timestamp":"2026-11-09T17:38:28.731160+00:00","event":"tcp-connected","peer":"127.0.0.1:58153","server":10501}
+{"timestamp":"2026-11-09T17:38:28.746693+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58153","server":10501}
+{"timestamp":"2026-11-09T17:38:31.232022+00:00","event":"tcp-connected","peer":"127.0.0.1:58238","server":10501}
+{"timestamp":"2026-11-09T17:38:31.244519+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58238","server":10501}

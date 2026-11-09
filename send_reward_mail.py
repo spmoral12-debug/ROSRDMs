@@ -136,3 +136,4 @@ print("=" * 65)
 print("Pagbukas ng player sa laro, makikita niya ang Mailbox icon.")
 print("I-click lang niya ang 'Claim' para makuha ang mga diamonds!")
 print("=" * 65)
+

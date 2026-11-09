@@ -36,9 +36,9 @@
     "feature": "store"
   },
   "changeNicknameWithCard": {
-    "count": 6,
+    "count": 7,
     "last_args": [
-      "[DEV] RADMO"
+      "DEV RADMO"
     ]
   },
   "changeOccupation": {
@@ -157,7 +157,7 @@
     "last_args": []
   },
   "reqPayedPartnerRel": {
-    "count": 35,
+    "count": 36,
     "last_args": [],
     "feature": "topup"
   },

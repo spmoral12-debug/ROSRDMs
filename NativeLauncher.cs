@@ -167,6 +167,7 @@ namespace RosRedemptionNativeLauncher {
         private Label lblGid;
         private Label lblDia;
         private Label lblGold;
+        private Label lblPerkFlag;
 
         // Create Account tab controls
         private TextBox txtRegUser;
@@ -500,10 +501,34 @@ namespace RosRedemptionNativeLauncher {
                 AutoSize = true
             };
 
+            ModernButton btnQuickRename = new ModernButton {
+                Text = "RENAME",
+                Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                NormalColor = Color.FromArgb(35, 45, 60),
+                HoverColor = ValCyan,
+                TextColor = Color.White,
+                Location = new Point(275, 14),
+                Size = new Size(88, 25)
+            };
+            btnQuickRename.Click += delegate { DoQuickRename(); };
+
+            ModernButton btnQuickFlag = new ModernButton {
+                Text = "SET FLAG",
+                Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                NormalColor = Color.FromArgb(35, 45, 60),
+                HoverColor = Color.FromArgb(255, 70, 85),
+                TextColor = Color.White,
+                Location = new Point(275, 45),
+                Size = new Size(88, 25)
+            };
+            btnQuickFlag.Click += delegate { DoQuickFlag(); };
+
             infoBox.Controls.Add(lblCharName);
             infoBox.Controls.Add(lblGid);
             infoBox.Controls.Add(lblDia);
             infoBox.Controls.Add(lblGold);
+            infoBox.Controls.Add(btnQuickRename);
+            infoBox.Controls.Add(btnQuickFlag);
 
             // Perks box
             Panel perkBox = new Panel {
@@ -522,13 +547,13 @@ namespace RosRedemptionNativeLauncher {
 
             Label p1 = new Label { Text = "🚲 Summer Bicycle (Shift+1 Spawn)", Font = new Font("Segoe UI", 9), ForeColor = Color.White, Location = new Point(15, 40), AutoSize = true };
             Label p2 = new Label { Text = "💃 Tango Dance Emote (Action Wheel)", Font = new Font("Segoe UI", 9), ForeColor = Color.White, Location = new Point(15, 68), AutoSize = true };
-            Label p3 = new Label { Text = "🚩 PH Flag & Blue Combat Killfeed", Font = new Font("Segoe UI", 9), ForeColor = Color.White, Location = new Point(15, 96), AutoSize = true };
+            lblPerkFlag = new Label { Text = "🚩 PH Flag & Blue Combat Killfeed", Font = new Font("Segoe UI", 9), ForeColor = Color.White, Location = new Point(15, 96), AutoSize = true };
             Label p4 = new Label { Text = "📦 Full 254 Box Drops (Permanent)", Font = new Font("Segoe UI", 9), ForeColor = ValCyan, Location = new Point(15, 124), AutoSize = true };
 
             perkBox.Controls.Add(lblPerkTitle);
             perkBox.Controls.Add(p1);
             perkBox.Controls.Add(p2);
-            perkBox.Controls.Add(p3);
+            perkBox.Controls.Add(lblPerkFlag);
             perkBox.Controls.Add(p4);
 
             rightCard.Controls.Add(lblSelectHeader);

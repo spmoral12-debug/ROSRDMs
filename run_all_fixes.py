@@ -1,4 +1,4 @@
-﻿import os, sys, shutil
+import os, sys, shutil
 
 helmet = r"C:\Users\seanj\.gemini\antigravity\brain\a45a1bf9-51a0-4670-a8bb-f6b40087198a\ros_redemption_pure_emblem_1794029947671.jpg"
 splash = r"C:\Users\seanj\.gemini\antigravity\brain\a45a1bf9-51a0-4670-a8bb-f6b40087198a\ros_redemption_splash_clean_1794018381576.jpg"
@@ -34,15 +34,12 @@ for l in ['dh_logo_1.png', 'dh_logo_2.png', 'dh_logo_3.png', 'dh_logo_4.png', 'd
         pass
 
 # 4. Ayusin ang Lobby Hook
-sys.path.insert(0, r"C:\DieHardROS\runtime\app")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(base_dir, "runtime", "app"))
 os.environ['ROS_RT_KEY'] = 'f7491bdbce9412b42ff5aa04a311e319d9b24c387902d85974c786fc282d5eaf'
 import rrboot
 rrboot.install()
 import client.inject_lobby as inj
-
-hook_file = r"C:\DieHardROS\runtime\app\client\lobby_hook.py"
-if os.path.exists(hook_file):
-    os.remove(hook_file)
 
 src = inj.read_source(inj.HOOK_PATH)
 
@@ -182,6 +179,36 @@ except:
 """
 src += art_code
 
-with open(hook_file, "w", encoding="utf-8") as f:
-    f.write(src)
-print(">>> Hook and Assets completely updated!")
+# Include Profile Rename & Country Flag Controls
+profile_hook_path = os.path.join(base_dir, "profile_controls_hook.py")
+if os.path.exists(profile_hook_path):
+    with open(profile_hook_path, "r", encoding="utf-8") as pf:
+        src += "\n\n" + pf.read()
+
+for hf in [
+    os.path.join(base_dir, "runtime", "app", "client", "lobby_hook.py"),
+    r"C:\DieHardROS\runtime\app\client\lobby_hook.py"
+]:
+    try:
+        os.makedirs(os.path.dirname(hf), exist_ok=True)
+        with open(hf, "w", encoding="utf-8") as f:
+            f.write(src)
+        print("Updated hook at:", hf)
+    except Exception as ex:
+        pass
+
+# Ensure server_patch.py is synced
+sp_src = os.path.join(base_dir, "local_update", "hot", "server_patch.py")
+if os.path.exists(sp_src):
+    for sp_dst in [
+        os.path.join(base_dir, "runtime", "app", "local_update", "hot", "server_patch.py"),
+        os.path.join(base_dir, "ROS_Redemption_Server_Package", "local_update", "hot", "server_patch.py")
+    ]:
+        try:
+            os.makedirs(os.path.dirname(sp_dst), exist_ok=True)
+            shutil.copyfile(sp_src, sp_dst)
+            print("Synced server_patch to:", sp_dst)
+        except Exception:
+            pass
+
+print(">>> Hook, Server Patch, and Assets completely updated!")

@@ -318,3 +318,172 @@ try:
     print('[server] ROS Redemption: MailServer robust detail & award patch active!', flush=True)
 except Exception as e:
     print('[server] Error patching MailServer:', e, flush=True)
+
+# ----------------------------------------------------------
+# 10. Profile & Identity RPC Handlers (Rename & Country Flag Change)
+# ----------------------------------------------------------
+try:
+    from backend_server import pyserver
+    from backend_server import database
+    import re
+    import time
+    import json
+    import os
+
+    FLAG_CODE_REGEX = re.compile(r"^[A-Za-z]{2}$")
+
+    def _sync_local_identity(name):
+        try:
+            curr_dir = os.path.dirname(os.path.abspath(__file__))
+            bases = [
+                r'C:\Users\seanj\Documents\ROSRDMs',
+                r'C:\DieHardROS',
+                os.path.abspath(os.path.join(curr_dir, '..', '..'))
+            ]
+            for base in bases:
+                for rel in [
+                    os.path.join('local_update', 'local_identity.json'),
+                    os.path.join('runtime', 'app', 'local_update', 'local_identity.json'),
+                    os.path.join('ROS_Redemption_Server_Package', 'local_update', 'local_identity.json')
+                ]:
+                    target = os.path.join(base, rel)
+                    if os.path.exists(target):
+                        try:
+                            with open(target, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                            data['username'] = name
+                            with open(target, 'w', encoding='utf-8') as f:
+                                json.dump(data, f, indent=2)
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+
+    def redemption_change_nickname(server, args, kwargs):
+        account = server.account
+        try:
+            raw_name = args[0] if args else None
+            if not raw_name:
+                return {'handled': True, 'ok': False, 'tip': 'Please enter a valid nickname.'}
+            name = str(raw_name).strip()
+            if len(name) > 16:
+                return {'handled': True, 'ok': False, 'tip': 'Nickname must be up to 16 characters.'}
+            if any(not char.isprintable() for char in name):
+                return {'handled': True, 'ok': False, 'tip': 'Nickname contains invalid characters.'}
+            
+            with account.db.transaction() as conn:
+                row = conn.execute(
+                    "SELECT nickname, server_id, lobby FROM characters WHERE gid = ?", (account.gid,)
+                ).fetchone()
+                if row is None:
+                    return {'handled': True, 'ok': False, 'tip': 'Character not found.'}
+                
+                lobby = json.loads(row["lobby"] or "{}")
+                if name == row["nickname"]:
+                    return {'handled': True, 'ok': False, 'tip': 'Please choose a different name.'}
+                
+                # Check duplicate name on same server
+                taken = conn.execute(
+                    "SELECT 1 FROM characters WHERE server_id = ? AND gid <> ? "
+                    "AND created = 1 AND nickname = ? COLLATE NOCASE",
+                    (row["server_id"], account.gid, name),
+                ).fetchone()
+                if taken:
+                    return {'handled': True, 'ok': False, 'tip': 'That nickname is already taken.'}
+                
+                # Charge diamonds only if they have enough, but never block
+                if lobby.get("freeNickNameUsed"):
+                    try:
+                        with account.edit_in(conn) as data:
+                            account.charge(data, "diamond", 300, "nickname_change")
+                    except Exception:
+                        pass
+                lobby["freeNickNameUsed"] = True
+                
+                account.db.update_character_in(conn, account.gid, nickname=name, lobby=lobby)
+                print(f"[server] ROS Redemption: Nickname changed for GID {account.gid} ({row['nickname']} -> {name})", flush=True)
+
+            _sync_local_identity(name)
+
+            return {
+                'handled': True,
+                'ok': True,
+                'callbacks': [
+                    {'method': 'rlRedemptionNickname', 'args': [name]},
+                    {'method': 'onChangeNickname', 'args': [0, 'Name changed.']}
+                ],
+                'props': {
+                    'nickname': name,
+                    'baseNickname': name,
+                    'playerName': name
+                },
+                'tip': 'Nickname changed successfully!'
+            }
+        except Exception as e:
+            print(f"[server] Error in changeNicknameWithCard: {e}", flush=True)
+            return {'handled': True, 'ok': False, 'tip': f'Failed to change name: {e}'}
+
+    def redemption_set_national_flag(server, args, kwargs):
+        raw_flag = args[0] if args else None
+        if not raw_flag or not isinstance(raw_flag, str) or not FLAG_CODE_REGEX.match(raw_flag):
+            return {'handled': True, 'ok': False, 'tip': 'Please select a valid 2-letter country flag.'}
+        
+        flag = raw_flag.upper()
+        account = server.account
+        try:
+            now = int(time.time())
+            with account.db.transaction() as conn:
+                row = conn.execute(
+                    "SELECT lobby FROM characters WHERE gid = ?", (account.gid,)
+                ).fetchone()
+                if row is None:
+                    return {'handled': True, 'ok': False, 'tip': 'Character not found.'}
+                
+                lobby = json.loads(row["lobby"] or "{}")
+                previous_time = int(lobby.get("nationalFlagSetTime") or 0)
+                
+                if previous_time:
+                    price = 500 if (now - previous_time < 7 * 86400) else 50
+                    try:
+                        with account.edit_in(conn) as data:
+                            account.charge(data, "diamond", price, "flag_change")
+                    except Exception:
+                        pass
+                
+                lobby.update(
+                    nationalFlag=flag,
+                    country=flag,
+                    flag=flag,
+                    nation=flag,
+                    nationalFlagSetTime=now
+                )
+                account.db.update_character_in(conn, account.gid, lobby=lobby)
+                print(f"[server] ROS Redemption: Country flag changed for GID {account.gid} -> {flag}", flush=True)
+
+            return {
+                'handled': True,
+                'ok': True,
+                'callbacks': [
+                    {'method': 'rlRedemptionFlag', 'args': [flag, now]},
+                    {'method': 'rlOwnFlag', 'args': [flag]},
+                    {'method': 'updateNationalityInfo', 'args': [[{'flag': flag, 'setTime': now}]]}
+                ],
+                'props': {
+                    'nationalFlag': flag
+                },
+                'tip': 'Country flag changed successfully!'
+            }
+        except Exception as e:
+            print(f"[server] Error in setNationalFlag: {e}", flush=True)
+            return {'handled': True, 'ok': False, 'tip': f'Failed to change flag: {e}'}
+
+    def redemption_update_lbs(server, args, kwargs):
+        return {'handled': True, 'ok': True, 'callbacks': []}
+
+    pyserver.HANDLERS['changeNicknameWithCard'] = redemption_change_nickname
+    pyserver.HANDLERS['setNationalFlag'] = redemption_set_national_flag
+    pyserver.HANDLERS['updatePlayerLBSData'] = redemption_update_lbs
+    print('[server] ROS Redemption: Profile rename & national flag handlers registered in pyserver.HANDLERS!', flush=True)
+except Exception as e:
+    print('[server] Error registering profile controls:', e, flush=True)
+

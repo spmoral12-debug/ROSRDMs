@@ -1,0 +1,14 @@
+(dp0
+S'quick_input'
+p1
+(dp2
+sS'friend'
+p3
+(dp4
+sS'shield_list'
+p5
+(lp6
+sS'shield_time_dict'
+p7
+(dp8
+s.

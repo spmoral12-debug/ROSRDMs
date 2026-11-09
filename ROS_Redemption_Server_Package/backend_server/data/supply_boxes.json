@@ -1,0 +1,35 @@
+{
+  "_doc": "SUPPLY boxes. rewards are weighted: {weight, currency, amount} or {weight, item, count, days}. freeEveryHours gives one free open on a timer. See backend_server/features/supply.py. defaultBox answers the game's own supplement ids that are not listed.",
+  "boxes": {
+    "daily": {
+      "cost": {
+        "currency": "gp",
+        "amount": 100
+      },
+      "freeEveryHours": 24,
+      "rewards": [
+        {
+          "weight": 50,
+          "currency": "gp",
+          "amount": 150
+        },
+        {
+          "weight": 30,
+          "currency": "gp",
+          "amount": 400
+        },
+        {
+          "weight": 15,
+          "currency": "freeYuanbao",
+          "amount": 10
+        },
+        {
+          "weight": 5,
+          "currency": "freeYuanbao",
+          "amount": 50
+        }
+      ]
+    }
+  },
+  "defaultBox": "daily"
+}

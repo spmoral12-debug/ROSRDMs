@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DieHard ROS Online Admin</title>
+<style>
+  :root { --bg:#0f1218; --panel:#171c25; --line:#273041; --text:#e6e9ef; --dim:#8c96a8; --accent:#f2b134; --ok:#3ecf8e; --bad:#ef5b5b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 system-ui, Segoe UI, Arial, sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; gap:16px; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel); }
+  header h1 { font-size:17px; margin:0; letter-spacing:.5px; } header h1 b { color:var(--accent); }
+  nav { display:flex; gap:4px; } nav button { background:none; border:0; color:var(--dim); padding:8px 14px; border-radius:6px; cursor:pointer; font-size:14px; }
+  nav button.on { background:var(--line); color:var(--text); }
+  #stats { margin-left:auto; color:var(--dim); font-size:13px; }
+  main { padding:20px; max-width:1200px; margin:auto; } section { display:none; } section.on { display:block; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .card h2 { font-size:15px; margin:0 0 12px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:10px; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--dim); }
+  input, select, textarea { background:#0c0f14; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+  textarea { width:100%; min-height:70px; resize:vertical; }
+  button.go { background:var(--accent); color:#1a1300; border:0; border-radius:6px; padding:8px 14px; font-weight:600; cursor:pointer; }
+  button.ghost { background:none; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 12px; cursor:pointer; }
+  button.danger { background:var(--bad); color:#fff; border:0; border-radius:6px; padding:8px 14px; cursor:pointer; }
+  table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); font-size:13px; }
+  th { color:var(--dim); font-weight:500; } tr.pick { cursor:pointer; } tr.pick:hover { background:#1d2430; }
+  .on-line { color:var(--ok); } .dim { color:var(--dim); } td.bad { color:var(--bad); font-weight:600; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; } .chip { background:var(--line); border-radius:12px; padding:3px 10px; font-size:12px; }
+  .chip button { background:none; border:0; color:var(--dim); cursor:pointer; margin-left:4px; }
+  #toast { position:fixed; right:20px; bottom:20px; max-width:420px; padding:12px 16px; border-radius:8px; display:none; }
+  #toast.ok { background:#123d2b; border:1px solid var(--ok); display:block; } #toast.bad { background:#3d1515; border:1px solid var(--bad); display:block; }
+  #login { max-width:380px; margin:12vh auto; } .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:800px) { .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div id="login" class="card">
+  <h2>DieHard ROS Online admin</h2>
+  <div class="row"><label style="flex:1">Admin key<input id="key" type="password" autocomplete="off"></label></div>
+  <button class="go" onclick="signIn()">Open</button>
+  <p class="dim">The key stays in this browser tab only.</p>
+</div>
+
+<div id="app" style="display:none">
+<header>
+  <h1>ROS <b>Reborn</b> Admin</h1>
+  <nav>
+    <button data-tab="players" class="on">Players</button>
+    <button data-tab="mail">Mail</button>
+    <button data-tab="items">Items</button>
+    <button data-tab="match">Match settings</button>
+    <button data-tab="logs" onclick="loadLogPlayers()">Logs</button>
+  </nav>
+  <div id="stats"></div>
+  <button class="ghost" onclick="signOut()">Sign out</button>
+</header>
+<main>
+  <section id="players" class="on">
+    <div class="card">
+      <div class="row">
+        <label style="flex:1">Search (name, account or gid)<input id="pq" placeholder="e.g. asdasd"></label>
+        <label>Server<select id="pserver"><option value="all">All</option></select></label>
+        <button class="go" onclick="findPlayers()">Search</button>
+      </div>
+      <table><thead><tr><th>Name</th><th>Account</th><th>GID</th><th>Server</th><th>Lv</th><th>Gold</th><th>Diamonds</th><th>Status</th></tr></thead>
+      <tbody id="plist"></tbody></table>
+    </div>
+    <div id="pdetail"></div>
+  </section>
+
+  <section id="mail">
+    <div class="card">
+      <h2>Send mail (players claim the attachments in game: Mail)</h2>
+      <div class="row">
+        <label>To<select id="mto" onchange="mailTarget()"><option value="player">One player</option><option value="server">Everyone on a server</option><option value="all">Everyone</option></select></label>
+        <label id="mgidl">Player GID<input id="mgid" type="number"></label>
+        <label id="mserverl" style="display:none">Server<select id="mserver"></select></label>
+      </div>
+      <div class="row"><label style="flex:1">Title<input id="mtitle" maxlength="60" placeholder="Maintenance gift"></label></div>
+      <label>Message<textarea id="mcontent" maxlength="1000"></textarea></label>
+      <div class="row" style="margin-top:10px">
+        <label>Diamonds<input id="mdia" type="number" min="0" value="0"></label>
+        <label>Gold<input id="mgold" type="number" min="0" value="0"></label>
+      </div>
+      <div class="row">
+        <label>Item ID<input id="mitem" type="number" placeholder="from the Items tab"></label>
+        <label>Count<input id="mcount" type="number" min="1" value="1"></label>
+        <label>Days (0 = permanent)<input id="mdays" type="number" min="0" value="0"></label>
+        <button class="ghost" onclick="addAttachment()">Add item</button>
+      </div>
+      <div class="chips" id="mitems"></div>
+      <div class="row" style="margin-top:14px"><button class="go" onclick="sendMail()">Send mail</button></div>
+    </div>
+    <div class="card">
+      <h2>Recall a mail sent to many (deletes it from every box, unclaimed attachments too)</h2>
+      <div class="row">
+        <label style="flex:1">Exact title<input id="rtitle" maxlength="60"></label>
+        <label>Where<select id="rserver"><option value="all">Every server</option></select></label>
+        <button class="danger" onclick="recallMail()">Recall</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="items">
+    <div class="card">
+      <div class="row">
+        <label style="flex:1">Find an item (name or id)<input id="iq" placeholder="e.g. Fenrir, M4A1, Lyra"></label>
+        <label>Type<select id="ikind"><option value="">Any</option></select></label>
+        <button class="go" onclick="findItems()">Search</button>
+      </div>
+      <p class="dim">Click an item to attach it to the mail, or give it straight to the player shown under Players.</p>
+      <table><thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Quality</th><th></th></tr></thead><tbody id="ilist"></tbody></table>
+    </div>
+  </section>
+
+  <section id="logs">
+    <div class="card">
+      <h2>Game logs sent by players' launchers (errors and important events)</h2>
+      <div class="row">
+        <label>Player<select id="lplayer" onchange="loadLogs()"><option value="">Choose...</option></select></label>
+        <label>Level<select id="llevel" onchange="loadLogs()"><option value="">All</option><option value="error">Errors</option><option value="warning">Warnings</option><option value="info">Info</option></select></label>
+        <label style="flex:1">Contains<input id="lq" placeholder="e.g. Traceback, rlParty"></label>
+        <button class="go" onclick="loadLogs()">Show</button>
+      </div>
+      <table><thead><tr><th style="width:150px">Time</th><th style="width:70px">From</th><th style="width:70px">Level</th><th>Text</th></tr></thead>
+      <tbody id="llist"><tr><td colspan="4" class="dim">Pick a player.</td></tr></tbody></table>
+    </div>
+  </section>
+
+  <section id="match">
+    <div class="card">
+      <h2>Server switches (apply at once, for everyone)</h2>
+      <div class="row">
+        <label><span><input type="checkbox" id="s_battle_enabled" onchange="flip('battle_enabled', this)"> Battle server on (START)</span>
+          <span class="dim">Off: "Battle server is temporarily disabled by admin."</span></label>
+        <label><span><input type="checkbox" id="s_draws_enabled" onchange="flip('draws_enabled', this)"> Lucky draws on (supply boxes)</span>
+          <span class="dim">Off: "Draws are temporarily closed by admin."</span></label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Players per match</h2>
+        <div class="row">
+          <label>Minimum to start<input id="s_match_players" type="number" min="1" max="100"></label>
+          <label>Maximum<input id="s_max_players" type="number" min="1" max="100"></label>
+          <label>Bots<input id="s_bots" type="number" min="0" max="99"></label>
+        </div>
+        <div class="row">
+          <label>Matching wait (s)<input id="s_matching_seconds" type="number" min="0" max="120" step="0.5"></label>
+          <label>Round length (s)<input id="s_match_seconds" type="number" min="60" max="7200"></label>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Teams</h2>
+        <div class="row">
+          <label><span><input type="checkbox" id="t1" checked disabled> Solo</span></label>
+          <label><span><input type="checkbox" id="t2"> Duo (2)</span></label>
+          <label><span><input type="checkbox" id="t4"> Squad (4)</span></label>
+          <label><span><input type="checkbox" id="t5"> Fireteam (5)</span></label>
+        </div>
+        <div class="row"><label>Largest party<input id="s_max_party" type="number" min="1" max="5"></label></div>
+      </div>
+    </div>
+    <button class="go" onclick="saveSettings()">Save match settings</button>
+    <span class="dim">&nbsp;The next match uses them.</span>
+  </section>
+</main>
+</div>
+<div id="toast"></div>
+
+<script>
+let KEY = sessionStorage.getItem('rosAdminKey') || '';
+let attachments = [];
+let current = null;
+
+const $ = (id) => document.getElementById(id);
+const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(text, ok = true) {
+  const box = $('toast'); box.textContent = text; box.className = ok ? 'ok' : 'bad';
+  clearTimeout(box._t); box._t = setTimeout(() => box.className = '', 5000);
+}
+
+async function api(action, body = {}) {
+  const response = await fetch('/api/admin/' + action, {
+    method: 'POST', headers: {'Content-Type': 'application/json', 'X-Admin-Key': KEY}, body: JSON.stringify(body)});
+  let reply = {};
+  try { reply = await response.json(); } catch (e) { reply = {ok: false, message: 'No answer from the server.'}; }
+  if (response.status === 403) { signOut(); toast(reply.message || 'Wrong admin key.', false); throw new Error('forbidden'); }
+  if (!reply.ok) { toast(reply.message || reply.error || 'Refused.', false); throw new Error(reply.error); }
+  return reply;
+}
+
+async function signIn() {
+  KEY = $('key').value.trim() || KEY;
+  try { await load(); sessionStorage.setItem('rosAdminKey', KEY); $('login').style.display = 'none'; $('app').style.display = 'block'; }
+  catch (e) {}
+}
+function signOut() { KEY = ''; sessionStorage.removeItem('rosAdminKey'); $('app').style.display = 'none'; $('login').style.display = 'block'; }
+
+async function load() {
+  const o = await api('overview');
+  $('stats').textContent = `${o.characters} players · ${o.online} online · ${o.accounts} accounts`;
+  const options = o.servers.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  $('pserver').innerHTML = '<option value="all">All</option>' + options; $('mserver').innerHTML = options;
+  $('rserver').innerHTML = '<option value="all">Every server</option>' + options;
+  showSettings(o.settings);
+  findPlayers();
+  const kinds = await api('items', {q: '', kind: ''});
+  $('ikind').innerHTML = '<option value="">Any</option>' + kinds.kinds.map((k) => `<option>${esc(k)}</option>`).join('');
+}
+
+document.querySelectorAll('nav button').forEach((button) => button.onclick = () => {
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b === button));
+  document.querySelectorAll('section').forEach((s) => s.classList.toggle('on', s.id === button.dataset.tab));
+});
+
+async function findPlayers() {
+  const r = await api('players', {q: $('pq').value, server: $('pserver').value});
+  $('plist').innerHTML = r.players.map((p) => `<tr class="pick" onclick="openPlayer(${Number(p.gid)})"><td>${esc(p.nickname)}</td><td>${esc(p.username)}</td><td>${p.gid}</td><td>${esc(p.serverName)}</td><td>${p.level}</td><td>${p.gold}</td><td>${p.diamonds}</td><td class="${p.online === 'offline' ? 'dim' : 'on-line'}">${esc(p.online)}</td></tr>`).join('')
+    || '<tr><td colspan="8" class="dim">Nobody found.</td></tr>';
+}
+
+async function openPlayer(gid) {
+  const p = (await api('player', {gid})).player; current = p;
+  $('mgid').value = gid;
+  const items = p.items.slice(0, 60).map((i) => `<span class="chip">${i[0]} ×${i[1]}${i[2] ? ' (expires ' + new Date(i[2] * 1000).toLocaleDateString() + ')' : ''}</span>`).join('');
+  $('pdetail').innerHTML = `<div class="card"><h2>${esc(p.nickname)} <span class="dim">gid ${p.gid} · ${esc(p.username)} · ${esc(p.serverName)} · ${esc(p.online)}${p.banned ? ' · BANNED' : ''}</span></h2>
+    <div class="row">
+      <label>Currency<select id="gcur"><option value="diamonds">Diamonds</option><option value="gold">Gold</option><option value="sp">SP</option></select></label>
+      <label>Amount<input id="gamount" type="number" min="1" value="100"></label>
+      <button class="go" onclick="grant()">Give now</button>
+    </div>
+    <div class="row">
+      <label>Item ID<input id="gitem" type="number"></label><label>Count<input id="gcount" type="number" min="1" value="1"></label>
+      <label>Days (0 = permanent)<input id="gdays" type="number" min="0" value="0"></label>
+      <button class="go" onclick="giveItem()">Give item now</button>
+    </div>
+    <div class="row">
+      <label>VIP Silver<input id="vsilver" type="number" min="0" max="10" value="${Number(p.vip.silver)}"></label>
+      <label>VIP Gold<input id="vgold" type="number" min="0" max="8" value="${Number(p.vip.gold)}"></label>
+      <button class="go" onclick="setVip()">Set VIP</button>
+      <button class="ghost" onclick="resetVip()">Reset VIP</button>
+    </div>
+    <p class="dim">Wallet: ${Object.entries(p.wallet).map(([k, v]) => esc(k) + ' ' + v).join(' · ')} · depot ${p.depot} items · ${p.mails.length} mails</p>
+    <div class="chips">${items}</div>
+    <h2 style="margin-top:16px">Mailbox</h2>
+    <table><thead><tr><th>Title</th><th>Sent</th><th>Attachments</th><th>State</th><th></th></tr></thead><tbody>
+    ${p.mails.map((m) => `<tr><td>${esc(m.title)}${m.unread ? ' <span class="on-line">●</span>' : ''}</td><td>${new Date(m.sent * 1000).toLocaleString()}</td>
+      <td>${Number(m.attachments)}</td><td>${esc(m.state)}</td><td><button class="ghost" onclick="deleteMail(${Number(m.id)})">Delete</button></td></tr>`).join('')
+      || '<tr><td colspan="5" class="dim">No mail.</td></tr>'}
+    </tbody></table>
+    ${p.mails.length ? '<button class="ghost" style="margin-top:8px" onclick="deleteAllMail()">Delete all mail</button>' : ''}
+    <h2 style="margin-top:16px">Ban</h2>
+    ${p.banned ? `<p class="dim">${esc(p.banMessage || 'Banned.')}</p><button class="ghost" onclick="ban(false)">Unban account</button>`
+      : `<div class="row"><label style="flex:1">Reason (the player sees it)<input id="breason" maxlength="200" placeholder="Cheating"></label>
+         <label>Days (0 = permanent)<input id="bdays" type="number" min="0" value="0"></label>
+         <button class="danger" onclick="ban(true)">Ban and kick</button></div>`}</div>`;
+}
+
+async function grant() {
+  const r = await api('grant', {gid: current.gid, currency: $('gcur').value, amount: +$('gamount').value});
+  toast(r.message); openPlayer(current.gid); findPlayers();
+}
+async function giveItem() {
+  const r = await api('item', {gid: current.gid, item: +$('gitem').value, count: +$('gcount').value, days: +$('gdays').value});
+  toast(r.message); openPlayer(current.gid);
+}
+async function ban(banned) {
+  if (!confirm((banned ? 'Ban ' : 'Unban ') + current.username + (banned ? ' and kick them out of the game?' : '?'))) return;
+  const body = {username: current.username, banned};
+  if (banned) { body.reason = $('breason').value; body.days = +$('bdays').value; }
+  const r = await api('ban', body); toast(r.message); openPlayer(current.gid); findPlayers();
+}
+
+async function setVip() {
+  const r = await api('vip', {gid: current.gid, silver: +$('vsilver').value, gold: +$('vgold').value});
+  toast(r.message); openPlayer(current.gid);
+}
+async function resetVip() {
+  if (!confirm('Reset VIP of ' + current.nickname + '?')) return;
+  const r = await api('vip', {gid: current.gid, reset: true}); toast(r.message); openPlayer(current.gid);
+}
+async function deleteMail(id) {
+  if (!confirm('Delete this mail? Unclaimed attachments go with it.')) return;
+  const r = await api('delete_mail', {gid: current.gid, mail: id}); toast(r.message); openPlayer(current.gid);
+}
+async function deleteAllMail() {
+  if (!confirm('Delete ALL mail of ' + current.nickname + '?')) return;
+  const r = await api('delete_mail', {gid: current.gid, all: true}); toast(r.message); openPlayer(current.gid);
+}
+async function recallMail() {
+  const title = $('rtitle').value.trim(); if (!title) return toast('Type the exact title.', false);
+  if (!confirm('Recall every mail titled "' + title + '"?')) return;
+  const r = await api('delete_mail', {title, server: $('rserver').value}); toast(r.message);
+}
+
+function mailTarget() {
+  const to = $('mto').value; $('mgidl').style.display = to === 'player' ? '' : 'none'; $('mserverl').style.display = to === 'server' ? '' : 'none';
+}
+function addAttachment(id, name) {
+  const item = id || +$('mitem').value; if (!item) return toast('Pick an item id first.', false);
+  attachments.push([item, +$('mcount').value || 1, +$('mdays').value || 0, name || '']); drawAttachments();
+}
+function drawAttachments() {
+  $('mitems').innerHTML = attachments.map((a, i) => `<span class="chip">${esc(a[3] || a[0])} ×${a[1]}${a[2] ? ' · ' + a[2] + 'd' : ''}<button onclick="attachments.splice(${i},1);drawAttachments()">✕</button></span>`).join('');
+}
+async function sendMail() {
+  const to = $('mto').value;
+  if (to !== 'player' && !confirm('Send this mail to ' + (to === 'all' ? 'EVERY player' : 'everyone on that server') + '?')) return;
+  const r = await api('mail', {to, gid: +$('mgid').value, server: +$('mserver').value, title: $('mtitle').value, content: $('mcontent').value,
+    diamonds: +$('mdia').value, gold: +$('mgold').value, items: attachments.map((a) => a.slice(0, 3))});
+  toast(r.message); attachments = []; drawAttachments();
+}
+
+let foundItems = [];
+async function findItems() {
+  const r = await api('items', {q: $('iq').value, kind: $('ikind').value});
+  foundItems = r.items;
+  $('ilist').innerHTML = r.items.map((i, n) => `<tr><td>${Number(i.id)}</td><td>${esc(i.name)}</td><td>${esc(i.kind)}</td><td>${'★'.repeat(Math.max(0, Math.min(6, Number(i.quality) || 0)))}</td>
+    <td><button class="ghost" onclick="itemToMail(${n})">To mail</button> <button class="ghost" onclick="itemToPlayer(${n})">Give</button></td></tr>`).join('')
+    || '<tr><td colspan="5" class="dim">No item by that name (any id still works).</td></tr>';
+}
+function itemToMail(n) { const i = foundItems[n]; addAttachment(Number(i.id), i.name); toast('Added to the mail: ' + i.name); }
+function itemToPlayer(n) {
+  if (!current) return toast('Open a player first (Players tab).', false);
+  document.querySelector('[data-tab=players]').click(); $('gitem').value = Number(foundItems[n].id);
+}
+
+async function loadLogPlayers() {
+  const r = await api('log_players');
+  const keep = $('lplayer').value;
+  $('lplayer').innerHTML = '<option value="">Choose...</option>' + r.players.map((p) =>
+    `<option value="${esc(p.username)}">${esc(p.username)} · ${new Date(p.updated * 1000).toLocaleString()}</option>`).join('');
+  if (keep) $('lplayer').value = keep;
+}
+async function loadLogs() {
+  const username = $('lplayer').value; if (!username) return;
+  const r = await api('logs', {username, level: $('llevel').value, q: $('lq').value, limit: 500});
+  $('llist').innerHTML = r.events.slice().reverse().map((e) => `<tr><td>${new Date((e.t ? e.t : e.at * 1000)).toLocaleString()}</td>
+    <td>${esc(e.src)}</td><td class="${e.level === 'error' ? 'bad' : e.level === 'warning' ? '' : 'dim'}">${esc(e.level)}</td>
+    <td><pre style="margin:0;white-space:pre-wrap;font:12px/1.35 Consolas,monospace">${esc(e.text)}</pre></td></tr>`).join('')
+    || '<tr><td colspan="4" class="dim">Nothing yet.</td></tr>';
+}
+$('lq').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadLogs(); });
+
+function showSettings(s) {
+  for (const name of ['match_players', 'max_players', 'bots', 'matching_seconds', 'match_seconds', 'max_party']) $('s_' + name).value = s[name];
+  for (const size of [2, 4, 5]) $('t' + size).checked = s.team_sizes.includes(size);
+  $('s_battle_enabled').checked = s.battle_enabled !== false; $('s_draws_enabled').checked = s.draws_enabled !== false;
+}
+async function flip(name, box) {
+  try { const r = await api('settings', {set: {[name]: box.checked}}); showSettings(r.settings);
+        toast((name === 'battle_enabled' ? 'Battle server ' : 'Lucky draws ') + (box.checked ? 'ON' : 'OFF') + '.'); }
+  catch (e) { box.checked = !box.checked; }
+}
+async function saveSettings() {
+  const set = {team_sizes: [1, 2, 4, 5].filter((size) => size === 1 || $('t' + size).checked)};
+  for (const name of ['match_players', 'max_players', 'bots', 'matching_seconds', 'match_seconds', 'max_party']) set[name] = +$('s_' + name).value;
+  set.battle_enabled = $('s_battle_enabled').checked; set.draws_enabled = $('s_draws_enabled').checked;
+  const r = await api('settings', {set}); showSettings(r.settings); toast(r.message);
+}
+
+$('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') signIn(); });
+$('pq').addEventListener('keydown', (e) => { if (e.key === 'Enter') findPlayers(); });
+$('iq').addEventListener('keydown', (e) => { if (e.key === 'Enter') findItems(); });
+if (KEY) signIn();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[2026-11-07_17:40:18] Create Link: exe path: C:\DieHardROS\Documents\ros_launcher.exe
+[2026-11-07_17:40:18] Create Link: exe path: C:\DieHardROS\Documents\ros_launcher.exe
+Create Link Success: link path in  C:\Users\Public\Desktop\Rules of Survival.lnk
+Create Link Success: link path in  C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Rules of Survival.lnk
+[2026-11-07_17:40:21] Start download hotfix info plist
+[2026-11-07_17:40:21] CURLMSG_DONE, response code: 200

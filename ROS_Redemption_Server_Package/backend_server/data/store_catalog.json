@@ -1,0 +1,5 @@
+{
+  "_doc": "STORE prices. Keys are the game's goods ids. currency: gp | sp | freeYuanbao | payYuanbao | diamond (free diamonds first). With allowUnlisted, any goods id not listed here is granted free as item = goods id. See backend_server/features/store.py.",
+  "allowUnlisted": true,
+  "goods": {}
+}

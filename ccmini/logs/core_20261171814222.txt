@@ -1,0 +1,13 @@
+Local Date: N Local Time: 1
+Build info: Aug 15 2014 10:08:59 r
+
+ERROR     ; (10:14:22:  2 |99999) AUDIO DEVICE:    0     0;     12192; device init begin
+ERROR     ; (10:14:22:103 |  101) AUDIO DEVICE:    0     0;     12192; device created
+ERROR     ; (10:14:22:105 |    2) AUDIO DEVICE:    0     0;     12192; device init
+ERROR     ; (10:14:22:107 |    2) AUDIO DEVICE:    0     0;     12192; set speaker
+ERROR     ; (10:14:22:109 |    2) AUDIO DEVICE:    0     0;     12192; init speaker
+ERROR     ; (10:14:22:110 |    1) AUDIO DEVICE:    0     0;     12192; set mic
+ERROR     ; (10:14:22:111 |    1) AUDIO DEVICE:    0     0;     12192; init mic
+ERROR     ; (10:14:22:111 |    0) AUDIO DEVICE:    0     0;     12192; process init begin
+ERROR     ; (10:14:22:111 |    0) AUDIO DEVICE:    0     0;     12192; process create
+ERROR     ; (10:14:22:111 |    0) AUDIO DEVICE:    0     0;     12192; process init end

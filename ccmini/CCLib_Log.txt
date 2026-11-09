@@ -1,0 +1,672 @@
+[2026/11/06 12:50:49:259][8720][13612] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 12:50:49:259][8720][13612] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 12:50:49:283][8720][13612] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 12:50:49:302][8720][13612] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 12:50:49:302][8720][13612] [CCLib] load library success
+[2026/11/06 12:50:49:302][8720][13612] [CCLib] start ccmini ret: 0
+[2026/11/06 13:08:19:704][11740][15328] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:08:19:704][11740][15328] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:08:19:740][11740][15328] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:08:19:759][11740][15328] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:08:19:759][11740][15328] [CCLib] load library success
+[2026/11/06 13:08:19:759][11740][15328] [CCLib] start ccmini ret: 0
+[2026/11/06 13:10:53:302][7784][9756] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:10:53:302][7784][9756] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:10:53:304][7784][9756] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:10:53:326][7784][9756] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:10:53:326][7784][9756] [CCLib] load library success
+[2026/11/06 13:10:53:326][7784][9756] [CCLib] start ccmini ret: 0
+[2026/11/06 13:12:14:537][13124][12588] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:12:14:537][13124][12588] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:12:14:539][13124][12588] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:12:14:557][13124][12588] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:12:14:557][13124][12588] [CCLib] load library success
+[2026/11/06 13:12:14:557][13124][12588] [CCLib] start ccmini ret: 0
+[2026/11/06 13:15:44:858][8984][11704] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:15:44:858][8984][11704] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:15:44:873][8984][11704] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:15:44:892][8984][11704] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:15:44:892][8984][11704] [CCLib] load library success
+[2026/11/06 13:15:44:892][8984][11704] [CCLib] start ccmini ret: 0
+[2026/11/06 13:16:16:089][8876][3280] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:16:16:089][8876][3280] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:16:16:091][8876][3280] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:16:16:110][8876][3280] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:16:16:110][8876][3280] [CCLib] load library success
+[2026/11/06 13:16:16:110][8876][3280] [CCLib] start ccmini ret: 0
+[2026/11/06 13:33:09:106][10120][11292] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:33:09:106][10120][11292] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:33:09:109][10120][11292] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:33:09:159][10120][11292] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:33:09:159][10120][11292] [CCLib] load library success
+[2026/11/06 13:33:09:159][10120][11292] [CCLib] start ccmini ret: 0
+[2026/11/06 13:34:13:040][10724][9884] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:34:13:040][10724][9884] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:34:13:041][10724][9884] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:34:13:127][10724][9884] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:34:13:127][10724][9884] [CCLib] load library success
+[2026/11/06 13:34:13:127][10724][9884] [CCLib] start ccmini ret: 0
+[2026/11/06 13:35:13:249][13484][0352] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:35:13:249][13484][0352] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:35:13:251][13484][0352] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:35:13:301][13484][0352] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:35:13:301][13484][0352] [CCLib] load library success
+[2026/11/06 13:35:13:301][13484][0352] [CCLib] start ccmini ret: 0
+[2026/11/06 13:39:58:382][14136][12608] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 13:39:58:382][14136][12608] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 13:39:58:384][14136][12608] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 13:39:58:480][14136][12608] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 13:39:58:480][14136][12608] [CCLib] load library success
+[2026/11/06 13:39:58:480][14136][12608] [CCLib] start ccmini ret: 0
+[2026/11/06 21:28:39:037][9748][9004] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:28:39:037][9748][9004] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:28:39:066][9748][9004] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:28:39:085][9748][9004] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:28:39:085][9748][9004] [CCLib] load library success
+[2026/11/06 21:28:39:085][9748][9004] [CCLib] start ccmini ret: 0
+[2026/11/06 21:34:14:587][11240][10968] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:34:14:587][11240][10968] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:34:14:590][11240][10968] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:34:14:612][11240][10968] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:34:14:612][11240][10968] [CCLib] load library success
+[2026/11/06 21:34:14:612][11240][10968] [CCLib] start ccmini ret: 0
+[2026/11/06 21:40:14:277][7000][10204] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:40:14:277][7000][10204] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:40:14:278][7000][10204] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:40:14:299][7000][10204] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:40:14:299][7000][10204] [CCLib] load library success
+[2026/11/06 21:40:14:299][7000][10204] [CCLib] start ccmini ret: 0
+[2026/11/06 21:43:23:011][10056][8024] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:43:23:011][10056][8024] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:43:23:012][10056][8024] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:43:23:031][10056][8024] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:43:23:031][10056][8024] [CCLib] load library success
+[2026/11/06 21:43:23:031][10056][8024] [CCLib] start ccmini ret: 0
+[2026/11/06 21:44:12:530][5664][4172] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:44:12:530][5664][4172] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:44:12:531][5664][4172] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:44:12:553][5664][4172] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:44:12:553][5664][4172] [CCLib] load library success
+[2026/11/06 21:44:12:553][5664][4172] [CCLib] start ccmini ret: 0
+[2026/11/06 21:46:23:620][9100][2088] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:46:23:620][9100][2088] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:46:23:621][9100][2088] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:46:23:643][9100][2088] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:46:23:643][9100][2088] [CCLib] load library success
+[2026/11/06 21:46:23:643][9100][2088] [CCLib] start ccmini ret: 0
+[2026/11/06 21:48:12:590][2320][6816] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:48:12:590][2320][6816] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:48:12:592][2320][6816] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:48:12:615][2320][6816] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:48:12:615][2320][6816] [CCLib] load library success
+[2026/11/06 21:48:12:615][2320][6816] [CCLib] start ccmini ret: 0
+[2026/11/06 21:51:34:934][13208][13212] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:51:34:934][13208][13212] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:51:34:936][13208][13212] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:51:34:955][13208][13212] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:51:34:955][13208][13212] [CCLib] load library success
+[2026/11/06 21:51:34:955][13208][13212] [CCLib] start ccmini ret: 0
+[2026/11/06 21:53:15:076][4640][6560] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:53:15:076][4640][6560] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:53:15:078][4640][6560] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:53:15:099][4640][6560] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:53:15:099][4640][6560] [CCLib] load library success
+[2026/11/06 21:53:15:099][4640][6560] [CCLib] start ccmini ret: 0
+[2026/11/06 21:54:11:435][1680][10188] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:54:11:435][1680][10188] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:54:11:437][1680][10188] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:54:11:459][1680][10188] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:54:11:459][1680][10188] [CCLib] load library success
+[2026/11/06 21:54:11:459][1680][10188] [CCLib] start ccmini ret: 0
+[2026/11/06 21:56:15:105][10196][10544] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:56:15:105][10196][10544] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:56:15:106][10196][10544] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:56:15:128][10196][10544] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:56:15:128][10196][10544] [CCLib] load library success
+[2026/11/06 21:56:15:128][10196][10544] [CCLib] start ccmini ret: 0
+[2026/11/06 21:57:56:924][10608][1092] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 21:57:56:924][10608][1092] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 21:57:56:926][10608][1092] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 21:57:56:944][10608][1092] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 21:57:56:944][10608][1092] [CCLib] load library success
+[2026/11/06 21:57:56:944][10608][1092] [CCLib] start ccmini ret: 0
+[2026/11/06 22:00:08:122][9748][10528] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:00:08:122][9748][10528] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:00:08:125][9748][10528] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:00:08:146][9748][10528] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:00:08:146][9748][10528] [CCLib] load library success
+[2026/11/06 22:00:08:146][9748][10528] [CCLib] start ccmini ret: 0
+[2026/11/06 22:03:17:254][4432][3148] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:03:17:254][4432][3148] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:03:17:256][4432][3148] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:03:17:276][4432][3148] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:03:17:276][4432][3148] [CCLib] load library success
+[2026/11/06 22:03:17:276][4432][3148] [CCLib] start ccmini ret: 0
+[2026/11/06 22:04:07:138][9644][3524] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:04:07:138][9644][3524] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:04:07:140][9644][3524] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:04:07:162][9644][3524] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:04:07:162][9644][3524] [CCLib] load library success
+[2026/11/06 22:04:07:162][9644][3524] [CCLib] start ccmini ret: 0
+[2026/11/06 22:06:47:987][11824][9548] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:06:47:987][11824][9548] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:06:47:988][11824][9548] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:06:48:010][11824][9548] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:06:48:010][11824][9548] [CCLib] load library success
+[2026/11/06 22:06:48:010][11824][9548] [CCLib] start ccmini ret: 0
+[2026/11/06 22:08:15:698][12880][10476] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:08:15:698][12880][10476] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:08:15:699][12880][10476] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:08:15:721][12880][10476] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:08:15:721][12880][10476] [CCLib] load library success
+[2026/11/06 22:08:15:721][12880][10476] [CCLib] start ccmini ret: 0
+[2026/11/06 22:10:18:272][13160][13156] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:10:18:272][13160][13156] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:10:18:274][13160][13156] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:10:18:295][13160][13156] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:10:18:296][13160][13156] [CCLib] load library success
+[2026/11/06 22:10:18:296][13160][13156] [CCLib] start ccmini ret: 0
+[2026/11/06 22:20:24:930][7980][7856] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:20:24:930][7980][7856] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:20:25:115][7980][7856] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:20:25:293][7980][7856] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:20:25:293][7980][7856] [CCLib] load library success
+[2026/11/06 22:20:25:293][7980][7856] [CCLib] start ccmini ret: 0
+[2026/11/06 22:23:45:426][7612][10624] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:23:45:426][7612][10624] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:23:45:428][7612][10624] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:23:45:448][7612][10624] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:23:45:449][7612][10624] [CCLib] load library success
+[2026/11/06 22:23:45:449][7612][10624] [CCLib] start ccmini ret: 0
+[2026/11/06 22:25:12:678][1644][10308] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:25:12:678][1644][10308] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:25:12:679][1644][10308] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:25:12:700][1644][10308] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:25:12:700][1644][10308] [CCLib] load library success
+[2026/11/06 22:25:12:700][1644][10308] [CCLib] start ccmini ret: 0
+[2026/11/06 22:27:46:752][10004][8852] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:27:46:752][10004][8852] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:27:46:827][10004][8852] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:27:46:902][10004][8852] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:27:46:902][10004][8852] [CCLib] load library success
+[2026/11/06 22:27:46:902][10004][8852] [CCLib] start ccmini ret: 0
+[2026/11/06 22:35:18:681][11924][12084] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:35:18:681][11924][12084] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:35:18:697][11924][12084] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:35:18:770][11924][12084] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:35:18:770][11924][12084] [CCLib] load library success
+[2026/11/06 22:35:18:770][11924][12084] [CCLib] start ccmini ret: 0
+[2026/11/06 22:39:44:718][3164][0156] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/06 22:39:44:718][3164][0156] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/06 22:39:44:719][3164][0156] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/06 22:39:45:468][3164][0156] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/06 22:39:45:468][3164][0156] [CCLib] load library success
+[2026/11/06 22:39:45:468][3164][0156] [CCLib] start ccmini ret: 0
+[2026/11/07 07:49:48:398][9960][9408] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 07:49:48:398][9960][9408] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 07:49:48:414][9960][9408] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 07:49:48:441][9960][9408] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 07:49:48:441][9960][9408] [CCLib] load library success
+[2026/11/07 07:49:48:441][9960][9408] [CCLib] start ccmini ret: 0
+[2026/11/07 08:10:49:137][11472][11572] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 08:10:49:137][11472][11572] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 08:10:49:139][11472][11572] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 08:10:49:167][11472][11572] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 08:10:49:167][11472][11572] [CCLib] load library success
+[2026/11/07 08:10:49:167][11472][11572] [CCLib] start ccmini ret: 0
+[2026/11/07 10:06:16:715][8916][11624] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 10:06:16:715][8916][11624] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 10:06:16:717][8916][11624] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 10:06:16:751][8916][11624] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 10:06:16:751][8916][11624] [CCLib] load library success
+[2026/11/07 10:06:16:752][8916][11624] [CCLib] start ccmini ret: 0
+[2026/11/07 10:10:20:332][12116][9412] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 10:10:20:332][12116][9412] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 10:10:20:333][12116][9412] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 10:10:20:442][12116][9412] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 10:10:20:442][12116][9412] [CCLib] load library success
+[2026/11/07 10:10:20:442][12116][9412] [CCLib] start ccmini ret: 0
+[2026/11/07 10:14:16:350][10604][12860] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 10:14:16:350][10604][12860] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 10:14:16:352][10604][12860] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 10:14:16:380][10604][12860] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 10:14:16:380][10604][12860] [CCLib] load library success
+[2026/11/07 10:14:16:380][10604][12860] [CCLib] start ccmini ret: 0
+[2026/11/07 10:30:36:960][9944][11700] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 10:30:36:960][9944][11700] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 10:30:36:961][9944][11700] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 10:30:36:987][9944][11700] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 10:30:36:987][9944][11700] [CCLib] load library success
+[2026/11/07 10:30:36:987][9944][11700] [CCLib] start ccmini ret: 0
+[2026/11/07 10:39:04:625][368][1920] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 10:39:04:625][368][1920] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 10:39:04:626][368][1920] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 10:39:04:654][368][1920] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 10:39:04:654][368][1920] [CCLib] load library success
+[2026/11/07 10:39:04:654][368][1920] [CCLib] start ccmini ret: 0
+[2026/11/07 11:17:01:858][1884][13724] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:17:01:858][1884][13724] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:17:01:860][1884][13724] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:17:01:894][1884][13724] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:17:01:894][1884][13724] [CCLib] load library success
+[2026/11/07 11:17:01:894][1884][13724] [CCLib] start ccmini ret: 0
+[2026/11/07 11:26:54:613][11692][11504] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:26:54:613][11692][11504] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:26:54:616][11692][11504] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:26:54:699][11692][11504] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:26:54:699][11692][11504] [CCLib] load library success
+[2026/11/07 11:26:54:699][11692][11504] [CCLib] start ccmini ret: 0
+[2026/11/07 11:27:43:299][10268][9368] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:27:43:299][10268][9368] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:27:43:300][10268][9368] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:27:43:329][10268][9368] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:27:43:329][10268][9368] [CCLib] load library success
+[2026/11/07 11:27:43:329][10268][9368] [CCLib] start ccmini ret: 0
+[2026/11/07 11:29:51:537][14140][13472] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:29:51:537][14140][13472] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:29:51:538][14140][13472] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:29:51:624][14140][13472] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:29:51:624][14140][13472] [CCLib] load library success
+[2026/11/07 11:29:51:624][14140][13472] [CCLib] start ccmini ret: 0
+[2026/11/07 11:34:39:563][8548][11336] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:34:39:563][8548][11336] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:34:39:564][8548][11336] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:34:39:657][8548][11336] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:34:39:657][8548][11336] [CCLib] load library success
+[2026/11/07 11:34:39:657][8548][11336] [CCLib] start ccmini ret: 0
+[2026/11/07 11:35:47:735][7920][12092] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:35:47:735][7920][12092] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:35:47:736][7920][12092] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:35:47:765][7920][12092] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:35:47:765][7920][12092] [CCLib] load library success
+[2026/11/07 11:35:47:765][7920][12092] [CCLib] start ccmini ret: 0
+[2026/11/07 11:40:06:557][1708][13048] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:40:06:557][1708][13048] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:40:06:558][1708][13048] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:40:06:584][1708][13048] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:40:06:584][1708][13048] [CCLib] load library success
+[2026/11/07 11:40:06:584][1708][13048] [CCLib] start ccmini ret: 0
+[2026/11/07 11:41:45:510][13968][11032] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:41:45:510][13968][11032] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:41:45:512][13968][11032] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:41:45:539][13968][11032] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:41:45:539][13968][11032] [CCLib] load library success
+[2026/11/07 11:41:45:539][13968][11032] [CCLib] start ccmini ret: 0
+[2026/11/07 11:43:50:032][10088][9880] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 11:43:50:032][10088][9880] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 11:43:50:034][10088][9880] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 11:43:50:059][10088][9880] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 11:43:50:059][10088][9880] [CCLib] load library success
+[2026/11/07 11:43:50:059][10088][9880] [CCLib] start ccmini ret: 0
+[2026/11/07 12:01:32:160][2416][10060] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 12:01:32:160][2416][10060] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 12:01:32:161][2416][10060] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 12:01:32:249][2416][10060] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 12:01:32:249][2416][10060] [CCLib] load library success
+[2026/11/07 12:01:32:249][2416][10060] [CCLib] start ccmini ret: 0
+[2026/11/07 12:25:42:287][5084][9428] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 12:25:42:287][5084][9428] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 12:25:42:288][5084][9428] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 12:25:42:318][5084][9428] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 12:25:42:318][5084][9428] [CCLib] load library success
+[2026/11/07 12:25:42:318][5084][9428] [CCLib] start ccmini ret: 0
+[2026/11/07 12:35:45:193][14772][15200] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 12:35:45:193][14772][15200] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 12:35:45:194][14772][15200] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 12:35:45:581][14772][15200] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 12:35:45:581][14772][15200] [CCLib] load library success
+[2026/11/07 12:35:45:581][14772][15200] [CCLib] start ccmini ret: 0
+[2026/11/07 12:50:33:831][13108][14248] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 12:50:33:831][13108][14248] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 12:50:33:832][13108][14248] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 12:50:33:945][13108][14248] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 12:50:33:945][13108][14248] [CCLib] load library success
+[2026/11/07 12:50:33:945][13108][14248] [CCLib] start ccmini ret: 0
+[2026/11/07 13:00:55:292][9312][0360] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 13:00:55:292][9312][0360] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 13:00:55:293][9312][0360] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 13:00:55:358][9312][0360] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 13:00:55:358][9312][0360] [CCLib] load library success
+[2026/11/07 13:00:55:358][9312][0360] [CCLib] start ccmini ret: 0
+[2026/11/07 13:09:43:554][13472][11984] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 13:09:43:554][13472][11984] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 13:09:43:556][13472][11984] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 13:09:43:639][13472][11984] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 13:09:43:639][13472][11984] [CCLib] load library success
+[2026/11/07 13:09:43:639][13472][11984] [CCLib] start ccmini ret: 0
+[2026/11/07 13:19:20:755][11220][14748] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 13:19:20:755][11220][14748] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 13:19:20:756][11220][14748] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 13:19:20:793][11220][14748] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 13:19:20:793][11220][14748] [CCLib] load library success
+[2026/11/07 13:19:20:793][11220][14748] [CCLib] start ccmini ret: 0
+[2026/11/07 13:24:20:524][13592][14292] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 13:24:20:524][13592][14292] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 13:24:20:526][13592][14292] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 13:24:20:554][13592][14292] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 13:24:20:554][13592][14292] [CCLib] load library success
+[2026/11/07 13:24:20:554][13592][14292] [CCLib] start ccmini ret: 0
+[2026/11/07 13:24:48:600][9880][2504] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 13:24:48:600][9880][2504] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 13:24:48:601][9880][2504] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 13:24:48:629][9880][2504] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 13:24:48:629][9880][2504] [CCLib] load library success
+[2026/11/07 13:24:48:629][9880][2504] [CCLib] start ccmini ret: 0
+[2026/11/07 13:32:32:003][12136][8404] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 13:32:32:003][12136][8404] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 13:32:32:005][12136][8404] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 13:32:32:032][12136][8404] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 13:32:32:032][12136][8404] [CCLib] load library success
+[2026/11/07 13:32:32:032][12136][8404] [CCLib] start ccmini ret: 0
+[2026/11/07 13:57:14:415][14288][7972] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 13:57:14:415][14288][7972] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 13:57:14:416][14288][7972] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 13:57:14:444][14288][7972] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 13:57:14:444][14288][7972] [CCLib] load library success
+[2026/11/07 13:57:14:444][14288][7972] [CCLib] start ccmini ret: 0
+[2026/11/07 14:00:02:616][9788][7784] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 14:00:02:616][9788][7784] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 14:00:02:619][9788][7784] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 14:00:02:648][9788][7784] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 14:00:02:648][9788][7784] [CCLib] load library success
+[2026/11/07 14:00:02:648][9788][7784] [CCLib] start ccmini ret: 0
+[2026/11/07 14:07:54:625][14604][8036] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 14:07:54:625][14604][8036] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 14:07:54:628][14604][8036] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 14:07:54:671][14604][8036] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 14:07:54:671][14604][8036] [CCLib] load library success
+[2026/11/07 14:07:54:671][14604][8036] [CCLib] start ccmini ret: 0
+[2026/11/07 14:12:29:593][6788][4820] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 14:12:29:593][6788][4820] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 14:12:29:596][6788][4820] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 14:12:29:624][6788][4820] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 14:12:29:624][6788][4820] [CCLib] load library success
+[2026/11/07 14:12:29:624][6788][4820] [CCLib] start ccmini ret: 0
+[2026/11/07 14:13:24:632][6536][3004] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 14:13:24:632][6536][3004] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 14:13:24:633][6536][3004] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 14:13:24:739][6536][3004] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 14:13:24:739][6536][3004] [CCLib] load library success
+[2026/11/07 14:13:24:739][6536][3004] [CCLib] start ccmini ret: 0
+[2026/11/07 14:21:12:399][10460][14880] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 14:21:12:399][10460][14880] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 14:21:12:401][10460][14880] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 14:21:12:501][10460][14880] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 14:21:12:501][10460][14880] [CCLib] load library success
+[2026/11/07 14:21:12:501][10460][14880] [CCLib] start ccmini ret: 0
+[2026/11/07 14:37:25:537][14604][8608] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 14:37:25:537][14604][8608] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 14:37:25:538][14604][8608] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 14:37:25:566][14604][8608] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 14:37:25:566][14604][8608] [CCLib] load library success
+[2026/11/07 14:37:25:566][14604][8608] [CCLib] start ccmini ret: 0
+[2026/11/07 14:39:09:864][13976][12592] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 14:39:09:864][13976][12592] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 14:39:09:867][13976][12592] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 14:39:09:893][13976][12592] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 14:39:09:893][13976][12592] [CCLib] load library success
+[2026/11/07 14:39:09:893][13976][12592] [CCLib] start ccmini ret: 0
+[2026/11/07 17:12:00:136][10508][13340] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 17:12:00:136][10508][13340] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 17:12:00:138][10508][13340] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 17:12:00:232][10508][13340] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 17:12:00:232][10508][13340] [CCLib] load library success
+[2026/11/07 17:12:00:232][10508][13340] [CCLib] start ccmini ret: 0
+[2026/11/07 17:21:23:965][15040][9612] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 17:21:23:965][15040][9612] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 17:21:23:967][15040][9612] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 17:21:24:116][15040][9612] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 17:21:24:116][15040][9612] [CCLib] load library success
+[2026/11/07 17:21:24:116][15040][9612] [CCLib] start ccmini ret: 0
+[2026/11/07 17:24:22:618][10144][10752] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 17:24:22:618][10144][10752] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 17:24:22:619][10144][10752] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 17:24:22:760][10144][10752] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 17:24:22:760][10144][10752] [CCLib] load library success
+[2026/11/07 17:24:22:760][10144][10752] [CCLib] start ccmini ret: 0
+[2026/11/07 17:37:50:748][7960][11172] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 17:37:50:748][7960][11172] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 17:37:50:749][7960][11172] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 17:37:50:774][7960][11172] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 17:37:50:774][7960][11172] [CCLib] load library success
+[2026/11/07 17:37:50:774][7960][11172] [CCLib] start ccmini ret: 0
+[2026/11/07 17:45:28:082][8140][14968] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 17:45:28:082][8140][14968] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 17:45:28:084][8140][14968] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 17:45:28:166][8140][14968] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 17:45:28:166][8140][14968] [CCLib] load library success
+[2026/11/07 17:45:28:166][8140][14968] [CCLib] start ccmini ret: 0
+[2026/11/07 17:48:43:522][14456][13352] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 17:48:43:522][14456][13352] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 17:48:43:524][14456][13352] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 17:48:43:554][14456][13352] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 17:48:43:554][14456][13352] [CCLib] load library success
+[2026/11/07 17:48:43:554][14456][13352] [CCLib] start ccmini ret: 0
+[2026/11/07 18:04:00:947][7776][15040] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:04:00:947][7776][15040] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:04:00:948][7776][15040] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:04:00:977][7776][15040] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:04:00:977][7776][15040] [CCLib] load library success
+[2026/11/07 18:04:00:977][7776][15040] [CCLib] start ccmini ret: 0
+[2026/11/07 18:05:08:471][12428][14208] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:05:08:471][12428][14208] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:05:08:472][12428][14208] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:05:08:614][12428][14208] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:05:08:614][12428][14208] [CCLib] load library success
+[2026/11/07 18:05:08:614][12428][14208] [CCLib] start ccmini ret: 0
+[2026/11/07 18:06:10:584][10516][7652] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:06:10:584][10516][7652] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:06:10:586][10516][7652] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:06:10:615][10516][7652] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:06:10:615][10516][7652] [CCLib] load library success
+[2026/11/07 18:06:10:615][10516][7652] [CCLib] start ccmini ret: 0
+[2026/11/07 18:08:25:388][5776][7864] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:08:25:388][5776][7864] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:08:25:389][5776][7864] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:08:25:452][5776][7864] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:08:25:452][5776][7864] [CCLib] load library success
+[2026/11/07 18:08:25:452][5776][7864] [CCLib] start ccmini ret: 0
+[2026/11/07 18:11:07:937][6084][13004] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:11:07:937][6084][13004] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:11:07:938][6084][13004] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:11:08:025][6084][13004] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:11:08:025][6084][13004] [CCLib] load library success
+[2026/11/07 18:11:08:025][6084][13004] [CCLib] start ccmini ret: 0
+[2026/11/07 18:13:39:196][5112][12336] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:13:39:196][5112][12336] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:13:39:212][5112][12336] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:13:39:253][5112][12336] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:13:39:253][5112][12336] [CCLib] load library success
+[2026/11/07 18:13:39:253][5112][12336] [CCLib] start ccmini ret: 0
+[2026/11/07 18:14:21:900][14072][12004] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:14:21:900][14072][12004] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:14:21:940][14072][12004] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:14:21:966][14072][12004] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:14:21:966][14072][12004] [CCLib] load library success
+[2026/11/07 18:14:21:966][14072][12004] [CCLib] start ccmini ret: 0
+[2026/11/07 18:16:55:684][15048][4820] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:16:55:684][15048][4820] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:16:55:685][15048][4820] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:16:55:788][15048][4820] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:16:55:788][15048][4820] [CCLib] load library success
+[2026/11/07 18:16:55:788][15048][4820] [CCLib] start ccmini ret: 0
+[2026/11/07 18:21:09:597][11480][12692] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:21:09:597][11480][12692] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:21:09:599][11480][12692] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:21:09:627][11480][12692] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:21:09:627][11480][12692] [CCLib] load library success
+[2026/11/07 18:21:09:627][11480][12692] [CCLib] start ccmini ret: 0
+[2026/11/07 18:24:23:152][9428][8572] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:24:23:152][9428][8572] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:24:23:155][9428][8572] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:24:23:265][9428][8572] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:24:23:265][9428][8572] [CCLib] load library success
+[2026/11/07 18:24:23:265][9428][8572] [CCLib] start ccmini ret: 0
+[2026/11/07 18:27:16:741][4780][13344] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:27:16:741][4780][13344] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:27:16:743][4780][13344] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:27:16:834][4780][13344] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:27:16:834][4780][13344] [CCLib] load library success
+[2026/11/07 18:27:16:834][4780][13344] [CCLib] start ccmini ret: 0
+[2026/11/07 18:49:56:597][14952][14608] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:49:56:597][14952][14608] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:49:56:598][14952][14608] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:49:56:627][14952][14608] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:49:56:627][14952][14608] [CCLib] load library success
+[2026/11/07 18:49:56:628][14952][14608] [CCLib] start ccmini ret: 0
+[2026/11/07 18:54:24:953][12944][11944] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 18:54:24:953][12944][11944] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 18:54:24:955][12944][11944] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 18:54:25:061][12944][11944] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 18:54:25:061][12944][11944] [CCLib] load library success
+[2026/11/07 18:54:25:061][12944][11944] [CCLib] start ccmini ret: 0
+[2026/11/07 19:01:09:357][15096][9592] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 19:01:09:357][15096][9592] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 19:01:09:358][15096][9592] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 19:01:09:387][15096][9592] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 19:01:09:387][15096][9592] [CCLib] load library success
+[2026/11/07 19:01:09:387][15096][9592] [CCLib] start ccmini ret: 0
+[2026/11/07 19:04:47:635][2560][3572] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 19:04:47:635][2560][3572] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 19:04:47:637][2560][3572] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 19:04:47:724][2560][3572] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 19:04:47:724][2560][3572] [CCLib] load library success
+[2026/11/07 19:04:47:724][2560][3572] [CCLib] start ccmini ret: 0
+[2026/11/07 19:11:00:380][6392][13296] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 19:11:00:380][6392][13296] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 19:11:00:381][6392][13296] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 19:11:00:462][6392][13296] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 19:11:00:463][6392][13296] [CCLib] load library success
+[2026/11/07 19:11:00:463][6392][13296] [CCLib] start ccmini ret: 0
+[2026/11/07 19:35:57:447][11168][14212] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 19:35:57:447][11168][14212] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 19:35:57:450][11168][14212] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 19:35:57:537][11168][14212] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 19:35:57:537][11168][14212] [CCLib] load library success
+[2026/11/07 19:35:57:537][11168][14212] [CCLib] start ccmini ret: 0
+[2026/11/07 22:42:37:831][10780][14528] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 22:42:37:831][10780][14528] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 22:42:37:907][10780][14528] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 22:42:37:980][10780][14528] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 22:42:37:980][10780][14528] [CCLib] load library success
+[2026/11/07 22:42:37:980][10780][14528] [CCLib] start ccmini ret: 0
+[2026/11/07 22:52:01:298][12612][19552] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 22:52:01:298][12612][19552] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 22:52:01:300][12612][19552] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 22:52:01:410][12612][19552] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 22:52:01:410][12612][19552] [CCLib] load library success
+[2026/11/07 22:52:01:410][12612][19552] [CCLib] start ccmini ret: 0
+[2026/11/07 22:59:54:878][1012][15912] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 22:59:54:878][1012][15912] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 22:59:54:881][1012][15912] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 22:59:54:911][1012][15912] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 22:59:54:911][1012][15912] [CCLib] load library success
+[2026/11/07 22:59:54:911][1012][15912] [CCLib] start ccmini ret: 0
+[2026/11/07 23:00:42:653][14352][18564] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/07 23:00:42:653][14352][18564] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/07 23:00:42:654][14352][18564] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/07 23:00:42:683][14352][18564] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/07 23:00:42:683][14352][18564] [CCLib] load library success
+[2026/11/07 23:00:42:683][14352][18564] [CCLib] start ccmini ret: 0
+[2026/11/08 01:28:50:103][15744][18888] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 01:28:50:103][15744][18888] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 01:28:50:106][15744][18888] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 01:28:50:221][15744][18888] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 01:28:50:221][15744][18888] [CCLib] load library success
+[2026/11/08 01:28:50:221][15744][18888] [CCLib] start ccmini ret: 0
+[2026/11/08 11:25:19:047][9832][6480] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 11:25:19:047][9832][6480] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 11:25:19:048][9832][6480] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 11:25:19:080][9832][6480] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 11:25:19:080][9832][6480] [CCLib] load library success
+[2026/11/08 11:25:19:080][9832][6480] [CCLib] start ccmini ret: 0
+[2026/11/08 11:50:00:227][11420][5768] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 11:50:00:227][11420][5768] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 11:50:00:228][11420][5768] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 11:50:00:258][11420][5768] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 11:50:00:258][11420][5768] [CCLib] load library success
+[2026/11/08 11:50:00:258][11420][5768] [CCLib] start ccmini ret: 0
+[2026/11/08 12:05:10:492][10872][11496] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 12:05:10:492][10872][11496] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 12:05:10:493][10872][11496] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 12:05:10:569][10872][11496] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 12:05:10:569][10872][11496] [CCLib] load library success
+[2026/11/08 12:05:10:569][10872][11496] [CCLib] start ccmini ret: 0
+[2026/11/08 12:07:57:138][9224][13424] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 12:07:57:138][9224][13424] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 12:07:57:140][9224][13424] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 12:07:57:189][9224][13424] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 12:07:57:189][9224][13424] [CCLib] load library success
+[2026/11/08 12:07:57:189][9224][13424] [CCLib] start ccmini ret: 0
+[2026/11/08 12:33:19:362][10060][10144] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 12:33:19:362][10060][10144] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 12:33:19:400][10060][10144] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 12:33:19:488][10060][10144] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 12:33:19:488][10060][10144] [CCLib] load library success
+[2026/11/08 12:33:19:488][10060][10144] [CCLib] start ccmini ret: 0
+[2026/11/08 12:50:58:016][12744][7968] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 12:50:58:016][12744][7968] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 12:50:58:017][12744][7968] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 12:50:58:048][12744][7968] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 12:50:58:048][12744][7968] [CCLib] load library success
+[2026/11/08 12:50:58:048][12744][7968] [CCLib] start ccmini ret: 0
+[2026/11/08 13:08:57:109][13224][13804] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 13:08:57:109][13224][13804] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 13:08:57:145][13224][13804] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 13:08:57:171][13224][13804] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 13:08:57:171][13224][13804] [CCLib] load library success
+[2026/11/08 13:08:57:171][13224][13804] [CCLib] start ccmini ret: 0
+[2026/11/08 13:34:04:351][13172][9444] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 13:34:04:351][13172][9444] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 13:34:04:352][13172][9444] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 13:34:04:382][13172][9444] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 13:34:04:382][13172][9444] [CCLib] load library success
+[2026/11/08 13:34:04:382][13172][9444] [CCLib] start ccmini ret: 0
+[2026/11/08 14:31:55:351][4372][14220] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/08 14:31:55:351][4372][14220] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/08 14:31:55:352][4372][14220] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/08 14:31:55:468][4372][14220] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/08 14:31:55:468][4372][14220] [CCLib] load library success
+[2026/11/08 14:31:55:468][4372][14220] [CCLib] start ccmini ret: 0
+[2026/11/09 11:48:22:260][12076][12196] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/09 11:48:22:260][12076][12196] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/09 11:48:22:272][12076][12196] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/09 11:48:22:299][12076][12196] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/09 11:48:22:299][12076][12196] [CCLib] load library success
+[2026/11/09 11:48:22:299][12076][12196] [CCLib] start ccmini ret: 0
+[2026/11/09 11:57:16:216][12820][13172] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/09 11:57:16:216][12820][13172] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/09 11:57:16:218][12820][13172] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/09 11:57:16:330][12820][13172] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/09 11:57:16:330][12820][13172] [CCLib] load library success
+[2026/11/09 11:57:16:330][12820][13172] [CCLib] start ccmini ret: 0
+[2026/11/09 16:25:47:461][12324][14196] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/09 16:25:47:461][12324][14196] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/09 16:25:47:474][12324][14196] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/09 16:25:47:517][12324][14196] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/09 16:25:47:517][12324][14196] [CCLib] load library success
+[2026/11/09 16:25:47:517][12324][14196] [CCLib] start ccmini ret: 0
+[2026/11/09 16:30:54:996][14432][14260] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/09 16:30:54:996][14432][14260] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/09 16:30:54:999][14432][14260] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/09 16:30:55:026][14432][14260] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/09 16:30:55:026][14432][14260] [CCLib] load library success
+[2026/11/09 16:30:55:026][14432][14260] [CCLib] start ccmini ret: 0
+[2026/11/09 16:31:21:098][2200][3044] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/09 16:31:21:098][2200][3044] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/09 16:31:21:100][2200][3044] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/09 16:31:21:154][2200][3044] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/09 16:31:21:155][2200][3044] [CCLib] load library success
+[2026/11/09 16:31:21:155][2200][3044] [CCLib] start ccmini ret: 0
+[2026/11/09 16:35:12:296][14104][14684] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/09 16:35:12:296][14104][14684] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/09 16:35:12:316][14104][14684] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/09 16:35:12:340][14104][14684] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/09 16:35:12:340][14104][14684] [CCLib] load library success
+[2026/11/09 16:35:12:340][14104][14684] [CCLib] start ccmini ret: 0
+[2026/11/09 16:36:46:150][12312][16116] [CCLib] start ccmini path: C:\DieHardROS\ccmini\CCMini.exe
+[2026/11/09 16:36:46:150][12312][16116] [CCLib] load ccipc C:\DieHardROS\ccmini\
+[2026/11/09 16:36:46:152][12312][16116] [CCLib] copy ccipc from --C:\DieHardROS\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/09 16:36:46:176][12312][16116] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/09 16:36:46:176][12312][16116] [CCLib] load library success
+[2026/11/09 16:36:46:176][12312][16116] [CCLib] start ccmini ret: 0

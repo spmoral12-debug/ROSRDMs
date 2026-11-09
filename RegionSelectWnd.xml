@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window size="520,320">
+  <Default shared="true" name="Combo"  value="hottextcolor=&quot;#e63250&quot; focusedtextcolor=&quot;#e63250&quot;" />
+	<Default shared="true" name="Button" value="textcolor=&quot;#FFFFFFFF&quot; hottextcolor=&quot;#FFFFFFFF&quot; focusedtextcolor=&quot;#FFFFFFFF&quot;" />
+  <Default name="VScrollBar" shared="true" value="button1normalimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='0,90,16,106' mask='#FFFF00FF'&quot; button1hotimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='18,90,34,106' mask='#FFFF00FF'&quot; button1pushedimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='36,90,52,106' mask='#FFFF00FF'&quot; button1disabledimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='54,90,70,106' mask='#FFFF00FF'&quot; button2normalimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='0,108,16,124' mask='#FFFF00FF'&quot; button2hotimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='18,108,34,124' mask='#FFFF00FF'&quot; button2pushedimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='36,108,52,124' mask='#FFFF00FF'&quot; button2disabledimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='54,108,70,124' mask='#FFFF00FF'&quot; thumbnormalimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='0,126,16,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbhotimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='18,126,34,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbpushedimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='36,126,52,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbdisabledimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='54,126,70,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; railnormalimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='0,144,16,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; railhotimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='18,144,34,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; railpushedimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='36,144,52,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; raildisabledimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='54,144,70,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; bknormalimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='0,162,16,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkhotimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='18,162,34,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkpushedimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='36,162,52,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkdisabledimage=&quot;file='AllysdkOverseaRes/Button/scrollbar.bmp' source='54,162,70,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; " />
+  <Font id = "0" name="Arial" size="24" bold="true" italic="false" />
+  <Font id = "1" name="Arial" size="14" bold="false" italic="false" />
+  <Font id = "2" name="Arial" size="14" bold="false" italic="false" />
+  <Font id = "3" name="Arial" size="16" bold="true" italic="false" />
+  <Font id = "4" name="Arial" size="14" bold="false" textcolor="#222222" italic="false" />
+  
+  <VerticalLayout bkcolor="#FFFFFFFF">
+		<VerticalLayout  name="TextContainer" bkcolor="#FFFFFFFF" padding="0,10">
+      <Button name="btnCancel" float="true" pos="490,10,0,10" width="12" height="12" align="right" normalimage="file='AllysdkOverseaRes/Button/Cancel.png'" hotimage="file='AllysdkOverseaRes/Button/Cancel.png' " pushedimage="file='AllysdkOverseaRes/Button/Cancel.png' "/>
+      <Text font="0" text="" name="" width="100" height="20" align="center"/>
+      <Text font="0" textcolor="#222222" text="Choose Top-Up Region" name="countryText" width="522" height="30" align="center"/>
+		</VerticalLayout>
+    <VerticalLayout  name="LocalCountyContainer" bkcolor="#FFFFFFFF" padding="35,0">
+      <Text font="1" textcolor="#999999" text="Your current location is in [Region Name]. Please select from the list below if this is not your desired Top-Up region! " name="LocalCountryText" width="450" height="60" align="center"/>
+    </VerticalLayout>
+    <VerticalLayout  name="SelectCountyContainer" bkcolor="#FFFFFFFF" padding="50,0">
+      <HorizontalLayout  name="SelectCountyContainer1" bkcolor="#FFFFFFFF" padding="0,0" hscrollbar="true" dropbox="hscrollbar=&quot;true&quot;">
+        <Text font="2" textcolor="#666666" text="Top-Up Region:" name="SelectCountryText" width="130" height="55" padding="0,5"/>
+        <Combo name="SelectCountryCombo" bordersize="1" bordercolor="#999999" borderround="2,2" bkcolor="#0000000" width="240" font="3" style="combo_style" itemfont="0" cursor="hand" showshadow="true" height="33" vscrollbar="true" normalimage="file='AllysdkOverseaRes/Button/Combo.png'"/>
+      </HorizontalLayout>   
+    </VerticalLayout>
+    <VerticalLayout  name="ButtonContainer" align="center">
+      <Control bkcolor="#ffd2d4d6" width="520" height="1" padding="0,16" />
+      <Button font="3" name="btnOk" text="Next" width="98" height="38" padding="213,10" normalimage="file='AllysdkOverseaRes/Button/Button_Red.png'" hotimage="file='AllysdkOverseaRes/Button/Button_Red.png' " pushedimage="file='AllysdkOverseaRes/Button/Button_Red.png' "/>
+    </VerticalLayout>
+	</VerticalLayout>
+
+</Window>

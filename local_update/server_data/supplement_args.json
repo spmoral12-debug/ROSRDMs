@@ -1,0 +1,45 @@
+{
+  "checkOpenSupplyTimes": {
+    "count": 4,
+    "last_args": [],
+    "last_time": 1794236481
+  },
+  "openMultipleSupplyBox": {
+    "count": 59,
+    "last_args": [
+      9764,
+      2,
+      []
+    ],
+    "last_time": 1794221909
+  },
+  "openSupplyBox": {
+    "count": 23,
+    "last_args": [
+      9770,
+      2,
+      [],
+      false
+    ],
+    "last_time": 1794236065
+  },
+  "queryAvailableOpenSupplyGift": {
+    "count": 4,
+    "last_args": [
+      "UITimeLimitActivityOpenSupplyGift"
+    ],
+    "last_time": 1794236481
+  },
+  "queryAvailableSupplement": {
+    "count": 112,
+    "last_args": [],
+    "last_time": 1794236066
+  },
+  "setIsUsePreciousTicketDiscount": {
+    "count": 82,
+    "last_args": [
+      0
+    ],
+    "last_time": 1794236065
+  }
+}

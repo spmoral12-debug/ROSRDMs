@@ -1,0 +1,38 @@
+{
+  "_doc": "TOP-UP packs. 'enabled' is the one switch: while it is false the TOP-UP button and every pay button (month card, limit packs...) show disabledTip and nothing is credited; chat /topup still works for testing. Set it to true and restart the server to turn top-up back on (players get the new state at their next lobby entry). When enabled there is no payment: buying credits the diamonds (payYuanbao) locally. firstBonus applies to the first purchase of each pack. See backend_server/features/topup.py. Any other pay goods id credits unlistedDiamonds.",
+  "enabled": false,
+  "disabledTip": "Top up is disabled as of now, contact the administrator.",
+  "packs": {
+    "60": {
+      "diamonds": 60,
+      "bonus": 0,
+      "firstBonus": 60
+    },
+    "300": {
+      "diamonds": 300,
+      "bonus": 30,
+      "firstBonus": 300
+    },
+    "980": {
+      "diamonds": 980,
+      "bonus": 110,
+      "firstBonus": 980
+    },
+    "1980": {
+      "diamonds": 1980,
+      "bonus": 260,
+      "firstBonus": 1980
+    },
+    "3280": {
+      "diamonds": 3280,
+      "bonus": 600,
+      "firstBonus": 3280
+    },
+    "6480": {
+      "diamonds": 6480,
+      "bonus": 1600,
+      "firstBonus": 6480
+    }
+  },
+  "unlistedDiamonds": 300
+}

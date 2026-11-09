@@ -1,0 +1,41 @@
+{
+  "_doc": "BENEFITS > Activity Pts (backend_server/features/activity.py). activities: the game's table (legacyProperties.iterDailyActivityData, probed: analysis/npk/workflow_probe.json 'daily'), in id order; the game indexes its progress/state lists by id. count / points (reward_activity) / exp (reward_experience) are the game's. kind says what moves a task: login (any lobby entry that day), share (recordShare), supply (a SUPPLY box opened), and from a match result: survive (surviveTime >= seconds; friends: only with friends in the team, which local matches never have), survive_minutes (+surviveTime // 60), kills (+kills), vehicle (got into a vehicle), collect (distinct supplies picked up >= distinct), travel (moveDis km >= km). A kind the backend does not know stays at 0. maps is the game's own list; it is checked only when check_maps is true (local battles are all battle-royale matches, whatever map id they load). daily / weekly: the milestone boxes (getActivityRewardData(DAILY 2 / WEEKLY 1).reward): goal in points, prop the box's hall prop (a gift bag of gift_bags.json, opened into the depot).",
+  "check_maps": false,
+  "activities": [
+    {"id": 0, "name": "Log in daily", "kind": "login", "count": 1, "points": 5, "exp": 75},
+    {"id": 1, "name": "Sharing is Caring", "kind": "share", "count": 1, "points": 15, "exp": 225},
+    {"id": 2, "name": "Rookie", "kind": "survive", "seconds": 300, "count": 1, "points": 5, "exp": 75,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 3, "name": "Junior", "kind": "survive", "seconds": 300, "count": 3, "points": 15, "exp": 225,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 4, "name": "Teamup", "kind": "survive", "seconds": 300, "friends": true, "count": 1, "points": 10, "exp": 150,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 5, "name": "Teamwork", "kind": "survive", "seconds": 300, "friends": true, "count": 3, "points": 20, "exp": 300,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 6, "name": "Junior Survivor", "kind": "survive", "seconds": 600, "count": 1, "points": 10, "exp": 150,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 7, "name": "Senior Survivor", "kind": "survive_minutes", "count": 30, "points": 20, "exp": 300,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 8, "name": "Intrepid", "kind": "kills", "count": 2, "points": 10, "exp": 150,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 9, "name": "Unstoppable", "kind": "kills", "count": 6, "points": 20, "exp": 300,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 10, "name": "Novice", "kind": "vehicle", "count": 1, "points": 5, "exp": 75,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 11, "name": "Fully Armed", "kind": "collect", "distinct": 10, "count": 1, "points": 5, "exp": 75,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 12, "name": "Long Journey", "kind": "travel", "km": 1.0, "count": 1, "points": 5, "exp": 75,
+     "maps": [700, 800, 703, 704, 803, 804, 710, 708, 711, 712, 714, 715, 750, 730, 795, 731]},
+    {"id": 13, "name": "Treasurer Seeker", "kind": "supply", "count": 1, "points": 10, "exp": 150}
+  ],
+  "daily": [
+    {"goal": 30, "prop": 400104},
+    {"goal": 60, "prop": 400105},
+    {"goal": 90, "prop": 490392},
+    {"goal": 120, "prop": 490393}
+  ],
+  "weekly": [
+    {"goal": 300, "prop": 400109},
+    {"goal": 600, "prop": 400110}
+  ]
+}

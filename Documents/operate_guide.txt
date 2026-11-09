@@ -1,0 +1,1 @@
+{"freshAccount": true, "basic_cnt": 0, "parachute_cnt": 0, "teleport_guild_cnt": 0}

@@ -1,0 +1,150 @@
+{
+ "_doc": "VIP levels from the game's VipData (legacyProperties.iterVipData): per VIP type (0 silver, 1 gold) the top-up number a level needs and its reward props. features/vip.py reads it.",
+ "levels": {
+  "0": [
+   {
+    "level": 1,
+    "topUp": 60,
+    "props": [
+     250120,
+     250239
+    ]
+   },
+   {
+    "level": 2,
+    "topUp": 300,
+    "props": [
+     250121,
+     250311
+    ]
+   },
+   {
+    "level": 3,
+    "topUp": 900,
+    "props": [
+     250122,
+     490295
+    ]
+   },
+   {
+    "level": 4,
+    "topUp": 1800,
+    "props": [
+     250123,
+     490293
+    ]
+   },
+   {
+    "level": 5,
+    "topUp": 3600,
+    "props": [
+     250124,
+     490285
+    ]
+   },
+   {
+    "level": 6,
+    "topUp": 7200,
+    "props": [
+     250125,
+     490286
+    ]
+   },
+   {
+    "level": 7,
+    "topUp": 12000,
+    "props": [
+     250126,
+     279001
+    ]
+   },
+   {
+    "level": 8,
+    "topUp": 21060,
+    "props": [
+     250127,
+     490287
+    ]
+   },
+   {
+    "level": 9,
+    "topUp": 36000,
+    "props": [
+     250128,
+     490291
+    ]
+   },
+   {
+    "level": 10,
+    "topUp": 60000,
+    "props": [
+     250129,
+     490292
+    ]
+   }
+  ],
+  "1": [
+   {
+    "level": 1,
+    "topUp": 60,
+    "props": [
+     250130
+    ]
+   },
+   {
+    "level": 2,
+    "topUp": 120,
+    "props": [
+     250131,
+     250240
+    ]
+   },
+   {
+    "level": 3,
+    "topUp": 300,
+    "props": [
+     250132,
+     250312
+    ]
+   },
+   {
+    "level": 4,
+    "topUp": 600,
+    "props": [
+     250133,
+     9800001
+    ]
+   },
+   {
+    "level": 5,
+    "topUp": 1200,
+    "props": [
+     250134
+    ]
+   },
+   {
+    "level": 6,
+    "topUp": 2400,
+    "props": [
+     250135
+    ]
+   },
+   {
+    "level": 7,
+    "topUp": 3600,
+    "props": [
+     250136,
+     9800003
+    ]
+   },
+   {
+    "level": 8,
+    "topUp": 6000,
+    "props": [
+     250137,
+     9800002
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,15 @@
+{
+  "_doc": "Game servers. Only official ROS Redemption server active.",
+  "host": "127.0.0.1",
+  "servers": [
+    {
+      "id": 10501,
+      "name": "ROS-Redemption-Official",
+      "port": 19000,
+      "zone": "ROS-Redemption",
+      "load": 1,
+      "status": 2,
+      "ping": 5
+    }
+  ]
+}

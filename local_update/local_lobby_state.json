@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "lobbyModel": {
+    "scale": 0.6,
+    "distance": 1.1,
+    "offsetX": 0.9,
+    "hideRanked": false,
+    "hideTeamSlots": false
+  }
+}

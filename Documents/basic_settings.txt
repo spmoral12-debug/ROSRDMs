@@ -1,0 +1,706 @@
+{
+    "autoScreenAdaptation" : true,
+    "avatarEyeSensibilityH" : 74,
+    "avatarEyeSensibilityV" : 74,
+    "avatarFPPSensibilityH" : 75,
+    "avatarFPPSensibilityV" : 75,
+    "avatarSensibilityH" : 200,
+    "avatarSensibilityV" : 200,
+    "avatarSmoothAccAlpha" : 30,
+    "avatarSmoothAccBeta" : 80,
+    "avatarSmoothAccFactor1" : 2,
+    "avatarSmoothAccFactor2" : 4,
+    "checkListenAll" : false,
+    "checkListenTeam" : true,
+    "checkSpeakAll" : false,
+    "checkSpeakTeam" : true,
+    "doubleFirePositionSensibility" : 0.01,
+    "doubleFireTimeSensibility" : 0.25,
+    "enablePickUpListSlide" : false,
+    "fallChangeYawByCam" : false,
+    "fullScreenState" : false,
+    "fullScreenStateInGame" : false,
+    "gyroscopeMode" : 0,
+    "gyroscopeScopeSensitiveFactor" : 1.0,
+    "gyroscopeScopeSensitiveFactor1271" : 1.0,
+    "gyroscopeScopeSensitiveFactor1272" : 1.0,
+    "gyroscopeScopeSensitiveFactor1273" : 1.0,
+    "gyroscopeScopeSensitiveFactor1274" : 1.0,
+    "gyroscopeScopeSensitiveFactor1275" : 1.0,
+    "gyroscopeScopeSensitiveFactor1280" : 1.0,
+    "gyroscopeScopeSensitiveFactor99251" : 1.0,
+    "gyroscopeScopeSensitiveFactor99252" : 1.0,
+    "gyroscopeScopeSensitiveFactor99253" : 1.0,
+    "gyroscopeScopeSensitiveFactor99254" : 1.0,
+    "gyroscopeScopeSensitiveFactor99255" : 1.0,
+    "hasPlayedCampWarIntroAnimation" : false,
+    "isAcceptFriendInviteOn" : false,
+    "isAutoAimOn" : true,
+    "isAutoOpenOn" : false,
+    "isColorAdjust" : 1,
+    "isCurrentVoiceOn" : true,
+    "isDamageTextOn" : true,
+    "isFps" : false,
+    "isHurtVibrationOn" : false,
+    "isInGameOthersSeen" : true,
+    "isLeanOperationOn" : true,
+    "isLegionVoiceOn" : true,
+    "isMapSoundMarkOn" : true,
+    "isMonsterDirOn" : false,
+    "isNextGen" : false,
+    "isPCNewBattleUI" : true,
+    "isParachuteOthersSeen" : true,
+    "isPersonalizedAD" : true,
+    "isPressureTouchFireOn" : false,
+    "isSwitchScopeOn" : false,
+    "isTeamVoiceOn" : true,
+    "isTurnRoundOn" : false,
+    "isVivoGameSdkOn" : true,
+    "isWorldVoiceOn" : false,
+    "language" : "en",
+    "leanModeHold" : false,
+    "liveInBattle" : false,
+    "m203_fire_mode" : 0,
+    "manualVault" : true,
+    "matchShockState" : true,
+    "nj_fire_mode" : 0,
+    "numOfAutoRoyaleGuideTipShowed" : 0,
+    "numOfDriveGuid" : 3,
+    "numOfHeroRuleGuide" : -1,
+    "numOfImbaBuildGuide" : -1,
+    "numOfImbaDrawCard" : -1,
+    "numOfImbaRuleGuide" : -1,
+    "numOfSecretTreasureRuleGuide" : -1,
+    "numOfSnowboardGuide" : 0,
+    "opAimSensibility" : 1,
+    "opFreeSensibility" : 1,
+    "opScopeSensibility" : 1,
+    "operateLevel" : 1,
+    "parachuteController" : false,
+    "pcHideableKeys" : {
+        "pc_121" : true,
+        "pc_14" : true,
+        "pc_17" : true,
+        "pc_28" : true,
+        "pc_29" : true,
+        "pc_49" : true,
+        "pc_5" : true,
+        "pc_6" : true,
+        "pc_61" : true,
+        "pc_7" : true,
+        "pc_70" : true,
+        "pc_71" : true,
+        "pc_8" : true,
+        "pc_90" : true,
+        "pc_92" : true
+    },
+    "pcOpenDoorMode" : 1,
+    "pcSetting" : {
+        "pc_1" : [
+            87
+        ],
+        "pc_10" : [
+            77
+        ],
+        "pc_100" : [
+            73
+        ],
+        "pc_101" : [
+            112
+        ],
+        "pc_102" : [
+            113
+        ],
+        "pc_103" : [
+            114
+        ],
+        "pc_104" : [
+            115
+        ],
+        "pc_105" : [
+            116
+        ],
+        "pc_106" : [
+            117
+        ],
+        "pc_107" : [
+            118
+        ],
+        "pc_108" : [
+            89
+        ],
+        "pc_109" : [
+            79
+        ],
+        "pc_11" : [
+            27
+        ],
+        "pc_110" : [
+            112
+        ],
+        "pc_111" : [
+            113
+        ],
+        "pc_112" : [
+            114
+        ],
+        "pc_113" : [
+            115
+        ],
+        "pc_114" : [
+            116
+        ],
+        "pc_115" : [
+            117
+        ],
+        "pc_117" : [
+            112
+        ],
+        "pc_118" : [
+            113
+        ],
+        "pc_119" : [
+            114
+        ],
+        "pc_12" : [
+            18
+        ],
+        "pc_120" : [
+            115
+        ],
+        "pc_121" : [
+            72
+        ],
+        "pc_122" : [
+            115
+        ],
+        "pc_123" : [
+            116
+        ],
+        "pc_13" : [
+            17
+        ],
+        "pc_14" : [
+            9
+        ],
+        "pc_15" : [
+            86
+        ],
+        "pc_16" : [
+            1
+        ],
+        "pc_17" : [
+            2
+        ],
+        "pc_18" : [
+            82
+        ],
+        "pc_19" : [
+            3
+        ],
+        "pc_2" : [
+            83
+        ],
+        "pc_20" : [
+            -3
+        ],
+        "pc_200" : [
+            16
+        ],
+        "pc_201" : [
+            49
+        ],
+        "pc_202" : [
+            50
+        ],
+        "pc_203" : [],
+        "pc_204" : [
+            18
+        ],
+        "pc_205" : [
+            17,
+            69
+        ],
+        "pc_206" : [
+            75
+        ],
+        "pc_21" : [
+            49
+        ],
+        "pc_210" : [
+            70
+        ],
+        "pc_211" : [
+            49
+        ],
+        "pc_212" : [
+            50
+        ],
+        "pc_213" : [
+            112
+        ],
+        "pc_22" : [
+            50
+        ],
+        "pc_23" : [
+            51
+        ],
+        "pc_24" : [
+            52
+        ],
+        "pc_25" : [
+            53
+        ],
+        "pc_26" : [
+            88
+        ],
+        "pc_27" : [
+            66
+        ],
+        "pc_28" : [
+            84
+        ],
+        "pc_29" : [
+            17,
+            84
+        ],
+        "pc_3" : [
+            65
+        ],
+        "pc_30" : [
+            55
+        ],
+        "pc_301" : [
+            1
+        ],
+        "pc_31" : [
+            56
+        ],
+        "pc_32" : [
+            57
+        ],
+        "pc_33" : [
+            48
+        ],
+        "pc_34" : [
+            70
+        ],
+        "pc_35" : [
+            17,
+            70
+        ],
+        "pc_36" : [
+            16
+        ],
+        "pc_37" : [
+            87
+        ],
+        "pc_38" : [
+            83
+        ],
+        "pc_39" : [
+            65
+        ],
+        "pc_4" : [
+            68
+        ],
+        "pc_40" : [
+            68
+        ],
+        "pc_400" : [
+            18,
+            49
+        ],
+        "pc_401" : [
+            18,
+            50
+        ],
+        "pc_402" : [
+            18,
+            82
+        ],
+        "pc_403" : [
+            32
+        ],
+        "pc_404" : [
+            18,
+            81
+        ],
+        "pc_405" : [
+            16
+        ],
+        "pc_406" : [
+            84
+        ],
+        "pc_407" : [
+            80
+        ],
+        "pc_408" : [
+            86
+        ],
+        "pc_409" : [
+            79
+        ],
+        "pc_41" : [
+            17,
+            49
+        ],
+        "pc_410" : [
+            71
+        ],
+        "pc_411" : [
+            72
+        ],
+        "pc_412" : [
+            87
+        ],
+        "pc_413" : [
+            83
+        ],
+        "pc_414" : [
+            65
+        ],
+        "pc_415" : [
+            68
+        ],
+        "pc_416" : [
+            81
+        ],
+        "pc_417" : [
+            69
+        ],
+        "pc_418" : [
+            18
+        ],
+        "pc_419" : [
+            187
+        ],
+        "pc_42" : [
+            17,
+            50
+        ],
+        "pc_420" : [
+            189
+        ],
+        "pc_421" : [
+            72
+        ],
+        "pc_422" : [
+            72
+        ],
+        "pc_423" : [
+            71
+        ],
+        "pc_424" : [
+            90
+        ],
+        "pc_425" : [
+            88
+        ],
+        "pc_426" : [
+            49
+        ],
+        "pc_427" : [
+            50
+        ],
+        "pc_428" : [
+            51
+        ],
+        "pc_429" : [
+            52
+        ],
+        "pc_43" : [
+            17,
+            51
+        ],
+        "pc_430" : [
+            53
+        ],
+        "pc_431" : [
+            3
+        ],
+        "pc_432" : [
+            -3
+        ],
+        "pc_433" : [
+            18,
+            66
+        ],
+        "pc_434" : [
+            70
+        ],
+        "pc_435" : [
+            18,
+            70
+        ],
+        "pc_436" : [
+            18,
+            69
+        ],
+        "pc_437" : [
+            3
+        ],
+        "pc_438" : [
+            -3
+        ],
+        "pc_44" : [
+            17,
+            52
+        ],
+        "pc_440" : [
+            70
+        ],
+        "pc_441" : [
+            70
+        ],
+        "pc_442" : [
+            70
+        ],
+        "pc_45" : [
+            17,
+            53
+        ],
+        "pc_46" : [
+            17,
+            54
+        ],
+        "pc_47" : [
+            34
+        ],
+        "pc_48" : [
+            33
+        ],
+        "pc_49" : [
+            13
+        ],
+        "pc_5" : [
+            32
+        ],
+        "pc_50" : [
+            78
+        ],
+        "pc_51" : [
+            70
+        ],
+        "pc_52" : [
+            69
+        ],
+        "pc_53" : [
+            81
+        ],
+        "pc_54" : [
+            69
+        ],
+        "pc_55" : [
+            70
+        ],
+        "pc_56" : [
+            70
+        ],
+        "pc_562" : [
+            88
+        ],
+        "pc_563" : [
+            79
+        ],
+        "pc_564" : [
+            76
+        ],
+        "pc_565" : [
+            69
+        ],
+        "pc_566" : [
+            84
+        ],
+        "pc_567" : [
+            17,
+            68
+        ],
+        "pc_568" : [
+            66
+        ],
+        "pc_569" : [
+            38
+        ],
+        "pc_57" : [
+            70
+        ],
+        "pc_570" : [
+            40
+        ],
+        "pc_571" : [
+            37
+        ],
+        "pc_572" : [
+            39
+        ],
+        "pc_58" : [
+            70
+        ],
+        "pc_59" : [
+            32
+        ],
+        "pc_6" : [
+            67
+        ],
+        "pc_61" : [
+            71
+        ],
+        "pc_62" : [
+            82
+        ],
+        "pc_63" : [
+            16
+        ],
+        "pc_64" : [
+            49
+        ],
+        "pc_65" : [
+            50
+        ],
+        "pc_66" : [
+            51
+        ],
+        "pc_67" : [
+            52
+        ],
+        "pc_68" : [
+            53
+        ],
+        "pc_7" : [
+            90
+        ],
+        "pc_70" : [
+            85
+        ],
+        "pc_71" : [
+            16,
+            32
+        ],
+        "pc_73" : [
+            4
+        ],
+        "pc_799" : [
+            16
+        ],
+        "pc_8" : [
+            187
+        ],
+        "pc_81" : [
+            72
+        ],
+        "pc_82" : [
+            74
+        ],
+        "pc_83" : [
+            75
+        ],
+        "pc_84" : [
+            76
+        ],
+        "pc_9" : [
+            16
+        ],
+        "pc_90" : [
+            80
+        ],
+        "pc_91" : [
+            189
+        ],
+        "pc_92" : [
+            16,
+            49
+        ],
+        "pc_93" : [
+            32
+        ],
+        "pc_94" : [
+            81
+        ],
+        "pc_95" : [
+            69
+        ]
+    },
+    "pc_resolution_index" : 0,
+    "pressureTouchSensitive" : 0.6,
+    "prop_101" : 10,
+    "prop_102" : 5,
+    "prop_103" : 2,
+    "prop_105" : 2,
+    "prop_106" : 2,
+    "prop_1101" : 20,
+    "prop_1102" : 180,
+    "prop_1103" : 60,
+    "prop_1104" : 180,
+    "prop_1105" : 30,
+    "prop_1106" : 20,
+    "prop_1107" : 20,
+    "prop_1108" : 200,
+    "prop_1109" : 10,
+    "prop_1271" : 1,
+    "prop_1272" : 1,
+    "prop_1273" : 1,
+    "prop_1274" : 1,
+    "prop_1275" : 1,
+    "prop_1401" : 2,
+    "prop_1402" : 2,
+    "prop_1403" : 2,
+    "prop_1404" : 2,
+    "prop_1405" : 2,
+    "prop_1406" : 2,
+    "runLockMode" : 0,
+    "scopeOpLevel" : 0,
+    "scopeSensitiveFactor1271" : 1.0,
+    "scopeSensitiveFactor1272" : 1.0,
+    "scopeSensitiveFactor1273" : 1.0,
+    "scopeSensitiveFactor1274" : 1.0,
+    "scopeSensitiveFactor1275" : 1.0,
+    "scopeSensitiveFactor1280" : 1.0,
+    "scopeSensitiveFactor99251" : 1.0,
+    "scopeSensitiveFactor99252" : 1.0,
+    "scopeSensitiveFactor99253" : 1.0,
+    "scopeSensitiveFactor99254" : 1.0,
+    "scopeSensitiveFactor99255" : 1.0,
+    "scopeSetting_0x" : [
+        -1,
+        -1
+    ],
+    "scopeSetting_1.1x" : [
+        -1,
+        -1
+    ],
+    "scopeSetting_1x" : [
+        -1,
+        -1
+    ],
+    "scopeSetting_2x" : [
+        -1,
+        -1
+    ],
+    "scopeSetting_4x" : [
+        -1,
+        -1
+    ],
+    "scopeSetting_8x" : [
+        -1,
+        -1
+    ],
+    "sg_fire_mode" : 0,
+    "showRenderFrameRate" : true,
+    "singleFirePositionSensibility" : 0.01,
+    "singleFireTimeSensibility" : 0.3,
+    "startAutoPickUp" : false,
+    "startAutoPickUpColdWeapon" : false,
+    "startAutoPickUpGun" : false,
+    "startAutoPickUpHigherPackage" : false,
+    "startAutoPickUpMainWeapon" : false,
+    "stopAutoPickUpWhenClosePickUpList" : false,
+    "teammateNameState" : 1,
+    "toShowNewKillEffect" : true,
+    "vaultAssist" : false,
+    "vehicleOpLevel" : 0,
+    "vehicleSensibility" : 50,
+    "volumeBgm" : 0,
+    "volumeCC" : 100,
+    "volumeFx" : 100
+}

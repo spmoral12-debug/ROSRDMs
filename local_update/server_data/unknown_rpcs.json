@@ -1,0 +1,350 @@
+{
+  "buyMallGood": {
+    "count": 1,
+    "last_args": [
+      9619,
+      1,
+      [],
+      "MallCloth"
+    ],
+    "last_kwargs": {
+      "item": 490412,
+      "items": [
+        909043
+      ],
+      "currency_id": 2,
+      "price": 387
+    },
+    "feature": "store"
+  },
+  "buyMallGoodInAppearanceMall": {
+    "count": 1,
+    "last_args": [
+      9013,
+      1,
+      [],
+      "AppearanceMall"
+    ],
+    "last_kwargs": {
+      "item": 490081,
+      "items": [
+        120014
+      ],
+      "currency_id": 2,
+      "price": 20
+    },
+    "feature": "store"
+  },
+  "changeNicknameWithCard": {
+    "count": 4,
+    "last_args": [
+      "TITENGBALUKTOT"
+    ]
+  },
+  "changeOccupation": {
+    "count": 52,
+    "last_args": [
+      0
+    ]
+  },
+  "changeTantanPicCount": {
+    "count": 1,
+    "last_args": [
+      0
+    ],
+    "feature": "profile"
+  },
+  "changeTantanSex": {
+    "count": 1,
+    "last_args": [
+      1
+    ],
+    "feature": "profile"
+  },
+  "checkBattleTimes": {
+    "count": 8,
+    "last_args": []
+  },
+  "dhGuardReport": {
+    "count": 22,
+    "last_args": [
+      {
+        "drift": null,
+        "source": "game"
+      }
+    ]
+  },
+  "finishRetAct527TaskFromClient": {
+    "count": 3,
+    "last_args": [
+      11
+    ]
+  },
+  "getHighestProficiencyWeapons": {
+    "count": 1,
+    "last_args": [
+      10000001
+    ],
+    "feature": "profile"
+  },
+  "getOpenMaintenanceFightTipFlag": {
+    "count": 1,
+    "last_args": []
+  },
+  "getRecallProgress": {
+    "count": 2,
+    "last_args": []
+  },
+  "getRecalledFriends": {
+    "count": 2,
+    "last_args": [
+      2
+    ]
+  },
+  "onUIDtsLevelUpShown": {
+    "count": 3,
+    "last_args": []
+  },
+  "queryAssistantRedPoint": {
+    "count": 4,
+    "last_args": []
+  },
+  "queryAvailableActivity": {
+    "count": 4,
+    "last_args": []
+  },
+  "queryAvailableAdvertisement": {
+    "count": 4,
+    "last_args": []
+  },
+  "queryAvailableBattleGift": {
+    "count": 8,
+    "last_args": [
+      1906
+    ]
+  },
+  "queryAvailableConvertItem": {
+    "count": 4,
+    "last_args": [
+      1907
+    ],
+    "feature": "depot"
+  },
+  "queryAvailableExchangeItem": {
+    "count": 4,
+    "last_args": [],
+    "feature": "depot"
+  },
+  "queryBlackFriday2019LeftTime": {
+    "count": 17,
+    "last_args": []
+  },
+  "queryBlackMarketInfo": {
+    "count": 4,
+    "last_args": []
+  },
+  "queryCreditScore": {
+    "count": 1,
+    "last_args": [],
+    "feature": "profile"
+  },
+  "queryTimerUseProp": {
+    "count": 4,
+    "last_args": []
+  },
+  "refreshSpecifiedTimeLoginTaskEvent": {
+    "count": 4,
+    "last_args": []
+  },
+  "reqPayedPartnerRel": {
+    "count": 33,
+    "last_args": [],
+    "feature": "topup"
+  },
+  "requestDtsLevelAward": {
+    "count": 1,
+    "last_args": [
+      2
+    ],
+    "last_kwargs": {
+      "items": [
+        202022,
+        138205,
+        138205,
+        138205,
+        138205,
+        138205,
+        138205,
+        138205,
+        138205,
+        138205,
+        138205
+      ],
+      "levels": {
+        "2": [
+          202022,
+          138205,
+          138205,
+          138205,
+          138205,
+          138205,
+          138205,
+          138205,
+          138205,
+          138205,
+          138205
+        ]
+      }
+    },
+    "feature": "welfare"
+  },
+  "requestFilePickerToken": {
+    "count": 2,
+    "last_args": []
+  },
+  "requestFriendData": {
+    "count": 5,
+    "last_args": []
+  },
+  "requestIntimateRelationshipInfo": {
+    "count": 1,
+    "last_args": [],
+    "feature": "profile"
+  },
+  "requestMeetInfo": {
+    "count": 4,
+    "last_args": [
+      10000001
+    ]
+  },
+  "requestPackageUUID": {
+    "count": 4,
+    "last_args": [],
+    "feature": "depot"
+  },
+  "requestRecordUSRecomendOnlineLog": {
+    "count": 4,
+    "last_args": [
+      0,
+      "{\"invite_sheet\": 0}"
+    ]
+  },
+  "requestRoomCountInfo": {
+    "count": 3,
+    "last_args": []
+  },
+  "requestRoomListInfo": {
+    "count": 3,
+    "last_args": [
+      0
+    ]
+  },
+  "requestShareAddtionShow": {
+    "count": 16,
+    "last_args": [
+      2
+    ]
+  },
+  "requestShareLimit": {
+    "count": 2,
+    "last_args": []
+  },
+  "requireCombatAbstract": {
+    "count": 1,
+    "last_args": [
+      1794235034,
+      -1,
+      -1
+    ]
+  },
+  "requireRankInfo": {
+    "count": 1,
+    "last_args": [
+      35
+    ],
+    "feature": "ranking"
+  },
+  "requireRankList": {
+    "count": 1,
+    "last_args": [
+      35,
+      0,
+      0,
+      false
+    ],
+    "feature": "ranking"
+  },
+  "rlActivityState": {
+    "count": 5,
+    "last_args": []
+  },
+  "rlPlayerCards": {
+    "count": 3,
+    "last_args": [
+      1,
+      [
+        10000002
+      ],
+      [
+        "portrait",
+        "characterType",
+        "score"
+      ]
+    ]
+  },
+  "rlSettleDepot": {
+    "count": 6,
+    "last_args": [],
+    "last_kwargs": {
+      "currency": [],
+      "trim": [
+        [
+          140073,
+          1
+        ],
+        [
+          142073,
+          1
+        ]
+      ]
+    },
+    "feature": "depot"
+  },
+  "setNationalFlag": {
+    "count": 7,
+    "last_args": [
+      "AZ"
+    ]
+  },
+  "setPortrait": {
+    "count": 4,
+    "last_args": [
+      "0"
+    ]
+  },
+  "tryClickAccumulateCharge": {
+    "count": 2,
+    "last_args": [],
+    "feature": "topup"
+  },
+  "updateEntertainNewBadge": {
+    "count": 7,
+    "last_args": [
+      false
+    ]
+  },
+  "updateIsIntimateRelationshipVisibleInTeam": {
+    "count": 1,
+    "last_args": [
+      true
+    ],
+    "feature": "profile"
+  },
+  "updatePlayerLBSData": {
+    "count": 1,
+    "last_args": [
+      "UN",
+      ""
+    ]
+  }
+}

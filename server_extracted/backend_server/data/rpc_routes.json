@@ -1,0 +1,908 @@
+{
+  "_doc": "Binds game RPCs (player.base.<name>) to backend actions. Fill this from local_update/server_data/unknown_rpcs.json after clicking a button in the lobby. See backend_server/README.md -> 'Binding a button'.",
+  "routes": {
+    "_note_startup": "Calls the lobby makes on entry that need no reply offline are acknowledged quietly.",
+    "buyMallGood": {
+      "action": "store.buy",
+      "params": [
+        "goods_id",
+        "count",
+        "cash_coupons",
+        "log_str"
+      ],
+      "reply": [
+        {
+          "method": "onBuyMallGood",
+          "args": [
+            "$hall_props"
+          ]
+        }
+      ],
+      "error_reply": [
+        {
+          "method": "onBuyMallGoodFailed",
+          "args": [
+            "$message",
+            "$goods_id",
+            "$count",
+            "$currency_id",
+            "$price",
+            [],
+            "$log_str"
+          ]
+        }
+      ]
+    },
+    "buyMallGoodInAppearanceMall": {
+      "action": "store.buy",
+      "params": [
+        "goods_id",
+        "count",
+        "cash_coupons",
+        "log_str"
+      ],
+      "reply": [
+        {
+          "method": "onBuyMallGood",
+          "args": [
+            "$hall_props"
+          ]
+        }
+      ],
+      "error_reply": [
+        {
+          "method": "onBuyMallGoodFailed",
+          "args": [
+            "$message",
+            "$goods_id",
+            "$count",
+            "$currency_id",
+            "$price",
+            [],
+            "$log_str"
+          ]
+        }
+      ]
+    },
+    "buyDtsHallProp": {
+      "_note": "Depot / store \"Purchase\" of one hall prop (weapon skin, outfit...): base.buyDtsHallProp(hallPropID, cashCoupons, logStr). The lobby hook adds its price (mall_utils.getDtsHallPropBuyCurrencyID / Price).",
+      "action": "store.buy",
+      "params": [
+        "goods_id",
+        "cash_coupons",
+        "log_str"
+      ],
+      "reply": [
+        {
+          "method": "onBuyMallGood",
+          "args": [
+            "$hall_props"
+          ]
+        }
+      ]
+    },
+    "requestRealNameAuthenCheckBeforeRequsetingPayGoods": {
+      "action": "topup.buy",
+      "params": [
+        "pack_id"
+      ],
+      "reply": [
+        {
+          "method": "syncVipInfo",
+          "args": [
+            "$vipInfo"
+          ]
+        }
+      ],
+      "tip": "Offline top-up: {diamonds} diamonds added."
+    },
+    "queryPayExtDayFirstFlags": {
+      "action": "ack",
+      "reply": [
+        {
+          "method": "onPayExtDayFirstFlags",
+          "args": [
+            {}
+          ]
+        }
+      ]
+    },
+    "distributeRKUBraveBookExp": {
+      "action": "ack",
+      "reply": [
+        {
+          "method": "onSuccDistributeRKUBraveBookExp",
+          "args": [
+            "$arg0",
+            0
+          ]
+        }
+      ]
+    },
+    "changeOccupation": {
+      "action": "ack"
+    },
+    "checkBattleTimes": {
+      "action": "ack"
+    },
+    "queryAvailableActivity": {
+      "_note": "UIMain.on_enter on every lobby entry; {} is 'no active events' (the shape of a non-empty answer is unknown).",
+      "action": "welfare.activities",
+      "params": [],
+      "reply": [
+        {
+          "method": "onQueryAvailableActivity",
+          "args": [
+            "$available"
+          ]
+        }
+      ]
+    },
+    "queryAssistantRedPoint": {
+      "action": "ack"
+    },
+    "queryAvailableAdvertisement": {
+      "action": "ack"
+    },
+    "queryAvailableBattleGift": {
+      "action": "ack"
+    },
+    "queryBlackMarketInfo": {
+      "action": "ack"
+    },
+    "refreshSpecifiedTimeLoginTaskEvent": {
+      "action": "ack"
+    },
+    "reportGrassLandRecordData": {
+      "action": "ack"
+    },
+    "requestFileList": {
+      "action": "ack"
+    },
+    "requestPackageUUID": {
+      "action": "ack"
+    },
+    "requestRecordUSRecomendOnlineLog": {
+      "action": "ack"
+    },
+    "ros2Logout": {
+      "action": "ack"
+    },
+    "uploadGameNpkVersionInfo": {
+      "action": "ack"
+    },
+    "_note_battleground": "The battleground player asks for its weapon components as soon as it enters (iGunComponent.onRequestInitData(gunCompPkg, gunSlotsList)); empty is a player with no guns yet, which is what the local battle host has.",
+    "requestInitData": {
+      "action": "ack",
+      "reply": [
+        {
+          "method": "onRequestInitData",
+          "args": [
+            {},
+            []
+          ]
+        }
+      ]
+    },
+    "_note_start_button": "START (UIModes._doGoMatch) asks getOpenMaintenanceFightTipFlag first and goes no further until onGetOpenMaintenanceFightTipFlag comes back; popTip 0 = no maintenance, carry on. The delay lets the click return first: the reply opens screens. A quiet ack here makes the START button do nothing at all.",
+    "getOpenMaintenanceFightTipFlag": {
+      "action": "ack",
+      "delay": 0.15,
+      "reply": [
+        {
+          "method": "onGetOpenMaintenanceFightTipFlag",
+          "args": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "queryAvailableConvertItem": {
+      "action": "ack"
+    },
+    "queryAvailableExchangeItem": {
+      "action": "ack"
+    },
+    "cancelTryOnAllRequest": {
+      "action": "ack"
+    },
+    "setPersonSpaceVisited": {
+      "action": "ack"
+    },
+    "setPortrait": {
+      "_note": "Sent with '0' on every lobby entry; acknowledged quiet (portrait sharing is the profile area's).",
+      "action": "ack"
+    },
+    "sSyncSettingDataToServer": {
+      "_note": "Settings live in the game's own settings files (kept per PC by the hook); the online server only stored them. Not pushed back (cSyncSettingDataToClient eval()s into Globals.settings). New hooks drop it as quiet; older clients still send it.",
+      "action": "ack"
+    },
+    "_note_supply": "SUPPLY RPCs (openSupplyBox, openMultipleSupplyBox, queryAvailableSupplement, ...) are Python handlers in backend_server/supplement_rpc.py; do not add routes for them here (a route wins over a handler).",
+    "requestDecomposeAppearance": {
+      "_note": "Depot \"Convert Repeats\": base.requestDecomposeAppearance([appearanceID...]). The lobby hook adds the game's shard rates; rlDecomposed (a lobby-hook callback) removes the copies and plays the shards animation.",
+      "action": "depot.decompose",
+      "params": [
+        "appearance_ids"
+      ],
+      "reply": [
+        {
+          "method": "rlDecomposed",
+          "args": [
+            "$removed",
+            "$chips"
+          ]
+        }
+      ]
+    },
+    "requestDecomposeAllRepeation": {
+      "_note": "Convert every repeat: the lobby hook names them (player.getDecomposeAppearance).",
+      "action": "depot.decompose",
+      "params": [],
+      "reply": [
+        {
+          "method": "rlDecomposed",
+          "args": [
+            "$removed",
+            "$chips"
+          ]
+        }
+      ]
+    },
+    "composeItem": {
+      "_note": "Depot \"Compose\" with shards: base.composeItem(appearanceID). The lobby hook adds the compose currency and price; onItemComposed shows the \"you got\" screen.",
+      "action": "store.compose",
+      "params": [
+        "item_id"
+      ],
+      "reply": [
+        {
+          "method": "onItemComposed",
+          "args": [
+            "$item_id"
+          ]
+        }
+      ]
+    },
+    "setHasAlreadyShowMonthSupply": {
+      "_note": "UIMonthlySupplyPackage.startMonthSupplyAnimCoro_NoUI after the monthly intro: remembered per account for this PH month, so UIMain.on_enter stops auto-opening the panel.",
+      "action": "supplement.month_shown",
+      "params": [],
+      "reply": []
+    },
+    "finishRetAct527TaskFromClient": {
+      "_note": "The online server only recorded it.",
+      "action": "ack",
+      "reply": []
+    },
+    "rlSettleDepot": {
+      "_note": "Lobby hook (not a game call): currency props become currency, extra copies of appearances that cannot be converted are dropped.",
+      "action": "depot.settle",
+      "params": [],
+      "reply": []
+    },
+    "requestDtsLevelAward": {
+      "_note": "Benefits > Level Award: one Get click claims every reached, unclaimed level pack (Claim All; the lobby hook opens the packs - ExpLevelTable levelAward - and sends levels {level: items}). rlLevelAwards first: onRequestDtsLevelAward appends $level itself. The claimed list is a lobby prop (welfare.level_props); a refusal re-syncs it.",
+      "action": "welfare.level_award",
+      "params": [
+        "level"
+      ],
+      "reply": [
+        {
+          "method": "rlLevelAwards",
+          "args": [
+            "$before"
+          ]
+        },
+        {
+          "method": "onRequestDtsLevelAward",
+          "args": [
+            "$level",
+            "$items"
+          ]
+        }
+      ],
+      "error_reply": [
+        {
+          "method": "rlLevelAwards",
+          "args": [
+            "$level_awards"
+          ]
+        }
+      ]
+    },
+    "requestDtsSigninAward": {
+      "_note": "7-day login (UIDtsSign): claim today's reward; days follow the server clock in Philippine time. The reply's props carry the new state (rlWelfare); a refusal (already_signed, week_done) re-syncs the hook's copy and the screen (rlWelfareSync).",
+      "action": "welfare.sign",
+      "params": [],
+      "reply": [
+        {
+          "method": "onSetSignAwardTime",
+          "args": [
+            "$sign_time"
+          ]
+        },
+        {
+          "method": "onRequestDtsSignInAward",
+          "args": [
+            "$awards",
+            "$sign_level"
+          ]
+        },
+        {
+          "method": "rlSigned",
+          "args": []
+        }
+      ],
+      "error_reply": [
+        {
+          "method": "rlWelfareSync",
+          "args": [
+            "$welfare",
+            "$code"
+          ]
+        }
+      ]
+    },
+    "rlWelfareState": {
+      "_note": "Lobby hook (not a game call): login days, today's claim and claimed level packs.",
+      "action": "welfare.state",
+      "params": [],
+      "reply": [
+        {
+          "method": "rlWelfareState",
+          "args": [
+            "$sign_level",
+            "$sign_time",
+            "$can_sign",
+            "$level_awards"
+          ]
+        }
+      ]
+    },
+    "rlActivityState": {
+      "_note": "Lobby hook (not a game call): active activities, calendar version, version this account has seen.",
+      "action": "welfare.activities",
+      "params": [],
+      "reply": [
+        {
+          "method": "rlActivityState",
+          "args": [
+            "$active",
+            "$version",
+            "$seen"
+          ]
+        }
+      ]
+    },
+    "rlActivitySeen": {
+      "_note": "Lobby hook: the Activity panel was opened; clears NEW! for this calendar.",
+      "action": "welfare.activity_seen",
+      "params": [
+        "version"
+      ],
+      "reply": [
+        {
+          "method": "rlActivityState",
+          "args": [
+            "$active",
+            "$version",
+            "$seen"
+          ]
+        }
+      ]
+    },
+    "onNewPlayerTaskMsg": {
+      "_note": "UILimitWelfareController.on_enter notification (TaskMsgType OPEN_TIMELIMIT_ACTIVITY); nothing to answer.",
+      "action": "ack"
+    },
+    "requireRefreshSeasonBountyInfoStatus": {
+      "_note": "Season Bounty has ended: no red points.",
+      "action": "ack",
+      "reply": [
+        {
+          "method": "onSetShowSeasonBountyRedPoint",
+          "args": [
+            false
+          ]
+        },
+        {
+          "method": "onSetShowSubmodeSeasonBountyRedPoint",
+          "args": [
+            false
+          ]
+        }
+      ]
+    },
+    "setShowSeasonBountyResRedPoint": {
+      "action": "ack",
+      "reply": [
+        {
+          "method": "onSetShowSeasonBountyResRedPoint",
+          "args": [
+            false
+          ]
+        }
+      ]
+    },
+    "reqSeasonBountyCheckSign": {
+      "_note": "Season Bounty cash claims went to rulesofsurvivalgame.com (gone); no onReqSeasonBountyCheckSign, so no dead web page.",
+      "action": "ack",
+      "tip": "Season Bounty has ended - there are no cash rewards to claim."
+    },
+    "_note_demon_hunter": "UIGuiMieTurnable (lobby Demon Hunter tile) is a limited-time lottery wheel whose draws the revival does not run (its version, currency and rules are unknown); the lobby hook fills the wheel from the game's own tables. A draw is acknowledged with a tip and nothing is charged.",
+    "requestDtsLTDoLottery": {
+      "action": "ack",
+      "tip": "Demon Hunter draws have ended - nothing was charged."
+    },
+    "requestDtsLTDoAdvanceLottery": {
+      "action": "ack",
+      "params": [
+        "idx"
+      ],
+      "tip": "Demon Hunter draws have ended - nothing was charged."
+    },
+    "requireRankList": {
+      "_note": "DATA leaderboards: one board of the server (points / wins / kills), paged; rlRankList hands it to the game callback of its kind.",
+      "action": "ranking.list",
+      "params": [
+        "rank_type",
+        "version",
+        "have",
+        "next_batch"
+      ],
+      "reply": [
+        {
+          "method": "rlRankList",
+          "args": [
+            "$rank_type",
+            "$start",
+            "$rows",
+            "$version",
+            "$kind"
+          ]
+        }
+      ]
+    },
+    "requireRankInfo": {
+      "_note": "DATA leaderboards: your own row of a board.",
+      "action": "ranking.mine",
+      "params": [
+        "rank_type"
+      ],
+      "reply": [
+        {
+          "method": "rlMyRank",
+          "args": [
+            "$rank_type",
+            "$info",
+            "$kind"
+          ]
+        }
+      ]
+    },
+    "_note_profile": "Another player's card / personal space, by gid, from the database (features/ranking.py public_profile): never the asker's own data. The hook asks these only for other gids; your own card stays local.",
+    "requireBaseInfo": {
+      "_note": "Meet / STATS card: onGetBaseInfo(gid, nickname, isFriend, score, serverID, identifyTagID, dtsLevel, nationalFlag).",
+      "action": "ranking.profile",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "onGetBaseInfo",
+          "args": [
+            "$gid",
+            "$nickname",
+            "$isFriend",
+            "$score",
+            "$serverID",
+            "$identifyTagID",
+            "$dtsLevel",
+            "$nationalFlag"
+          ]
+        }
+      ]
+    },
+    "requireRecordData": {
+      "_note": "STATS records by RecordTypeToName name; rlRecordData lets the hook fill the types the player never played (zero records).",
+      "action": "ranking.records",
+      "params": [
+        "gid",
+        "record_type"
+      ],
+      "reply": [
+        {
+          "method": "rlRecordData",
+          "args": [
+            "$gid",
+            "$records"
+          ]
+        }
+      ]
+    },
+    "queryPersonalInfo": {
+      "_note": "UIPersonalSpace of another player: queryPersonalInfoCB(gid, data); data keys as _getPersonInfo builds them.",
+      "action": "ranking.profile",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "queryPersonalInfoCB",
+          "args": [
+            "$gid",
+            "$person"
+          ]
+        }
+      ]
+    },
+    "_note_credit": "Friends > Meet profile tabs (features/profile.py), for any gid: credit (full credit, Diamond status, nothing to claim), the best-weapon title from the per-weapon battle totals the lobby saves (lobby weaponStats), TanTan sex / picture count kept in character data. Intimate relationships, marriage and personal-space comments are not kept yet: an empty but valid answer, never the asker's own data. rl* callbacks are finished by the lobby hook (it knows the game's intimate IDs and weapon table).",
+    "getHighestProficiencyWeapons": {
+      "action": "profile.proficiency",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "rlProficiency",
+          "args": [
+            "$arg0",
+            "$weapons"
+          ]
+        }
+      ]
+    },
+    "queryCreditScore": {
+      "action": "profile.credit",
+      "reply": [
+        {
+          "method": "queryCreditScoreCB",
+          "args": [
+            "$score",
+            "$records"
+          ]
+        }
+      ]
+    },
+    "queryOtherCreditScore": {
+      "action": "profile.credit",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "queryOtherCreditScoreCB",
+          "args": [
+            "$score",
+            "$status",
+            "$continue"
+          ]
+        }
+      ]
+    },
+    "querySubCreditScoreRecord": {
+      "action": "profile.credit",
+      "reply": [
+        {
+          "method": "querySubCreditScoreRecordCB",
+          "args": [
+            "$records"
+          ]
+        }
+      ]
+    },
+    "queryCreditStatus": {
+      "_note": "queryCreditStatusCB takes no arguments: the status arrives as the online push syncCreditStatus(status, coupletsTime, gifts).",
+      "action": "profile.credit",
+      "reply": [
+        {
+          "method": "syncCreditStatus",
+          "args": [
+            "$status",
+            "$couplets",
+            "$gifts"
+          ]
+        }
+      ]
+    },
+    "requestIntimateRelationshipInfo": {
+      "_note": "Your own list (UIMeetMainPage.on_enter, enterHall): rlIntimateInfo -> onUpdateIntimateRelationship(info, requests).",
+      "action": "profile.intimate",
+      "reply": [
+        {
+          "method": "rlIntimateInfo",
+          "args": [
+            0,
+            "$info",
+            "$requests",
+            false
+          ]
+        }
+      ]
+    },
+    "requestOthersIntimateRelationshipInfo": {
+      "action": "profile.intimate",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "rlIntimateInfo",
+          "args": [
+            "$arg0",
+            "$info",
+            "$requests",
+            true
+          ]
+        }
+      ]
+    },
+    "requestOtherMarryshipInfo": {
+      "action": "profile.marryship",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "onGetOtherPlayerMarryshipInfo",
+          "args": [
+            "$state",
+            "$lover",
+            "$arg0"
+          ]
+        }
+      ]
+    },
+    "requestOthersMarriageInfo": {
+      "action": "profile.marriage",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "rlMarriageInfo",
+          "args": [
+            "$arg0",
+            "$info"
+          ]
+        }
+      ]
+    },
+    "requestMessageForMarriage": {
+      "_note": "The gids are echoed as sent: callbackFillMessagePanel compares them with its own pair.",
+      "action": "profile.marriage_messages",
+      "params": [
+        "gid1",
+        "gid2"
+      ],
+      "reply": [
+        {
+          "method": "onRequestMessageCallback",
+          "args": [
+            true,
+            "",
+            "$arg0",
+            "$arg1",
+            "$msgs"
+          ]
+        }
+      ]
+    },
+    "changeTantanSex": {
+      "_note": "PlayerAthlete.updateTantanSex sets player.tantanSex; without it the Meet page sent this again on every visit.",
+      "action": "profile.set_tantan_sex",
+      "params": [
+        "sex"
+      ],
+      "reply": [
+        {
+          "method": "updateTantanSex",
+          "args": [
+            "$sex"
+          ]
+        }
+      ]
+    },
+    "changeTantanPicCount": {
+      "action": "profile.set_tantan_pics",
+      "params": [
+        "count"
+      ],
+      "reply": [
+        {
+          "method": "updateTantanPicCount",
+          "args": [
+            "$count"
+          ]
+        }
+      ]
+    },
+    "changeBestWeaponTitle": {
+      "action": "profile.best_weapon",
+      "params": [
+        "weapon"
+      ],
+      "reply": [
+        {
+          "method": "changeBestWeaponTitleCB",
+          "args": [
+            "$weapon"
+          ]
+        }
+      ]
+    },
+    "queryPersonalSpaceComment": {
+      "action": "profile.space_comments",
+      "params": [
+        "gid",
+        "page"
+      ],
+      "reply": [
+        {
+          "method": "queryPersonalSpaceCommentCB",
+          "args": [
+            "$arg0",
+            "$data"
+          ]
+        }
+      ]
+    },
+    "queryPersonalSpaceLikeCnt": {
+      "action": "profile.space_likes",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "queryPersonalSpaceLikeCntCB",
+          "args": [
+            "$arg0",
+            "$count"
+          ]
+        }
+      ]
+    },
+    "judgePersonalSpaceLike": {
+      "action": "profile.space_like_state",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "judgePersonalSpaceLikeCB",
+          "args": [
+            "$arg0",
+            "$state"
+          ]
+        }
+      ]
+    },
+    "postPersonalSpaceRead": {
+      "action": "ack",
+      "reply": [
+        {
+          "method": "postPersonalSpaceReadCB",
+          "args": [
+            {}
+          ]
+        }
+      ]
+    },
+    "judgeSpacePartnerShow": {
+      "action": "profile.partner_show",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "judgeSpacePartnerShowCB",
+          "args": [
+            "$arg0",
+            "$show"
+          ]
+        }
+      ]
+    },
+    "requestMeetInfo": {
+      "_note": "Not a game RPC: the lobby hook asks it for meethttp.httpMeetMyInfo (Meet page Data), so the page reads this database locally and online.",
+      "action": "profile.meet",
+      "params": [
+        "gid"
+      ],
+      "reply": [
+        {
+          "method": "rlMeetInfo",
+          "args": [
+            "$arg0",
+            "$data"
+          ]
+        }
+      ]
+    },
+    "updateIsIntimateRelationshipVisibleInTeam": {
+      "_note": "A setting the game repeats with the same value; nothing reads it back.",
+      "action": "ack"
+    },
+    "updatePlayerLBSData": {
+      "_note": "updatePlayerLBSData(adminCode, subAdminCode), e.g. ('UN', ''): echoed back as the strings the rank list expects.",
+      "action": "ack",
+      "reply": [
+        {
+          "method": "onUpdatePlayerLBSData",
+          "args": [
+            "$arg0",
+            "$arg1"
+          ]
+        }
+      ]
+    },
+    "getVipReward": {
+      "_note": "UIVipPrivilege.onClickGet: getVipReward(vipType, level). iVip.onGetVipReward shows the props; syncVipInfo refreshes the levels, red dots and the screen (features/vip.py).",
+      "action": "vip.claim",
+      "params": [
+        "vip_type",
+        "level"
+      ],
+      "reply": [
+        {
+          "method": "onGetVipReward",
+          "args": [
+            "$vip_type",
+            "$level"
+          ]
+        },
+        {
+          "method": "syncVipInfo",
+          "args": [
+            "$vipInfo"
+          ]
+        }
+      ]
+    },
+    "openNewMonthcardMain": {
+      "_note": "UINewMonthCard.on_enter(addVisit): no card bought (top-up is disabled). onOpenNewMonthcardFirst(gotLuckyCoin=True) -> refreshNormalEnterUI, the normal entry screen whose game buttons only show the buy-first tips (False would start the first-visit coin game, whose bets are not served).",
+      "action": "ack",
+      "params": [
+        "addVisit"
+      ],
+      "reply": [
+        {
+          "method": "onOpenNewMonthcardFirst",
+          "args": [
+            true
+          ]
+        }
+      ]
+    },
+    "queryAvailableHalfMonthPackage": {
+      "_note": "UILimitWelfareController / UITimeLimitActivityHalfMonthPackage: no half-month packs on sale (top-up is disabled). Both args stay dicts: iLimitPackage.canBuySpringPack tests `packID in halfMonthPackageBuyTimes`.",
+      "action": "ack",
+      "params": [],
+      "reply": [
+        {
+          "method": "onQueryAvailableHalfMonthPackage",
+          "args": [
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "queryAvailbleMonthPayRebateAwards": {
+      "_note": "UILimitWelfareController: no monthly top-up rebate (top-up is disabled). iPay.canGetMonthPayRebateAward iterates monthPayRebateAwardInfo (a dict).",
+      "action": "ack",
+      "params": [],
+      "reply": [
+        {
+          "method": "onQueryAvailbleMonthPayRebateAwards",
+          "args": [
+            {},
+            {},
+            0
+          ]
+        }
+      ]
+    }
+  }
+}

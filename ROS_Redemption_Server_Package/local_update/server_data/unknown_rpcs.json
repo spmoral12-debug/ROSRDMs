@@ -1,0 +1,75 @@
+{
+  "changeNicknameWithCard": {
+    "count": 2,
+    "last_args": [
+      "DEV RADMO"
+    ]
+  },
+  "dhGuardReport": {
+    "count": 4,
+    "last_args": [
+      {
+        "drift": null,
+        "source": "game"
+      }
+    ]
+  },
+  "getRecallProgress": {
+    "count": 1,
+    "last_args": []
+  },
+  "getRecalledFriends": {
+    "count": 1,
+    "last_args": [
+      2
+    ]
+  },
+  "onUIDtsLevelUpShown": {
+    "count": 1,
+    "last_args": []
+  },
+  "queryBlackFriday2019LeftTime": {
+    "count": 17,
+    "last_args": []
+  },
+  "queryTimerUseProp": {
+    "count": 3,
+    "last_args": []
+  },
+  "reqPayedPartnerRel": {
+    "count": 11,
+    "last_args": [],
+    "feature": "topup"
+  },
+  "requestFilePickerToken": {
+    "count": 2,
+    "last_args": []
+  },
+  "requestFriendData": {
+    "count": 3,
+    "last_args": []
+  },
+  "requestShareAddtionShow": {
+    "count": 10,
+    "last_args": [
+      2
+    ]
+  },
+  "setNationalFlag": {
+    "count": 4,
+    "last_args": [
+      "AO"
+    ]
+  },
+  "tryClickAccumulateCharge": {
+    "count": 1,
+    "last_args": [],
+    "feature": "topup"
+  },
+  "updateEntertainNewBadge": {
+    "count": 3,
+    "last_args": [
+      false
+    ]
+  }
+}

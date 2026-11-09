@@ -1,0 +1,27 @@
+{
+  "_doc": "The local battleground (backend_server/battle.py). map_id is the game's own map id - the client loads its data by it, so it must be a map the client has. bots stand in for the other players and only walk around, so replication can be seen. spawn is (x, y, z) in metres, tick_rate is server ticks per second, matching_seconds is how long the MATCHING screen waits before the battle starts, match_seconds is the round length.",
+  "map_id": 1001,
+  "tick_rate": 15.0,
+  "bots": 40,
+  "match_seconds": 900.0,
+  "matching_seconds": 3.0,
+  "match_players": 1,
+  "spawn": [
+    0.0,
+    100.0,
+    0.0
+  ],
+  "spawn_radius": 30.0,
+  "bot_radius": 120.0,
+  "bot_speed": 4.0,
+  "team_size": 1,
+  "seed": 0,
+  "_doc_spawn_points": "Where the player comes in, per map: {\"<map id>\": [x, y, z]}. For a spawn the client has no table for - the spawn island is in the server's level data. Put a waypoint on the spot in a battle and the cmd window prints the line to paste here. y is only a fallback: the ground height there replaces it once the terrain has streamed in. 700: the spawn island, from the waypoint on the big map (x 11516.8, z -2633.6).",
+  "spawn_points": {
+    "700": [
+      11516.8,
+      -790.0,
+      -2633.6
+    ]
+  }
+}

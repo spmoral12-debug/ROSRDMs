@@ -1,0 +1,31 @@
+{
+  "_doc": "PLATOON (the game's RosMatchTeam) settings. See backend_server/features/platoon.py. Costs are keyed by const.MallCurrencyType (2 diamonds, 202 star diamonds), the game's const.RosMatch prices. teamLvConf is sent to the game (onSyncRosMatchTeamConf): lv/exp/memberMax/needSignCnt per level; memberMax follows the game's construction table (15, +5 at Lv 2-4, max 30).",
+  "maxNameLength": 16,
+  "maxDescLength": 100,
+  "maxNoticeLength": 200,
+  "createCost": {"2": 200, "202": 3000},
+  "renameCost": {"2": 100, "202": 1500},
+  "logoCost": {"2": 100, "202": 1500},
+  "maxVice": 2,
+  "rejoinCooldownHours": 0,
+  "listSize": 100,
+  "searchSize": 20,
+  "eventPage": 10,
+  "signExp": 20,
+  "signAct": 10,
+  "signMemberAct": 10,
+  "operations": {"change_leader": 1, "kick": 2, "accept": 3, "reject": 4, "clear": 5, "promote": 6, "demote": 7},
+  "teamRankTypes": [1200, 1131],
+  "teamLvConf": [
+    {"lv": 1, "exp": 0, "memberMax": 15, "needSignCnt": 5},
+    {"lv": 2, "exp": 200, "memberMax": 20, "needSignCnt": 8},
+    {"lv": 3, "exp": 600, "memberMax": 25, "needSignCnt": 10},
+    {"lv": 4, "exp": 1200, "memberMax": 30, "needSignCnt": 12},
+    {"lv": 5, "exp": 2000, "memberMax": 30, "needSignCnt": 15},
+    {"lv": 6, "exp": 3200, "memberMax": 30, "needSignCnt": 15},
+    {"lv": 7, "exp": 4800, "memberMax": 30, "needSignCnt": 18},
+    {"lv": 8, "exp": 6800, "memberMax": 30, "needSignCnt": 20},
+    {"lv": 9, "exp": 9200, "memberMax": 30, "needSignCnt": 22},
+    {"lv": 10, "exp": 12000, "memberMax": 30, "needSignCnt": 25}
+  ]
+}

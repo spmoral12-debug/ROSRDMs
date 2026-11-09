@@ -1,0 +1,9 @@
+{
+    "AOI_8K_LEVEL" : 2,
+    "CSM_LEVEL" : 3,
+    "FRAME_RATE_LEVEL" : 0,
+    "GRAPHIC_LEVEL" : 4,
+    "IS_MSAA_ON" : false,
+    "RESOLUTION" : 4,
+    "USE_NEXT_GEN_BAKE" : false
+}

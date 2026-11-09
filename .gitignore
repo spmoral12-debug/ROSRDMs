@@ -1,0 +1,44 @@
+# ==========================================
+# ROSRDMs .gitignore
+# Exclude heavy assets, binaries, and runtimes
+# ==========================================
+
+# Game Assets & Packages (Multiple GBs - share via Google Drive/Mega)
+*.npk
+*.npk.*
+res/
+Documents/res/
+assets.npk
+script.npk
+
+# Ghidra Decompilation Project (~1.5GB)
+ghidra/
+
+# Memory Dumps & Large Executables
+x64/
+*.dump
+*.dmp
+
+# Python Runtimes & Heavy Libraries (e.g. Frida >100MB)
+runtime/
+*.pyd
+__pycache__/
+*.py[cod]
+*$py.class
+ROS_Redemption_Server_Package/python/
+
+# Accidental Git internal files extracted to project root
+objects/
+hooks/
+info/
+refs/
+HEAD
+FETCH_HEAD
+config
+description
+index.lock
+
+# Temporary and log files
+*.log
+*.tmp
+

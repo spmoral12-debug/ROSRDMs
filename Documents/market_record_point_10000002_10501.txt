@@ -1,0 +1,12 @@
+{
+    "first_download_login_game" : false,
+    "first_friend_added" : {},
+    "first_game_done" : {
+        "10000002_10501" : true
+    },
+    "first_match_successed" : {},
+    "first_on_plane" : {
+        "10000002_10501" : true
+    },
+    "last_remind_time" : 0
+}

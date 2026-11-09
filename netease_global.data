@@ -1,0 +1,17 @@
+{
+	"APPID":"123",
+	"APP_CHANNEL":"netease_global",
+	"JF_GAMEID":"h45naxx1gb",
+	"UNISDK_JF_GAS3":"1",
+	"UNISDK_JF_GAS3_URL":"https://mgbsdknaeast.matrix.easebar.com/h45naxx1gb/sdk",
+	"JF_LOG_KEY":"PispjNKFfu5dVHoT_jtcED_aOeM2ALLG",
+	"JF_PAY_LOG_URL": "https://applog.matrix.easebar.com/client/sdk/pay_log",
+	"COMPACT_URL": "https://unisdk.update.easebar.com/html/latest_v32.tw.json",
+	"LANGUAGE_CODE":  "EN_US",
+    "MOL_WEB":"0",
+    "DEMO_ALLYSDK_PAY":"1",
+    "ALLYSDK_PAY_SECONDORY_CHANNEL":"codapay",
+    "REDIRECT_URL":"https://www.163.com",
+    "DEMO_mpay_option_set_request_platform":"p",
+    "MPAY_DIRECT_PAY":"1"
+}

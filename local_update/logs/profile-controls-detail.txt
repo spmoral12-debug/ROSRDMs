@@ -1,0 +1,78 @@
+calcSetNationFlagYB
+ 32           0 <155>                    0
+              3 <160>                    1
+              6 CALL_FUNCTION            1
+              9 LOAD_NAME                1 (nationalityInfo)
+             12 <151>                    2
+             15 <148>                   24
+
+ 33          18 LIST_APPEND              1
+             21 MAKE_FUNCTION            0
+
+ 35          24 <160>                    1
+             27 LOAD_NAME                1 (nationalityInfo)
+             30 BINARY_ADD          
+             31 DELETE_ATTR              2 (get)
+             34 LOAD_NAME                2 (get)
+             37 LOAD_NAME                1 (nationalityInfo)
+             40 CALL_FUNCTION            2
+             43 BUILD_SET                1
+
+ 36          46 FOR_ITER                 1 (to 50)
+             49 LOAD_NAME                1 (nationalityInfo)
+             52 <151>                    2
+             55 <148>                   64
+
+ 37          58 LIST_APPEND              1
+             61 MAKE_FUNCTION            0
+
+ 38          64 <155>                    3
+             67 DELETE_ATTR              4 (getServerSysTime)
+             70 CALL_FUNCTION            0
+             73 BUILD_SET                2
+
+ 39          76 <155>                    5
+             79 DELETE_ATTR              6 (SET_NATIONAL_FLAG_DAY_DELTA)
+             82 LOAD_NAME                3 (client_utils)
+             85 <37>                
+             86 LOAD_NAME                4 (getServerSysTime)
+             89 <37>                
+             90 BUILD_SET                3
+
+ 40          93 FOR_ITER                 2 (to 98)
+             96 FOR_ITER                 1 (to 100)
+             99 BINARY_RSHIFT       
+        >>  100 FOR_ITER                 3 (to 106)
+            103 <151>                    0
+        >>  106 <148>                  116
+
+ 41         109 <155>                    5
+            112 DELETE_ATTR              7 (SET_NATIONAL_FLAG_YB)
+            115 PRINT_NEWLINE_TO    
+
+ 42         116 <155>                    5
+            119 DELETE_ATTR              8 (SET_NATIONAL_FLAG_YB2)
+            122 PRINT_NEWLINE_TO    
+onChangeNickname
+503           0 <155>                    0
+              3 DELETE_ATTR              1 (uiMgr)
+              6 DELETE_ATTR              2 (systemJumpTip)
+              9 FOR_ITER                 2 (to 14)
+             12 CALL_FUNCTION            1
+             15 INPLACE_MULTIPLY    
+
+504          16 <155>                    0
+             19 DELETE_ATTR              1 (uiMgr)
+             22 DELETE_ATTR              3 (UIChangeNickname)
+             25 <148>                   50
+
+505          28 <155>                    0
+             31 DELETE_ATTR              1 (uiMgr)
+             34 DELETE_ATTR              3 (UIChangeNickname)
+             37 DELETE_ATTR              4 (onChangeNickname)
+             40 FOR_ITER                 1 (to 44)
+             43 CALL_FUNCTION            1
+             46 INPLACE_MULTIPLY    
+             47 MAKE_FUNCTION            0
+             50 LIST_APPEND              0
+('updateNickname args', ('self', 'gid', 'nickname'))

@@ -8006,3 +8006,14 @@
 {"timestamp":"2026-11-09T17:38:28.746693+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58153","server":10501}
 {"timestamp":"2026-11-09T17:38:31.232022+00:00","event":"tcp-connected","peer":"127.0.0.1:58238","server":10501}
 {"timestamp":"2026-11-09T17:38:31.244519+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58238","server":10501}
+{"timestamp":"2026-11-09T17:38:33.734263+00:00","event":"tcp-connected","peer":"127.0.0.1:58255","server":10501}
+{"timestamp":"2026-11-09T17:38:33.735478+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58255","server":10501}
+{"timestamp":"2026-11-09T17:38:36.234274+00:00","event":"tcp-connected","peer":"127.0.0.1:58265","server":10501}
+{"timestamp":"2026-11-09T17:38:36.248263+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58265","server":10501}
+{"timestamp":"2026-11-09T17:38:38.731155+00:00","event":"tcp-connected","peer":"127.0.0.1:58267","server":10501}
+{"timestamp":"2026-11-09T17:38:38.735355+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58267","server":10501}
+{"timestamp":"2026-11-09T17:38:41.232054+00:00","event":"tcp-connected","peer":"127.0.0.1:58273","server":10501}
+{"timestamp":"2026-11-09T17:38:41.279158+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58273","server":10501}
+{"timestamp":"2026-11-09T17:38:43.731813+00:00","event":"tcp-connected","peer":"127.0.0.1:58307","server":10501}
+{"timestamp":"2026-11-09T17:38:43.731813+00:00","event":"tcp-disconnected","peer":"127.0.0.1:58307","server":10501}
+{"timestamp":"2026-11-09T17:38:44.685206+00:00","event":"stopped"}

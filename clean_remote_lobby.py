@@ -7481,7 +7481,7 @@ except Exception:
 # The /adm Seasons tab sends theme_mode (auto / off / <season>) and seasons {key: {window, enabled, lobby_theme}} in
 # rlLobby; the active season's lobby_theme goes on, the default comes back when no season is on.  Only the default
 # and the season themes are managed, so a lobby theme a player equipped of their own is left alone.
-_DH_DEFAULT_LOBBY_THEME = 279008
+_DH_DEFAULT_LOBBY_THEME = 270000
 _DH_SEASON_LOBBY = {          # built-in calendar, used until the console sends one
     'halloween': {'window': ('10-15', '11-02'), 'lobby_theme': 279009},   # Haunted Cabin
     'christmas': {'window': ('12-10', '01-05'), 'lobby_theme': 279007},   # Town Square
@@ -65231,23 +65231,21 @@ try:
     _dh_orig_hall_theme_id = globals().get('hall_theme_id')
     def _dh_safe_hall_theme_id():
         tid = _dh_orig_hall_theme_id() if callable(_dh_orig_hall_theme_id) else 0
-        if not tid or tid == 270000:
-            return 279008
+        if not tid or tid == 279008:
+            return 270000
         return tid
     hall_theme_id = _dh_safe_hall_theme_id
 
-    # Ensure native backdrop models (road, mountains, sky, motorcycle) are NEVER hidden into black void
+    # Ensure native Countryside backdrop models (terrace, motorcycle, guardrail, crates, sky, hills) are NEVER hidden
     _dh_orig_hide_native = globals().get('hide_native_hall_models')
     def _dh_hide_native_safe(scene):
         try:
             if scene is not None:
                 for model, name in scene_models(scene):
-                    name_lower = str(name).lower()
-                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
-                        try:
-                            model.visible = True
-                        except Exception:
-                            pass
+                    try:
+                        model.visible = True
+                    except Exception:
+                        pass
         except Exception:
             pass
         _lobby['native_hall_models'] = []
@@ -65255,58 +65253,56 @@ try:
         return 0
     hide_native_hall_models = _dh_hide_native_safe
 
-    # Ensure show_lobby_backdrop keeps mountains and road visible
+    # Ensure show_lobby_backdrop keeps terrace, motorcycle, guardrail, crates, mountains, and sky visible
     _dh_orig_show_backdrop = globals().get('show_lobby_backdrop')
     def _dh_show_lobby_backdrop_safe(show):
         try:
             import BigWorld
+            import Globals
             player = BigWorld.player()
             hall = getattr(player, 'hallScene', None)
-            scene = getattr(hall, '_native_scene', None)
-            if scene is not None:
-                for model, name in scene_models(scene):
-                    name_lower = str(name).lower()
-                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
+            scenes = [getattr(hall, '_native_scene', None), getattr(Globals, 'hallScene', None), getattr(Globals, 'loginScene', None)]
+            for sc in scenes:
+                if sc is not None:
+                    for model, name in scene_models(sc):
                         try:
                             model.visible = bool(show)
                         except Exception:
                             pass
         except Exception:
             pass
-        if callable(_dh_orig_show_backdrop):
-            try:
-                return _dh_orig_show_backdrop(show)
-            except Exception:
-                return 0
         return 0
     show_lobby_backdrop = _dh_show_lobby_backdrop_safe
 
-    # Periodic Lobby 3D Scene loop: ensures ground road, sky, motorcycle, mountains, and theme 279008 are always intact
+    # Periodic Lobby 3D Scene loop: ensures ground terrace, sky, motorcycle, guardrails, crates, and theme 270000 are always intact
     def _dh_lobby_scene_watchdog():
         try:
             if _dh_in_lobby():
                 import BigWorld
+                import Globals
                 BigWorld._dh_theme_suspended = False
                 player = BigWorld.player()
                 if player is not None:
-                    # Enforce valid default theme 279008 (The Arrival with asphalt road & motorcycle)
+                    # Enforce valid default theme 270000 (The Countryside / The Fiord)
                     cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
-                    if not cur_theme or cur_theme == 270000:
-                        player.dtsHallThemeID = 279008
+                    if not cur_theme or cur_theme == 279008:
+                        player.dtsHallThemeID = 270000
                         if hasattr(player, 'onUpdateDtsHallThemeID'):
                             try:
-                                player.onUpdateDtsHallThemeID(279008)
+                                player.onUpdateDtsHallThemeID(270000)
                             except Exception:
                                 pass
-                    # Ensure scene models for road, sky, motorcycle, mountains are visible
+                    # Ensure scene models for terrace, guardrails, crates, motorcycle, mountains are visible
                     hall = getattr(player, 'hallScene', None)
-                    scene = getattr(hall, '_native_scene', None)
-                    if scene is not None:
-                        for model, name in scene_models(scene):
-                            name_lower = str(name).lower()
-                            if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
-                                if hasattr(model, 'visible') and not model.visible:
-                                    model.visible = True
+                    scenes = [getattr(hall, '_native_scene', None), getattr(Globals, 'hallScene', None), getattr(Globals, 'loginScene', None)]
+                    for sc in scenes:
+                        if sc is not None:
+                            for model, name in scene_models(sc):
+                                try:
+                                    if hasattr(model, 'visible') and not model.visible:
+                                        model.visible = True
+                                except Exception:
+                                    pass
         except Exception:
             pass
         call_later(2.0, _dh_lobby_scene_watchdog)
@@ -65560,15 +65556,25 @@ while getattr(_dh_orig_main_ready, '_dh_party_ready_inner', None) is not None:
 def _dh_party_main_ready(*args, **kwargs):
     try:
         import BigWorld
+        import Globals
         BigWorld._dh_theme_suspended = False
         p = BigWorld.player()
         if p is not None:
             cur_th = getattr(p, 'dtsHallThemeID', 0) or 0
-            if not cur_th or cur_th == 270000:
-                p.dtsHallThemeID = 279008
+            if not cur_th or cur_th == 279008:
+                p.dtsHallThemeID = 270000
                 if hasattr(p, 'onUpdateDtsHallThemeID'):
                     try:
-                        p.onUpdateDtsHallThemeID(279008)
+                        p.onUpdateDtsHallThemeID(270000)
+                    except Exception:
+                        pass
+        hall = getattr(p, 'hallScene', None) if p else None
+        scenes = [getattr(hall, '_native_scene', None), getattr(Globals, 'hallScene', None), getattr(Globals, 'loginScene', None)]
+        for sc in scenes:
+            if sc is not None:
+                for model, name in scene_models(sc):
+                    try:
+                        model.visible = True
                     except Exception:
                         pass
     except Exception:

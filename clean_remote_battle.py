@@ -8296,7 +8296,7 @@ log('local-m49-installed', reload_safe=True)
 # switch - it clears the equipped theme's LIVE models cleanly, so nothing stale is left for the post-match rebuild to
 # choke on.  The equipped theme is kept in the lobby state (dhThemeOwn) and returns at the next login; a session flag
 # (BigWorld._dh_theme_suspended) tells the lobby patch's season pass not to re-apply it after the battle.
-_DH_HALL_DEFAULT = 279008
+_DH_HALL_DEFAULT = 270000
 
 
 def _dh_hall_reset_for_match(player):

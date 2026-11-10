@@ -5917,3 +5917,5 @@
 {"timestamp":"2026-11-09T17:48:31.856159+00:00","scheme":"http","method":"POST","host":"sigma-keypoint-h45na.proxima.nie.easebar.com","path":"/","status":404}
 {"timestamp":"2026-11-09T17:48:55.414963+00:00","scheme":"http","method":"POST","host":"sigma-keypoint-h45na.proxima.nie.easebar.com","path":"/","status":404}
 {"timestamp":"2026-11-09T17:49:47.866566+00:00","scheme":"http","method":"POST","host":"sigma-keypoint-h45na.proxima.nie.easebar.com","path":"/","status":404}
+{"timestamp":"2026-11-10T00:12:47.083812+00:00","scheme":"http","method":"POST","host":"127.0.0.1","path":"/PlayerInfoSummary/get_player_info","status":200,"body":"{\"Ret\": 0, \"Data\": {}}"}
+{"timestamp":"2026-11-10T00:12:48.403744+00:00","scheme":"http","method":"POST","host":"127.0.0.1","path":"/PlayerInfoSummary/get_player_info","status":200,"body":"{\"Ret\": 0, \"Data\": {}}"}

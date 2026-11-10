@@ -90,26 +90,42 @@ def cultivate_compound(server, args, kwargs):
     flag = int(args[2]) if len(args) > 2 else 0
     if not target_id:
         raise AccountError("bad_item", "Invalid target item.")
+    
+    _tune_src_map = {
+        140404: 140403,  # Monster - M2 -> Monster - M1
+        142008: 142007,  # Velociraptor Lv. 2 -> Velociraptor Lv. 1
+    }
+    effective_src = _tune_src_map.get(target_id, src_id)
     account = server.account
     try:
         with account.db.transaction() as conn:
             with account.edit_in(conn) as data:
-                if src_id:
-                    try:
-                        account.remove_item(data, src_id, 1)
-                    except Exception:
-                        pass
+                depot = data.setdefault("depot", {})
+                # Completely remove source item copies from depot
+                if effective_src:
+                    depot.pop(str(effective_src), None)
+                if src_id and src_id != target_id:
+                    depot.pop(str(src_id), None)
+                if target_id in _tune_src_map:
+                    depot.pop(str(_tune_src_map[target_id]), None)
+                
                 try:
                     account.spend(data, 1001, 1000, f"cultivate:{target_id}")
                 except Exception:
                     pass
-                account.add_item(data, target_id, 1)
+                
+                # Set target item count to exactly 1
+                depot[str(target_id)] = {"count": 1, "expires": 0}
+                
                 equipped = data.setdefault("equipped", {})
                 for k, v in list(equipped.items()):
-                    if isinstance(v, list) and src_id in v:
-                        equipped[k] = [target_id if x == src_id else x for x in v]
-                    elif v == src_id:
+                    if isinstance(v, list) and (effective_src in v or src_id in v):
+                        equipped[k] = [target_id if (x == effective_src or x == src_id) else x for x in v]
+                    elif v == effective_src or v == src_id:
                         equipped[k] = target_id
+                
+                # Clear recent_changes so server does not send duplicate items in reply['items']
+                server.account.recent_changes = []
     except Exception as error:
         raise AccountError("cultivate_error", str(error))
     return {
@@ -117,6 +133,48 @@ def cultivate_compound(server, args, kwargs):
         "tip": "Tune successful!"
     }
 
+
+# Auto-sanitize account depots on load to clean up duplicate copies & consumed vehicles
+try:
+    from backend_server.account import Account
+    _orig_account_load = getattr(Account, '_load', None)
+    if _orig_account_load is not None and not getattr(_orig_account_load, '_dh_sanitized', False):
+        def _sanitized_account_load(self, conn):
+            data = _orig_account_load(self, conn)
+            try:
+                if isinstance(data, dict):
+                    depot = data.get("depot")
+                    if isinstance(depot, dict):
+                        changed = False
+                        # 1. Evolution pairs cleanup:
+                        # Monster M2 -> delete M1
+                        if "140404" in depot and "140403" in depot:
+                            del depot["140403"]
+                            changed = True
+                        # Velociraptor Lv. 2 -> delete Lv. 1
+                        if "142008" in depot and "142007" in depot:
+                            del depot["142007"]
+                            changed = True
+                        # 2. Clamp duplicate permanent cosmetics:
+                        for k, v in list(depot.items()):
+                            if isinstance(v, dict) and not int(v.get("expires") or 0):
+                                try:
+                                    iid = int(k)
+                                    # Cosmetic hall props: vehicles, weapons, clothes, themes
+                                    if v.get("count", 1) > 1 and not (200000 <= iid < 300000 or 490000 <= iid < 500000):
+                                        v["count"] = 1
+                                        changed = True
+                                except Exception:
+                                    pass
+                        if changed:
+                            self._save(conn, data)
+            except Exception:
+                pass
+            return data
+        _sanitized_account_load._dh_sanitized = True
+        Account._load = _sanitized_account_load
+except Exception:
+    pass
 
 # ==============================================================================
 # Training Manual (Brave Book 2) Points & Level Purchases

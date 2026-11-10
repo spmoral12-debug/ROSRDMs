@@ -702,13 +702,24 @@ namespace RosRedemptionOnlineLauncher {
                     string srvJson = "{\n  \"servers\": [\n    {\n      \"id\": 10501,\n      \"name\": \"Singapore-Dedicated\",\n      \"port\": 30061,\n      \"host\": \"143.14.88.9\",\n      \"zone\": \"Singapore-Dedicated\"\n    }\n  ]\n}";
                     File.WriteAllText(ServerListFile, srvJson);
 
+                    // Ensure local_update has Singapore-Dedicated so game never displays MainPC-Asia
+                    try {
+                        string luDir = Path.Combine(BaseDir, "local_update");
+                        if (Directory.Exists(luDir)) {
+                            string luServers = "{\n  \"_doc\": \"Game servers. Singapore Dedicated Server active.\",\n  \"host\": \"143.14.88.9\",\n  \"servers\": [\n    {\n      \"id\": 10501,\n      \"name\": \"Singapore-Dedicated\",\n      \"port\": 30061,\n      \"zone\": \"Singapore-Dedicated\",\n      \"load\": 1,\n      \"status\": 2,\n      \"ping\": 40\n    }\n  ]\n}";
+                            File.WriteAllText(Path.Combine(luDir, "servers.json"), luServers);
+                            string luTxt = "Singapore-Dedicated 1 0 2 X Singapore-Dedicated 143.14.88.9:30061 143.14.88.9:30061 143.14.88.9:30061 10501 143.14.88.9:30061\n";
+                            File.WriteAllText(Path.Combine(luDir, "server_list_pc.txt"), luTxt);
+                        }
+                    } catch { }
+
                     // Launch python process silently
                     string py = File.Exists(PythonwExe) ? PythonwExe : PythonExe;
                     string script = Path.Combine(BaseDir, "start_diehard_local.py");
 
                     ProcessStartInfo psi = new ProcessStartInfo();
                     psi.FileName = py;
-                    psi.Arguments = "-u \"" + script + "\" --direct --remote-servers \"" + ServerListFile + "\" --account \"" + user + "\" --token \"" + token + "\" --account-id " + accountId;
+                    psi.Arguments = "-u \"" + script + "\" --direct --remote-servers \"" + ServerListFile + "\" --server 10501 --account \"" + user + "\" --token \"" + token + "\" --account-id " + accountId;
                     psi.WorkingDirectory = BaseDir;
                     psi.EnvironmentVariables["ROS_GAME_DIR"] = BaseDir;
                     psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";

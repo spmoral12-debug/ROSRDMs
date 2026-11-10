@@ -41,6 +41,7 @@ index.lock
 # Temporary and log files
 *.log
 *.tmp
+.online_session.json
 
 
 # Nested git folder

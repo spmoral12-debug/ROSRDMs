@@ -176,4 +176,44 @@ def patched_agent_source(identity, encoded):
 run_ros_local.persistent_agent_source = patched_agent_source
 
 if __name__ == "__main__":
+    # Auto-ensure online Singapore VPS server list and credentials if not explicitly passed
+    srv_file = root / "online_servers.json"
+    if not srv_file.is_file():
+        default_srv = {
+            "servers": [
+                {
+                    "id": 10501,
+                    "name": "Singapore-Dedicated",
+                    "port": 30061,
+                    "host": "143.14.88.9",
+                    "zone": "Singapore-Dedicated"
+                }
+            ]
+        }
+        import json
+        srv_file.write_text(json.dumps(default_srv, indent=2), encoding="utf-8")
+
+    # If --remote-servers is not explicitly in sys.argv, automatically route to Singapore VPS
+    if "--remote-servers" not in sys.argv:
+        sys.argv.extend(["--remote-servers", str(srv_file)])
+
+    # If --account or --token is not passed, automatically load saved online session
+    sess_file = root / ".online_session.json"
+    if not sess_file.is_file():
+        alt_sess = Path(r"C:\DieHardROS\ROS-REDEMPTION\DieHardROS\.online_session.json")
+        if alt_sess.is_file():
+            sess_file = alt_sess
+    if sess_file.is_file():
+        try:
+            import json
+            sess = json.loads(sess_file.read_text(encoding="utf-8"))
+            if "--account" not in sys.argv and sess.get("username"):
+                sys.argv.extend(["--account", str(sess["username"])])
+            if "--token" not in sys.argv and sess.get("token"):
+                sys.argv.extend(["--token", str(sess["token"])])
+            if "--account-id" not in sys.argv and sess.get("account_id"):
+                sys.argv.extend(["--account-id", str(sess["account_id"])])
+        except Exception:
+            pass
+
     sys.exit(run_ros_local.main())

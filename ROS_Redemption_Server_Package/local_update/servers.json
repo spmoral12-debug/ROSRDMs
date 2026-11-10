@@ -1,15 +1,15 @@
 {
-  "_doc": "Game servers. Only official ROS Redemption server active.",
-  "host": "127.0.0.1",
+  "_doc": "Game servers. Singapore Dedicated Server active.",
+  "host": "143.14.88.9",
   "servers": [
     {
       "id": 10501,
-      "name": "ROS-Redemption-Official",
-      "port": 19000,
-      "zone": "ROS-Redemption",
+      "name": "Singapore-Dedicated",
+      "port": 30061,
+      "zone": "Singapore-Dedicated",
       "load": 1,
       "status": 2,
-      "ping": 5
+      "ping": 40
     }
   ]
 }

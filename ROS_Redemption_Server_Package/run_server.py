@@ -46,8 +46,59 @@ def start_auth_api(db, host="0.0.0.0", port=30063):
             self.wfile.write(data)
 
         def do_GET(self):
-            if self.path == "/api/health":
-                return self._send(200, {"ok": True, "status": "online"})
+            if self.path in ("/api/health", "/api/stats"):
+                online_count = 0
+                try:
+                    import time
+                    now = int(time.time())
+                    c = db.cursor()
+                    c.execute("SELECT count(DISTINCT account_id) FROM login_tokens WHERE expires > ?", (now,))
+                    row = c.fetchone()
+                    online_count = int(row[0]) if row and row[0] is not None else 0
+                    if online_count < 1:
+                        c.execute("SELECT count(*) FROM characters WHERE last_login > ?", (now - 3600,))
+                        row2 = c.fetchone()
+                        online_count = int(row2[0]) if row2 and row2[0] is not None else 0
+                except Exception:
+                    online_count = 1
+
+                patch_notes = [
+                    "✅ [LAUNCHER] Official Standalone Client (No .bat, Real-Time Stats)",
+                    "✅ [FIXED] Team Leave Instant Unform & Member Sync",
+                    "✅ [FIXED] 3D Lobby Road & Mountain Sky Elevation (Theme 279008)",
+                    "✅ [VEHICLE] Car Skin Auto-Equip on Boarding",
+                    "✅ [VEHICLE] Nitro Turbo Boost (Shift Key & Flames)",
+                    "✅ [VEHICLE] Fuel Consumption & Smooth Engine Audio",
+                    "✅ [COMBAT] Safe Fall Damage (High Cliffs only)",
+                    "✅ [STORE] Pack Buy Again & Universal Guaranteed Pity System",
+                    "✅ [BALANCE] 125 Spawn Point Spread on Prepare Island"
+                ]
+
+                return self._send(200, {
+                    "ok": True,
+                    "status": "online",
+                    "server": "Singapore-Dedicated",
+                    "host": "143.14.88.9",
+                    "players_online": max(1, online_count),
+                    "version": "1.2.0",
+                    "patch_notes": patch_notes
+                })
+            if self.path == "/api/patch_notes":
+                return self._send(200, {
+                    "ok": True,
+                    "version": "1.2.0",
+                    "patch_notes": [
+                        "✅ [LAUNCHER] Official Standalone Client (No .bat, Real-Time Stats)",
+                        "✅ [FIXED] Team Leave Instant Unform & Member Sync",
+                        "✅ [FIXED] 3D Lobby Road & Mountain Sky Elevation (Theme 279008)",
+                        "✅ [VEHICLE] Car Skin Auto-Equip on Boarding",
+                        "✅ [VEHICLE] Nitro Turbo Boost (Shift Key & Flames)",
+                        "✅ [VEHICLE] Fuel Consumption & Smooth Engine Audio",
+                        "✅ [COMBAT] Safe Fall Damage (High Cliffs only)",
+                        "✅ [STORE] Pack Buy Again & Universal Guaranteed Pity System",
+                        "✅ [BALANCE] 125 Spawn Point Spread on Prepare Island"
+                    ]
+                })
             if self.path == "/api/servers":
                 try:
                     servers = load_servers(SERVERS_PATH)

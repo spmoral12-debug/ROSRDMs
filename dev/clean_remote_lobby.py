@@ -4237,15 +4237,6 @@ def _dh_main_ready():
             unblocked=_dh_unblock_top_tabs(), at='UIMain')
     except Exception:
         log_error('local-top-tabs-error', at='UIMain')
-    try:
-        bw = globals().get('BigWorld') or __import__('BigWorld')
-        player = bw.player()
-        if player is not None and hasattr(player, 'onAddDtsAppearanceItem'):
-            _push = globals().get('_push_one_item')
-            if callable(_push):
-                _push(player, 121363, 1, 0, package='appearance')
-    except Exception:
-        pass
 
 
 def _dh_relabel_manual():

@@ -133,6 +133,13 @@ try:
                 items = params.get('items', [])
                 count = max(1, int(params.get('count', 1)))
 
+                if isinstance(result, dict):
+                    result['ok'] = True
+                    result['handled'] = True
+                    props = result.setdefault('props', {})
+                    if 'wallet' not in props and 'wallet' in data:
+                        props['wallet'] = data['wallet']
+
                 is_points = (
                     goods_id == '3002' or
                     item_id == 261011 or
@@ -192,5 +199,77 @@ try:
         LocalPyServer._run_route = _patched_run_route
 except Exception as e:
     print("[server] Training points patch init error:", e)
+
+
+# ==============================================================================
+# Theme Purchase & Equip RPC Handlers
+# ==============================================================================
+@rpc("updateDtsHallThemeID", "setDtsHallThemeID")
+def rpc_update_dts_hall_theme(server, args, kwargs):
+    theme_id = int(args[0]) if args else 0
+    account = server.account
+    try:
+        with account.db.transaction() as conn:
+            with account.edit_in(conn) as data:
+                equipped = data.setdefault("equipped", {})
+                equipped["dtsHallThemeID"] = theme_id
+                lobby = data.setdefault("lobby", {})
+                lobby["dtsHallThemeID"] = theme_id
+    except Exception as error:
+        raise AccountError("theme_update_error", str(error))
+    return {
+        "ok": True,
+        "handled": True,
+        "props": {"dtsHallThemeID": theme_id},
+        "callbacks": [{"method": "onUpdateDtsHallThemeID", "args": [theme_id]}],
+        "tip": "Lobby theme updated!" if theme_id else "Lobby theme reset."
+    }
+
+
+@rpc("buyMultipleMallGood")
+def rpc_buy_multiple_mall_good(server, args, kwargs):
+    account = server.account
+    goods_list = kwargs.get('goods') or []
+    if not goods_list and args and isinstance(args[0], (list, tuple)):
+        goods_list = [{'goods_id': gid, 'item': gid, 'currency_id': 2, 'price': 0} for gid in args[0]]
+
+    all_granted_items = []
+    hall_props = []
+
+    try:
+        with account.db.transaction() as conn:
+            with account.edit_in(conn) as data:
+                for g in goods_list:
+                    goods_id = str(g.get('goods_id', ''))
+                    item_id = int(g.get('item', 0) or goods_id or 0)
+                    currency_id = int(g.get('currency_id', 2) or 2)
+                    price = max(0, int(g.get('price', 0) or 0))
+
+                    if price > 0:
+                        account.spend(data, currency_id, price, f"buy_multiple:{goods_id}")
+
+                    sub_items = g.get('items') or [item_id]
+                    for itm in sub_items:
+                        itm_id = int(itm)
+                        if itm_id:
+                            account.add_item(data, itm_id, 1)
+                            all_granted_items.append({'item': itm_id, 'count': 1, 'expires': 0})
+                            hall_props.append(itm_id)
+
+                wallet = data.get('wallet', {})
+    except Exception as error:
+        raise AccountError("buy_failed", str(error))
+
+    return {
+        "ok": True,
+        "handled": True,
+        "props": {"wallet": wallet},
+        "items": all_granted_items,
+        "callbacks": [
+            {"method": "onBuyMallGood", "args": [hall_props]},
+            {"method": "onBuyMultipleMallGood", "args": [list(args[0]) if args and isinstance(args[0], (list, tuple)) else []]}
+        ],
+        "tip": "Purchase successful!"
+    }
 
 

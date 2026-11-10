@@ -5492,7 +5492,7 @@ except Exception:
 _dh_mates = globals().get('_dh_mates') or {}
 for _dh_k, _dh_v in (('sig', None), ('updates', 0), ('warned', False)):
     _dh_mates.setdefault(_dh_k, _dh_v)
-_DH_PARTY_LOW, _DH_PARTY_HIGH = 1000000, 2000000
+_DH_PARTY_LOW, _DH_PARTY_HIGH = 1, 2000000
 
 
 def _dh_player_state(name):

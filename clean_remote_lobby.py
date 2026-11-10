@@ -5421,12 +5421,11 @@ if callable(_dh_orig_finish_rpc) and not getattr(_dh_orig_finish_rpc, '_dh_pack_
     def _dh_finish_rpc_pack_wrapper(player, name, args, kwargs, reply, count):
         res = _dh_orig_finish_rpc(player, name, args, kwargs, reply, count)
         try:
-            if name in ('buyMallGood', 'buyMallGoodInAppearanceMall') and isinstance(reply, dict) and reply.get('ok'):
-                if _dh_last_pack_buy.get('active'):
-                    items = (kwargs or {}).get('items') or _dh_last_pack_buy.get('last_opened') or []
-                    curr_id = (kwargs or {}).get('currency_id') or _dh_last_pack_buy.get('currencyID') or 2
-                    if items:
-                        call_later(0.15, show_bought_items, items, curr_id)
+            if name in ('buyMallGood', 'buyMallGoodInAppearanceMall', 'buyMultipleMallGood', 'buyDtsHallProp') and isinstance(reply, dict) and reply.get('ok'):
+                items = (reply.get('items') if isinstance(reply.get('items'), list) else None) or (kwargs or {}).get('items') or _dh_last_pack_buy.get('last_opened') or []
+                curr_id = (kwargs or {}).get('currency_id') or _dh_last_pack_buy.get('currencyID') or 2
+                if items:
+                    call_later(0.15, show_bought_items, items, curr_id)
         except Exception:
             pass
         return res
@@ -7481,7 +7480,7 @@ except Exception:
 # The /adm Seasons tab sends theme_mode (auto / off / <season>) and seasons {key: {window, enabled, lobby_theme}} in
 # rlLobby; the active season's lobby_theme goes on, the default comes back when no season is on.  Only the default
 # and the season themes are managed, so a lobby theme a player equipped of their own is left alone.
-_DH_DEFAULT_LOBBY_THEME = 270000
+_DH_DEFAULT_LOBBY_THEME = 279008
 _DH_SEASON_LOBBY = {          # built-in calendar, used until the console sends one
     'halloween': {'window': ('10-15', '11-02'), 'lobby_theme': 279009},   # Haunted Cabin
     'christmas': {'window': ('12-10', '01-05'), 'lobby_theme': 279007},   # Town Square
@@ -8606,10 +8605,22 @@ def _dh_theme_remember(theme_id):
         theme_id = 0
     _dh_theme117['own'] = theme_id
     try:
-        ok, reason = save_state_durable(lobby={'dhThemeOwn': theme_id})
+        ok, reason = save_state_durable(lobby={'dhThemeOwn': theme_id, 'dtsHallThemeID': theme_id})
     except Exception:
         ok, reason = False, 'error'
         log_error('local-lobby-theme-own-error')
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        if player is not None:
+            active_theme = theme_id if theme_id else _DH_DEFAULT_LOBBY_THEME
+            player.dtsHallThemeID = active_theme
+            if hasattr(player, 'onUpdateDtsHallThemeID'):
+                player.onUpdateDtsHallThemeID(active_theme)
+            if hasattr(player, 'base') and hasattr(player.base, 'updateDtsHallThemeID'):
+                player.base.updateDtsHallThemeID(theme_id)
+    except Exception:
+        pass
     log('local-lobby-theme-own', theme=theme_id, ok=ok, reason=safe(reason, 80))
 
 
@@ -65230,22 +65241,32 @@ except Exception:
 try:
     _dh_orig_hall_theme_id = globals().get('hall_theme_id')
     def _dh_safe_hall_theme_id():
+        own = _dh_theme_own()
+        if own:
+            return own
         tid = _dh_orig_hall_theme_id() if callable(_dh_orig_hall_theme_id) else 0
-        if not tid or tid == 279008:
-            return 270000
+        if not tid or tid == 270000:
+            return 279008
         return tid
     hall_theme_id = _dh_safe_hall_theme_id
 
-    # Ensure native Countryside backdrop models (terrace, motorcycle, guardrail, crates, sky, hills) are NEVER hidden
+    # Ensure native Arrival backdrop models (road, motorcycle, sky, etc.) are kept visible when Arrival is active
     _dh_orig_hide_native = globals().get('hide_native_hall_models')
     def _dh_hide_native_safe(scene):
+        own = _dh_theme_own()
+        if own and own != 279008:
+            if callable(_dh_orig_hide_native):
+                return _dh_orig_hide_native(scene)
+            return 0
         try:
             if scene is not None:
                 for model, name in scene_models(scene):
-                    try:
-                        model.visible = True
-                    except Exception:
-                        pass
+                    name_lower = str(name).lower()
+                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
+                        try:
+                            model.visible = True
+                        except Exception:
+                            pass
         except Exception:
             pass
         _lobby['native_hall_models'] = []
@@ -65253,56 +65274,64 @@ try:
         return 0
     hide_native_hall_models = _dh_hide_native_safe
 
-    # Ensure show_lobby_backdrop keeps terrace, motorcycle, guardrail, crates, mountains, and sky visible
+    # Ensure show_lobby_backdrop keeps arrival backdrop visible
     _dh_orig_show_backdrop = globals().get('show_lobby_backdrop')
     def _dh_show_lobby_backdrop_safe(show):
+        own = _dh_theme_own()
+        if own and own != 279008:
+            if callable(_dh_orig_show_backdrop):
+                return _dh_orig_show_backdrop(show)
+            return 0
         try:
             import BigWorld
-            import Globals
             player = BigWorld.player()
             hall = getattr(player, 'hallScene', None)
-            scenes = [getattr(hall, '_native_scene', None), getattr(Globals, 'hallScene', None), getattr(Globals, 'loginScene', None)]
-            for sc in scenes:
-                if sc is not None:
-                    for model, name in scene_models(sc):
+            scene = getattr(hall, '_native_scene', None)
+            if scene is not None:
+                for model, name in scene_models(scene):
+                    name_lower = str(name).lower()
+                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
                         try:
                             model.visible = bool(show)
                         except Exception:
                             pass
         except Exception:
             pass
+        if callable(_dh_orig_show_backdrop):
+            try:
+                return _dh_orig_show_backdrop(show)
+            except Exception:
+                return 0
         return 0
     show_lobby_backdrop = _dh_show_lobby_backdrop_safe
 
-    # Periodic Lobby 3D Scene loop: ensures ground terrace, sky, motorcycle, guardrails, crates, and theme 270000 are always intact
+    # Periodic Lobby 3D Scene loop: ensures default Arrival theme 279008 or player equipped theme is intact
     def _dh_lobby_scene_watchdog():
         try:
             if _dh_in_lobby():
                 import BigWorld
-                import Globals
                 BigWorld._dh_theme_suspended = False
                 player = BigWorld.player()
                 if player is not None:
-                    # Enforce valid default theme 270000 (The Countryside / The Fiord)
+                    own = _dh_theme_own()
+                    target_theme = own if own else 279008
                     cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
-                    if not cur_theme or cur_theme == 279008:
-                        player.dtsHallThemeID = 270000
+                    if not cur_theme or (not own and cur_theme == 270000):
+                        player.dtsHallThemeID = target_theme
                         if hasattr(player, 'onUpdateDtsHallThemeID'):
                             try:
-                                player.onUpdateDtsHallThemeID(270000)
+                                player.onUpdateDtsHallThemeID(target_theme)
                             except Exception:
                                 pass
-                    # Ensure scene models for terrace, guardrails, crates, motorcycle, mountains are visible
-                    hall = getattr(player, 'hallScene', None)
-                    scenes = [getattr(hall, '_native_scene', None), getattr(Globals, 'hallScene', None), getattr(Globals, 'loginScene', None)]
-                    for sc in scenes:
-                        if sc is not None:
-                            for model, name in scene_models(sc):
-                                try:
+                    if target_theme == 279008:
+                        hall = getattr(player, 'hallScene', None)
+                        scene = getattr(hall, '_native_scene', None)
+                        if scene is not None:
+                            for model, name in scene_models(scene):
+                                name_lower = str(name).lower()
+                                if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
                                     if hasattr(model, 'visible') and not model.visible:
                                         model.visible = True
-                                except Exception:
-                                    pass
         except Exception:
             pass
         call_later(2.0, _dh_lobby_scene_watchdog)
@@ -65556,27 +65585,30 @@ while getattr(_dh_orig_main_ready, '_dh_party_ready_inner', None) is not None:
 def _dh_party_main_ready(*args, **kwargs):
     try:
         import BigWorld
-        import Globals
         BigWorld._dh_theme_suspended = False
         p = BigWorld.player()
+        own = _dh_theme_own()
+        target_th = own if own else 279008
         if p is not None:
             cur_th = getattr(p, 'dtsHallThemeID', 0) or 0
-            if not cur_th or cur_th == 279008:
-                p.dtsHallThemeID = 270000
+            if not cur_th or (not own and cur_th == 270000):
+                p.dtsHallThemeID = target_th
                 if hasattr(p, 'onUpdateDtsHallThemeID'):
                     try:
-                        p.onUpdateDtsHallThemeID(270000)
+                        p.onUpdateDtsHallThemeID(target_th)
                     except Exception:
                         pass
-        hall = getattr(p, 'hallScene', None) if p else None
-        scenes = [getattr(hall, '_native_scene', None), getattr(Globals, 'hallScene', None), getattr(Globals, 'loginScene', None)]
-        for sc in scenes:
-            if sc is not None:
-                for model, name in scene_models(sc):
-                    try:
-                        model.visible = True
-                    except Exception:
-                        pass
+        if target_th == 279008:
+            hall = getattr(p, 'hallScene', None) if p else None
+            scene = getattr(hall, '_native_scene', None) if hall else None
+            if scene is not None:
+                for model, name in scene_models(scene):
+                    name_lower = str(name).lower()
+                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
+                        try:
+                            model.visible = True
+                        except Exception:
+                            pass
     except Exception:
         pass
     res = _dh_orig_main_ready(*args, **kwargs) if callable(_dh_orig_main_ready) else None

@@ -4237,6 +4237,15 @@ def _dh_main_ready():
             unblocked=_dh_unblock_top_tabs(), at='UIMain')
     except Exception:
         log_error('local-top-tabs-error', at='UIMain')
+    try:
+        bw = globals().get('BigWorld') or __import__('BigWorld')
+        player = bw.player()
+        if player is not None and hasattr(player, 'onAddDtsAppearanceItem'):
+            _push = globals().get('_push_one_item')
+            if callable(_push):
+                _push(player, 121363, 1, 0, package='appearance')
+    except Exception:
+        pass
 
 
 def _dh_relabel_manual():
@@ -4434,7 +4443,9 @@ def _dh_install_main_watch():
     current = getattr(mgr, 'enter_ui', None) if mgr is not None else None
     if current is None:
         return False
-    inner = getattr(current, '_dh_inner', current)
+    inner = current
+    while getattr(inner, '_dh_inner', None) is not None or getattr(inner, '_redemption_inner', None) is not None:
+        inner = getattr(inner, '_dh_inner', None) or getattr(inner, '_redemption_inner', None)
 
     def enter_ui(ui_name, *args, **kwargs):
         if ui_name == 'UIDeathKillerDisplay':
@@ -8933,12 +8944,6 @@ def _dh_client_knows_item(item_id):
 
 if callable(_dh_push_inner):
     def _push_one_item(player, item_id, count, expires, package=None, _dh_base=_dh_push_inner):
-        try:
-            if int(item_id) in (121363, 492081, 492082):
-                _dh_install_prop_table_hooks()
-                _dh_ensure_synthetic_props()
-        except Exception:
-            pass
         if not _dh_client_knows_item(item_id):
             if item_id not in _dh_push_skipped:
                 _dh_push_skipped.add(item_id)
@@ -8948,38 +8953,6 @@ if callable(_dh_push_inner):
     _push_one_item._dh_m119 = True
     _push_one_item._dh_inner = _dh_push_inner
     log('local-depot-push-guard', installed=True)
-
-
-_dh_orig_push_server_items = globals().get('push_server_items')
-while getattr(_dh_orig_push_server_items, '_dh_quiet_lobby', False):
-    _dh_orig_push_server_items = _dh_orig_push_server_items._dh_inner
-
-if callable(_dh_orig_push_server_items):
-    def _dh_push_server_items_quiet_lobby(player, items, reason='reply', _dh_base=_dh_orig_push_server_items):
-        """Suppress 'You got [...] x1' system message banner during initial/post-battle depot sync
-        (reason in ('lobby', 'lobby-cache', 'lobby-new')), while keeping it active when claiming rewards."""
-        if str(reason) in ('lobby', 'lobby-cache', 'lobby-new'):
-            cu = None
-            orig_msg = None
-            try:
-                cu = __import__('client_utils')
-                orig_msg = getattr(cu, 'showSystemMsg', None)
-                if callable(orig_msg):
-                    cu.showSystemMsg = lambda *_a, **_kw: None
-            except Exception:
-                cu = None
-            try:
-                return _dh_base(player, items, reason=reason)
-            finally:
-                if cu is not None and callable(orig_msg):
-                    try:
-                        cu.showSystemMsg = orig_msg
-                    except Exception:
-                        pass
-        return _dh_base(player, items, reason=reason)
-    _dh_push_server_items_quiet_lobby._dh_quiet_lobby = True
-    _dh_push_server_items_quiet_lobby._dh_inner = _dh_orig_push_server_items
-    push_server_items = _dh_push_server_items_quiet_lobby
 
 log('local-art-installed', version='m119')
 
@@ -65075,7 +65048,7 @@ class _DH_SecuritySuite(object):
                     vel = dist / dt
                     MAX_ALLOWED_VEL = 13.0  # Max sprint is ~10.5 m/s
 
-                    if vel > MAX_ALLOWED_VEL:
+                    if vel > MAX_ALLOWED_VEL and (dist < 60.0 or self.cheat_speed_enabled):
                         # VIOLATION DETECTED!
                         self.show_toast("[ANTI-CHEAT ALERT] Abnormal Velocity: %.1f m/s! Suppressed!" % vel, 0xff2222)
                         log('local-anticheat-violation', vel=vel, threshold=MAX_ALLOWED_VEL)
@@ -65349,4 +65322,263 @@ try:
     call_later(1.0, _dh_lobby_scene_watchdog)
 except Exception:
     log_error('local-lobby-scene-safeguard-error')
+
+
+
+# ---------------------------------------------------------------------
+# Post-Battle Lobby Party & Teammate 3D Model Restoration
+# ---------------------------------------------------------------------
+_dh_party_restore = globals().get('_dh_party_restore') or {
+    'leaving': False,
+    'pending_enter': None,
+    'last_enter': None,
+    'last_enter_at': 0.0,
+}
+
+
+def _dh_ui_main_models():
+    """Return all 3D character models currently managed by UIMain (self + teammates)."""
+    kept = []
+    try:
+        import Globals
+        main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
+        if main_ui is None:
+            return kept
+        models_dict = getattr(main_ui, 'models', None)
+        if isinstance(models_dict, dict):
+            for entry in models_dict.values():
+                if isinstance(entry, dict):
+                    m = entry.get('model')
+                    if m is not None:
+                        kept.append(m)
+                elif entry is not None:
+                    kept.append(entry)
+    except Exception:
+        pass
+    return kept
+
+
+def _dh_safe_clear_stray_characters(player=None):
+    """Same as clear_stray_characters, but keeps all teammate 3D models in UIMain.models
+    so returning from a match in a party never destroys the teammate's lobby character."""
+    try:
+        import BigWorld
+        player = player or BigWorld.player()
+        hall = getattr(player, 'hallScene', None)
+        if not isinstance(hall, LocalHallScene):
+            return 0
+        keep = ([hall.__dict__.get('model')] +
+                [entry[0] for entry in (hall.__dict__.get('_rl_model_cache') or {}).values()] +
+                _dh_ui_main_models())
+        stray = []
+        for model, name in scene_models(hall._native_scene):
+            if 'dataosha' not in name or any(model is kept for kept in keep if kept is not None):
+                continue
+            if name.endswith(CHARACTER_MODEL_ENDINGS) or at_spot(model, SELECT_SCREEN_SPOT):
+                stray.append(model)
+        kept = game_preloaded_models()
+        for model in stray:
+            if any(model is other for other in kept):
+                try:
+                    model.visible = False
+                except Exception:
+                    pass
+            else:
+                destroy_model(model)
+        if stray:
+            log('local-lobby-stray-characters-cleared', count=len(stray))
+        return len(stray)
+    except Exception:
+        log_error('local-lobby-safe-stray-clear-error')
+        return 0
+
+
+globals()['clear_stray_characters'] = _dh_safe_clear_stray_characters
+
+
+def _dh_apply_party_enter_when_ready(tries=0):
+    """Apply deferred rlParty('enter', ...) once UIMain and self model are ready in the lobby."""
+    try:
+        import BigWorld, Globals
+        player = BigWorld.player()
+        main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
+        hall = getattr(player, 'hallScene', None) if player is not None else None
+        if (player is None or main_ui is None or hall is None or not _lobby.get('entered')
+                or not getattr(main_ui, 'models', None)):
+            if tries < 40:
+                call_later(0.35, _dh_apply_party_enter_when_ready, tries + 1)
+            return
+        args = _dh_party_restore.get('pending_enter') or _dh_party_restore.get('last_enter')
+        if not args or len(args) < 4:
+            return
+        _dh_party_restore['pending_enter'] = None
+        team_type, leader, size, cards = args[:4]
+        card_list = [c for c in (cards or []) if isinstance(c, dict)]
+        if len(card_list) <= 1:
+            return
+        models_dict = getattr(main_ui, 'models', None) or {}
+        all_present = all(int(c.get('gid', 0) or 0) in models_dict for c in card_list if c.get('gid'))
+        if all_present and len(_team_gids(player)) >= len(card_list):
+            try:
+                refresh = getattr(main_ui, 'onFormTeam', None)
+                if callable(refresh):
+                    refresh(False)
+            except Exception:
+                pass
+            return
+        # Ensure iHallTeam.onEnterHallTeam sees teammates as newly entering so UIMain spawns their 3D models
+        try:
+            own_gid = int(local_player.gid)
+            td = getattr(player, 'hallTeamData', None)
+            if isinstance(td, dict) and len(td) > 1 and not all_present:
+                for k in list(td.keys()):
+                    if int(k) != own_gid:
+                        td.pop(k, None)
+        except Exception:
+            pass
+        map_group = args[4] if len(args) > 4 else getattr(player, 'hallTeamMapGroup', 0)
+        members = [_party_member(player, card) for card in card_list]
+        enter_hall_team(player, team_type, leader, size, members, map_group,
+                        args[5] if len(args) > 5 else False, args[6] if len(args) > 6 else 1)
+        try:
+            refresh = getattr(main_ui, 'onFormTeam', None)
+            if callable(refresh):
+                refresh(False)
+            ref_mem = getattr(main_ui, '_refresh_members', None)
+            if callable(ref_mem):
+                ref_mem()
+        except Exception:
+            pass
+        party_voice(player)
+        log('local-lobby-party-restored-models', count=len(members), models=len(getattr(main_ui, 'models', None) or {}))
+    except Exception:
+        log_error('local-lobby-party-restore-error')
+
+
+_dh_orig_local_party = (LOCAL_CALLBACKS.get('rlParty') if isinstance(globals().get('LOCAL_CALLBACKS'), dict) else None) \
+    or globals().get('_local_party')
+while getattr(_dh_orig_local_party, '_dh_party_wrap', None) is not None:
+    _dh_orig_local_party = _dh_orig_local_party._dh_party_wrap
+
+# The team-leave fix's cleanup (rlParty 'left' and the leaveHallTeam RPC) resets to a solo team: let it through
+_dh_orig_leave_clean = globals().get('_dh_party_leave_clean')
+while getattr(_dh_orig_leave_clean, '_dh_leave_inner', None) is not None:
+    _dh_orig_leave_clean = _dh_orig_leave_clean._dh_leave_inner
+if callable(_dh_orig_leave_clean):
+    def _dh_party_leave_clean_flagged(player):
+        _dh_party_restore['leaving'] = True
+        _dh_party_restore['pending_enter'] = None
+        _dh_party_restore['last_enter'] = None
+        try:
+            return _dh_orig_leave_clean(player)
+        finally:
+            _dh_party_restore['leaving'] = False
+    _dh_party_leave_clean_flagged._dh_leave_inner = _dh_orig_leave_clean
+    globals()['_dh_party_leave_clean'] = _dh_party_leave_clean_flagged
+
+
+def _dh_wrapped_local_party(player, kind, *args):
+    kind_s = str(kind)
+    if kind_s == 'left':
+        _dh_party_restore['leaving'] = True
+        _dh_party_restore['pending_enter'] = None
+        _dh_party_restore['last_enter'] = None
+        try:
+            return _dh_orig_local_party(player, kind, *args)
+        finally:
+            _dh_party_restore['leaving'] = False
+    if kind_s == 'enter' and len(args) >= 4:
+        cards = args[3]
+        if isinstance(cards, (list, tuple)) and len(cards) > 1:
+            import time as _t
+            _dh_party_restore['last_enter'] = args
+            _dh_party_restore['last_enter_at'] = _t.time()
+            import Globals
+            main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
+            if main_ui is None or not _lobby.get('entered') or not getattr(main_ui, 'models', None):
+                _dh_party_restore['pending_enter'] = args
+                log('local-party-enter-deferred', count=len(cards))
+                call_later(0.5, _dh_apply_party_enter_when_ready, 0)
+                return
+            # If UIMain is already open, ensure any missing 3D teammate model is spawned
+            models_dict = getattr(main_ui, 'models', None) or {}
+            all_present = all(int(c.get('gid', 0) or 0) in models_dict for c in cards if isinstance(c, dict) and c.get('gid'))
+            if not all_present:
+                try:
+                    own_gid = int(local_player.gid)
+                    td = getattr(player, 'hallTeamData', None)
+                    if isinstance(td, dict) and len(td) > 1:
+                        for k in list(td.keys()):
+                            if int(k) != own_gid:
+                                td.pop(k, None)
+                except Exception:
+                    pass
+    elif kind_s == 'member' and args and isinstance(args[0], dict):
+        try:
+            gid = int(args[0].get('gid', 0) or 0)
+            if gid and gid != int(local_player.gid) and gid not in _team_gids(player):
+                team_call(player, 'addHallTeamMember', _party_member(player, args[0]))
+                ask_party_state(player)
+        except Exception:
+            pass
+    res = _dh_orig_local_party(player, kind, *args)
+    if kind_s == 'enter' and len(args) >= 4 and isinstance(args[3], (list, tuple)) and len(args[3]) > 1:
+        call_later(0.4, _dh_apply_party_enter_when_ready, 0)
+    return res
+
+
+_dh_wrapped_local_party._dh_party_wrap = _dh_orig_local_party
+if 'LOCAL_CALLBACKS' in globals() and isinstance(LOCAL_CALLBACKS, dict):
+    LOCAL_CALLBACKS['rlParty'] = _dh_wrapped_local_party
+
+
+_dh_base_sync_local_team = globals().get('sync_local_team')
+while getattr(_dh_base_sync_local_team, '_dh_party_guard_inner', None) is not None:
+    _dh_base_sync_local_team = _dh_base_sync_local_team._dh_party_guard_inner
+
+
+def _dh_guarded_sync_local_team(lobby_player, *args, **kwargs):
+    """Do not overwrite an active multi-player party in hallTeamData with a 1-player solo team."""
+    try:
+        if not _dh_party_restore.get('leaving') and len(_team_gids(lobby_player)) > 1:
+            own_gid = int(local_player.gid)
+            td = getattr(lobby_player, 'hallTeamData', None)
+            if isinstance(td, dict) and own_gid in td:
+                try:
+                    td[own_gid]['nationalFlag'] = own_flag() or 'UN'
+                except Exception:
+                    pass
+            log('local-lobby-sync-team-preserved-party', members=len(_team_gids(lobby_player)))
+            call_later(0.3, _dh_apply_party_enter_when_ready, 0)
+            return
+    except Exception:
+        pass
+    return _dh_base_sync_local_team(lobby_player, *args, **kwargs)
+
+
+_dh_guarded_sync_local_team._dh_party_guard_inner = _dh_base_sync_local_team
+globals()['sync_local_team'] = _dh_guarded_sync_local_team
+
+
+_dh_orig_main_ready = globals().get('_dh_main_ready')
+while getattr(_dh_orig_main_ready, '_dh_party_ready_inner', None) is not None:
+    _dh_orig_main_ready = _dh_orig_main_ready._dh_party_ready_inner
+
+
+def _dh_party_main_ready(*args, **kwargs):
+    res = _dh_orig_main_ready(*args, **kwargs) if callable(_dh_orig_main_ready) else None
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        if player is not None:
+            call_later(0.2, _dh_apply_party_enter_when_ready, 0)
+            call_later(0.5, ask_party_state, player)
+            call_later(2.0, ask_party_state, player)
+    except Exception:
+        pass
+    return res
+
+
+_dh_party_main_ready._dh_party_ready_inner = _dh_orig_main_ready
+globals()['_dh_main_ready'] = _dh_party_main_ready
 

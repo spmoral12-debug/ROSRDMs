@@ -2999,16 +2999,19 @@ def _dh_scene_brand_pass():
     scene = cc.Director.getInstance().getRunningScene()
     if scene is None:
         return
-    # In lobby or battle: DO NOT show 2D wallpaper (leaves 3D character and lobby room visible!)
+
+    # In lobby or in battle: remove wallpaper so 3D lobby, room, and character are clean
     if _dh_in_lobby() or _dh_in_battle():
         try:
             bg = scene.getChildByName('ros_redemption_bg')
             if bg is not None:
-                bg.setVisible(False)
-                bg.setPosition(-99999.0, -99999.0)
+                bg.removeFromParent()
         except Exception:
             pass
         return
+
+    # Strictly on Login / Play screen:
+    # 1. Attach ROS Redemption HD Wallpaper (with the epic 3D winged logo) BEHIND UI (-999)
     try:
         bg_path = 'dh_brand/dh_bg1.jpg'
         win = cc.Director.getInstance().getWinSize()
@@ -3024,10 +3027,13 @@ def _dh_scene_brand_pass():
                     bg.setScaleY(float(win.height) / float(sz.height))
                 scene.addChild(bg, -999)
         else:
-            bg.setVisible(True)
-            bg.setPosition(win.width / 2.0, win.height / 2.0)
+            try:
+                bg.setLocalZOrder(-999)
+            except Exception:
+                pass
     except Exception:
         pass
+
     # --- ROS Redemption: hide street squad, QR code, Facebook, animated layers by node name
     _ALWAYS_HIDE = ('swing', 'layer_swing', 'panel_di', 'panel_che',
                     'erweima', 'qrcode', 'facebook', 'icon_facebook',
@@ -4151,13 +4157,32 @@ def _dh_bind_top_tabs(ui):
             continue
         target = dest.get(name)
         if target is None:
-            continue
+            if name.lower() in ('data', 'leaderboard', 'rank') or 'data' in name.lower():
+                target = 612
+            else:
+                continue
+
+        try:
+            if not node.isVisible():
+                node.setVisible(True)
+                parent = node.getParent()
+                layout = getattr(parent, 'forceDoLayout', None)
+                if callable(layout):
+                    layout()
+        except Exception:
+            pass
 
         def on_touch(sender, event, _target=target):
             if int(event) == 2:          # ccui TOUCH_EVENT_ENDED
                 try:
                     if _target in _DH_WEB_JUMPS:
                         _dh_open_competition(cu)
+                    elif _target == 612:
+                        try:
+                            import Globals
+                            Globals.uiMgr.enter_ui('UIRankList')
+                        except Exception:
+                            cu.doUIJump(612)
                     else:
                         cu.doUIJump(_target)
                 except Exception:
@@ -4203,10 +4228,24 @@ except Exception:
 # found nothing to bind.  Run them again each time UIMain opens (lobby entry, back from a battle).
 def _dh_main_ready():
     try:
+        _dh_install_prop_table_hooks()
+        _dh_ensure_synthetic_props()
+    except Exception:
+        pass
+    try:
         log('local-top-tabs', welfare=_dh_install_welfare_click(), entrance=_dh_install_entrance_click(),
             unblocked=_dh_unblock_top_tabs(), at='UIMain')
     except Exception:
         log_error('local-top-tabs-error', at='UIMain')
+    try:
+        bw = globals().get('BigWorld') or __import__('BigWorld')
+        player = bw.player()
+        if player is not None and hasattr(player, 'onAddDtsAppearanceItem'):
+            _push = globals().get('_push_one_item')
+            if callable(_push):
+                _push(player, 121363, 1, 0, package='appearance')
+    except Exception:
+        pass
 
 
 def _dh_relabel_manual():
@@ -4330,13 +4369,83 @@ except Exception:
     log_error('local-crash-guards-start-error')
 
 
+_dh_last_pack_buy = globals().get('_dh_last_pack_buy') or {
+    'active': False,
+    'goodID': 0,
+    'buyNum': 1,
+    'cashCoupons': [],
+    'MallLogStr': 'MallGiftBag',
+    'rpcName': 'buyMallGood',
+    'currencyID': 2,
+    'price': 0,
+    'confirmBtnTxt': 'Buy Again',
+    'gotoCB': None,
+    'seq': 0,
+    'buying_again_at': 0.0,
+    'last_conf_click_at': 0.0,
+    'last_opened': []
+}
+
+
+def _dh_is_buying_again():
+    try:
+        import time as _t
+        return (_t.time() - float(_dh_last_pack_buy.get('buying_again_at', 0.0) or 0.0)) < 2.5
+    except Exception:
+        return False
+
+
+def _dh_buy_again_watchdog():
+    """If a 'Buy Again' purchase failed (e.g. out of diamonds) and UIItemDisplay did not re-open, restore Store UI."""
+    try:
+        import Globals
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        disp = getattr(ui_mgr, 'UIItemDisplay', None) if ui_mgr else None
+        if disp is not None and getattr(disp, 'is_enter', False):
+            return
+        _dh_last_pack_buy['buying_again_at'] = 0.0
+        _dh_last_pack_buy['active'] = False
+        _dh_restore_mall_and_supply_ui()
+    except Exception:
+        pass
+
+
+def _dh_trigger_pack_buy_again():
+    """Re-executes the active Mall Pack / GiftBag purchase when 'Buy Again' is clicked on UIItemDisplay."""
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        if player is None:
+            return False
+        good_id = int(_dh_last_pack_buy.get('goodID') or 0)
+        if good_id <= 0:
+            return False
+        buy_num = max(1, int(_dh_last_pack_buy.get('buyNum') or 1))
+        coupons = list(_dh_last_pack_buy.get('cashCoupons') or [])
+        log_str = str(_dh_last_pack_buy.get('MallLogStr') or 'MallGiftBag')
+        rpc_name = str(_dh_last_pack_buy.get('rpcName') or 'buyMallGood')
+        base_obj = getattr(player, 'base', None)
+        fn = getattr(base_obj, rpc_name, None) if base_obj is not None else None
+        if not callable(fn):
+            fn = getattr(base_obj, 'buyMallGood', None) if base_obj is not None else None
+        if callable(fn):
+            fn(good_id, buy_num, coupons, log_str)
+            log('local-pack-buy-again', good_id=good_id, count=buy_num, rpc=rpc_name)
+            return True
+    except Exception:
+        log_error('local-pack-buy-again-error')
+    return False
+
+
 def _dh_install_main_watch():
     import Globals
     mgr = getattr(Globals, 'uiMgr', None)
     current = getattr(mgr, 'enter_ui', None) if mgr is not None else None
     if current is None:
         return False
-    inner = getattr(current, '_dh_inner', current)
+    inner = current
+    while getattr(inner, '_dh_inner', None) is not None or getattr(inner, '_redemption_inner', None) is not None:
+        inner = getattr(inner, '_dh_inner', None) or getattr(inner, '_redemption_inner', None)
 
     def enter_ui(ui_name, *args, **kwargs):
         if ui_name == 'UIDeathKillerDisplay':
@@ -4344,9 +4453,133 @@ def _dh_install_main_watch():
                 _dh_install_death_killer_guard()
             except Exception:
                 log_error('local-death-killer-install-error')
+        elif ui_name == 'UIGiftBagConfirm':
+            try:
+                if args and isinstance(args[0], dict):
+                    gb_args = args[0]
+                    if gb_args.get('goodID') is not None:
+                        _dh_last_pack_buy['goodID'] = int(gb_args.get('goodID') or 0)
+                    if gb_args.get('currencyID') is not None:
+                        _dh_last_pack_buy['currencyID'] = int(gb_args.get('currencyID') or 2)
+                    if gb_args.get('price') is not None:
+                        _dh_last_pack_buy['price'] = int(gb_args.get('price') or 0)
+                    if gb_args.get('MallLogStr'):
+                        _dh_last_pack_buy['MallLogStr'] = str(gb_args.get('MallLogStr'))
+                    _dh_last_pack_buy['active'] = True
+                    _dh_last_pack_buy['buying_again_at'] = 0.0
+            except Exception:
+                pass
+        elif ui_name == 'UIItemDisplay':
+            try:
+                if args and isinstance(args[0], dict):
+                    disp_args = args[0]
+                    _dh_last_pack_buy['buying_again_at'] = 0.0
+                    # Ensure isBGShow and isConfirmBtnShow are True so the UI and buttons are always rendered
+                    disp_args['isBGShow'] = True
+                    disp_args['isConfirmBtnShow'] = True
+                    disp_args['onlyItem'] = False
+
+                    if disp_args.get('confirmBtnTxt'):
+                        _dh_last_pack_buy['confirmBtnTxt'] = disp_args.get('confirmBtnTxt')
+                    if disp_args.get('gotoCB') or disp_args.get('gotoBtnCallback'):
+                        _dh_last_pack_buy['gotoCB'] = disp_args.get('gotoCB') or disp_args.get('gotoBtnCallback')
+
+                    if _dh_last_pack_buy.get('active'):
+                        disp_args['onlyShowReturnBtn'] = False
+                        disp_args['confirmBtnTxt'] = disp_args.get('confirmBtnTxt') or _dh_last_pack_buy.get('confirmBtnTxt') or 'Buy Again'
+                        if not disp_args.get('currencyID') and _dh_last_pack_buy.get('currencyID'):
+                            disp_args['currencyID'] = _dh_last_pack_buy.get('currencyID')
+                        if not disp_args.get('gotoCB') and _dh_last_pack_buy.get('gotoCB'):
+                            disp_args['gotoCB'] = _dh_last_pack_buy.get('gotoCB')
+
+                    raw_ret = disp_args.get('returnBtnCb')
+                    def _dh_safe_leave_ret(*_a, **_kw):
+                        _dh_last_pack_buy['active'] = False
+                        _dh_last_pack_buy['buying_again_at'] = 0.0
+                        try:
+                            if callable(raw_ret):
+                                raw_ret(*_a, **_kw)
+                        except Exception:
+                            pass
+                        try:
+                            import Globals
+                            Globals.uiMgr.leave_ui('UIItemDisplay')
+                        except Exception:
+                            pass
+                        _dh_restore_mall_and_supply_ui()
+
+                    raw_conf = disp_args.get('confirmBtnCb')
+                    def _dh_safe_leave_conf(*_a, **_kw):
+                        import time as _t
+                        now = _t.time()
+                        if (now - float(_dh_last_pack_buy.get('last_conf_click_at', 0.0) or 0.0)) < 0.35:
+                            return
+                        _dh_last_pack_buy['last_conf_click_at'] = now
+
+                        if _dh_last_pack_buy.get('active') and int(_dh_last_pack_buy.get('goodID') or 0) > 0:
+                            _dh_last_pack_buy['buying_again_at'] = now
+                            seq_before = int(_dh_last_pack_buy.get('seq') or 0)
+                            try:
+                                import Globals
+                                Globals.uiMgr.leave_ui('UIItemDisplay')
+                            except Exception:
+                                pass
+                            try:
+                                if callable(raw_conf) and raw_conf is not raw_ret:
+                                    raw_conf(*_a, **_kw)
+                            except Exception:
+                                pass
+                            if int(_dh_last_pack_buy.get('seq') or 0) == seq_before:
+                                _dh_trigger_pack_buy_again()
+                            call_later(1.2, _dh_buy_again_watchdog)
+                            return
+
+                        # Non-pack confirm button (e.g. Supply Box 'Buy Again' or normal 'Confirm')
+                        _dh_last_pack_buy['buying_again_at'] = now
+                        try:
+                            if callable(raw_conf):
+                                raw_conf(*_a, **_kw)
+                        except Exception:
+                            pass
+                        try:
+                            import Globals
+                            Globals.uiMgr.leave_ui('UIItemDisplay')
+                        except Exception:
+                            pass
+                        call_later(0.8, _dh_buy_again_watchdog)
+
+                    disp_args['returnBtnCb'] = _dh_safe_leave_ret
+                    disp_args['confirmBtnCb'] = _dh_safe_leave_conf
+
+                    raw_items = disp_args.get('itemIDs')
+                    if isinstance(raw_items, list):
+                        safe_items = []
+                        for entry in raw_items:
+                            iid = entry[0] if isinstance(entry, (list, tuple)) and entry else entry
+                            cnt = entry[1] if isinstance(entry, (list, tuple)) and len(entry) > 1 else 1
+                            try:
+                                iid = int(iid)
+                            except Exception:
+                                iid = 0
+                            if iid == 0:
+                                try:
+                                    import BigWorld
+                                    repl = getattr(BigWorld, '_dh_last_cultivate_target', 142008) or 142008
+                                except Exception:
+                                    repl = 142008
+                                safe_items.append((repl, cnt) if isinstance(entry, (list, tuple)) else repl)
+                            else:
+                                safe_items.append(entry)
+                        disp_args['itemIDs'] = safe_items
+            except Exception:
+                pass
         result = inner(ui_name, *args, **kwargs)
         try:
-            if ui_name == 'UIMain':
+            if ui_name == 'UIItemDisplay':
+                call_later(0.1, _dh_fix_item_display_ui)
+                call_later(0.5, _dh_fix_item_display_ui)
+                call_later(1.5, _dh_fix_item_display_ui)
+            elif ui_name == 'UIMain':
                 try:
                     _c = _dh_cc()
                     if _c:
@@ -4370,7 +4603,844 @@ def _dh_install_main_watch():
         return result
     enter_ui._dh_inner = inner
     mgr.enter_ui = enter_ui
+
+    leave_current = getattr(mgr, 'leave_ui', None)
+    if leave_current is not None:
+        leave_inner = getattr(leave_current, '_dh_inner', leave_current)
+        def leave_ui(ui_name, *args, **kwargs):
+            if ui_name == 'UIItemDisplay':
+                try:
+                    cc = _dh_cc()
+                    if cc:
+                        sc = cc.Director.getInstance().getRunningScene()
+                        if sc:
+                            b = sc.getChildByName('dh_item_disp_fail_safe')
+                            if b is not None:
+                                sc.removeChild(b)
+                except Exception:
+                    pass
+                if not _dh_is_buying_again():
+                    _dh_last_pack_buy['active'] = False
+                    call_later(0.05, _dh_restore_mall_and_supply_ui)
+                    call_later(0.2, _dh_restore_mall_and_supply_ui)
+                    call_later(0.5, _dh_restore_mall_and_supply_ui)
+            return leave_inner(ui_name, *args, **kwargs)
+        leave_ui._dh_inner = leave_inner
+        mgr.leave_ui = leave_ui
     return True
+
+
+def _dh_restore_mall_and_supply_ui():
+    """Restores goods panels, subtabs, and visibility for Mall, Supply, and Manual when UIItemDisplay closes."""
+    try:
+        import Globals
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        if not ui_mgr:
+            return
+
+        # 1. Dismiss any lingering loading or confirmation dialogs that block touches
+        for modal_name in ('UIPayLoading', 'UIGiftBagConfirm'):
+            try:
+                modal = getattr(ui_mgr, modal_name, None)
+                if modal is not None and getattr(modal, 'is_enter', False):
+                    ui_mgr.leave_ui(modal_name)
+            except Exception:
+                pass
+        try:
+            import pay_utils
+            pay_utils.closePay()
+        except Exception:
+            pass
+
+        target_screens = [
+            'UIMallController', 'UIMallCloth', 'UIMall',
+            'UISupplyController', 'UISupplyPackage', 'UIAdvanceSupplyPackage',
+            'UIMonthlySupplyPackage', 'UIMainActionAndEmoji',
+            'UIDtsAppearance', 'UIDtsAppearanceVehicleCultivate2', 'UIWorkshop',
+            'UIBraveBook2Tab', 'UIBraveBook2Award', 'UIBraveBook2Task',
+            'UIBraveBook2Shop', 'UIBraveBook2'
+        ]
+        for scr_name in target_screens:
+            scr = getattr(ui_mgr, scr_name, None)
+            if scr is not None and getattr(scr, 'is_enter', False):
+                try:
+                    if hasattr(scr, 'setVisible'):
+                        scr.setVisible(True)
+                    if hasattr(scr, 'setTouchEnabled'):
+                        scr.setTouchEnabled(True)
+                    if hasattr(scr, 'leaveFullScreen') and callable(scr.leaveFullScreen):
+                        scr.leaveFullScreen()
+                    if hasattr(scr, 'refreshGeneralDisplayPanel') and callable(scr.refreshGeneralDisplayPanel):
+                        scr.refreshGeneralDisplayPanel()
+                    if hasattr(scr, 'refresh') and callable(scr.refresh):
+                        scr.refresh()
+                    if hasattr(scr, 'refreshMall') and callable(scr.refreshMall):
+                        scr.refreshMall()
+                    if hasattr(scr, 'refreshView') and callable(scr.refreshView):
+                        scr.refreshView()
+                    if hasattr(scr, '_UpdateSeasonView') and callable(scr._UpdateSeasonView):
+                        scr._UpdateSeasonView()
+                    if hasattr(scr, 'fillGoods') and callable(scr.fillGoods):
+                        try:
+                            import BigWorld
+                            p = BigWorld.player()
+                            if p:
+                                g = getattr(p, 'recordMallGoods', None)
+                                if isinstance(g, dict) and g:
+                                    scr.fillGoods(g)
+                        except Exception:
+                            pass
+                    root = getattr(scr, 'panel', None) or getattr(scr, 'widget', None)
+                    if root is not None:
+                        if hasattr(root, 'setVisible'):
+                            root.setVisible(True)
+                        if hasattr(root, 'setTouchEnabled'):
+                            root.setTouchEnabled(True)
+                        for path, node in walk_ui_nodes(scr, limit=500):
+                            p_low = path.lower()
+                            if any(k in p_low for k in ('right', 'goods', 'cloth', 'item_list', 'listview', 'panel_1', 'panel_di', 'panel_content', 'tab', 'btn', 'button', 'back', 'return', 'award')):
+                                try:
+                                    node.setVisible(True)
+                                    if hasattr(node, 'setTouchEnabled'):
+                                        node.setTouchEnabled(True)
+                                except Exception:
+                                    pass
+                except Exception:
+                    pass
+        call_later(0.1, _dh_relabel_manual)
+    except Exception:
+        pass
+
+
+def _dh_fix_item_display_ui():
+    """Ensure UIItemDisplay's BACK, Return and Confirm ('Buy Again') buttons are active and responsive."""
+    try:
+        import Globals
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        if not ui_mgr:
+            return
+        disp = getattr(ui_mgr, 'UIItemDisplay', None)
+        if disp is not None and getattr(disp, 'is_enter', False):
+            # 1. Ensure result panel and dlg root are visible
+            for p in ('dlg', 'dlg/result_panel', 'dlg/result_panel/anchor-upper-left', 'dlg/result_panel/anchor-bottom-right', 'dlg/result_panel/anchor-bottom-left'):
+                try:
+                    w = disp.get_widget_by_path(p)
+                    if w is not None:
+                        w.setVisible(True)
+                except Exception:
+                    pass
+
+            def _on_leave(sender, event):
+                if int(event) == 2:
+                    _dh_last_pack_buy['active'] = False
+                    _dh_last_pack_buy['buying_again_at'] = 0.0
+                    try:
+                        if hasattr(disp, 'doReturnBtnClick') and callable(disp.doReturnBtnClick):
+                            disp.doReturnBtnClick()
+                        elif callable(getattr(disp, 'returnBtnCb', None)):
+                            disp.returnBtnCb()
+                            ui_mgr.leave_ui('UIItemDisplay')
+                        else:
+                            ui_mgr.leave_ui('UIItemDisplay')
+                    except Exception:
+                        try:
+                            ui_mgr.leave_ui('UIItemDisplay')
+                        except Exception:
+                            pass
+                    call_later(0.1, _dh_restore_mall_and_supply_ui)
+
+            def _on_confirm(sender, event):
+                if int(event) == 2:
+                    try:
+                        cb = getattr(disp, 'confirmBtnCb', None)
+                        if callable(cb):
+                            cb()
+                        elif _dh_last_pack_buy.get('active') and int(_dh_last_pack_buy.get('goodID') or 0) > 0:
+                            import time as _t
+                            _dh_last_pack_buy['buying_again_at'] = _t.time()
+                            ui_mgr.leave_ui('UIItemDisplay')
+                            _dh_trigger_pack_buy_again()
+                            call_later(1.2, _dh_buy_again_watchdog)
+                        else:
+                            ui_mgr.leave_ui('UIItemDisplay')
+                            call_later(0.1, _dh_restore_mall_and_supply_ui)
+                    except Exception:
+                        try:
+                            ui_mgr.leave_ui('UIItemDisplay')
+                        except Exception:
+                            pass
+                        if not _dh_is_buying_again():
+                            call_later(0.1, _dh_restore_mall_and_supply_ui)
+
+            # 2. Wire returnBtn directly
+            ret_btn = getattr(disp, 'returnBtn', None) or disp.get_widget_by_path('dlg/result_panel/anchor-upper-left/returnBtn')
+            if ret_btn is not None:
+                try:
+                    ret_btn.setVisible(True)
+                    ret_btn.setTouchEnabled(True)
+                    ret_btn.addTouchEventListener(_on_leave)
+                except Exception:
+                    pass
+
+            # 3. Wire confirmBtn directly
+            conf_btn = getattr(disp, 'confirmBtn', None) or disp.get_widget_by_path('dlg/result_panel/anchor-bottom-right/confirmBtn')
+            if conf_btn is not None:
+                try:
+                    conf_btn.setVisible(True)
+                    conf_btn.setTouchEnabled(True)
+                    conf_btn.addTouchEventListener(_on_confirm)
+                except Exception:
+                    pass
+            if _dh_last_pack_buy.get('active'):
+                try:
+                    ct = getattr(disp, 'confirmBtnTxt', None)
+                    if ct is not None and hasattr(ct, 'setString'):
+                        ct.setString(str(_dh_last_pack_buy.get('confirmBtnTxt') or 'Buy Again'))
+                except Exception:
+                    pass
+
+            # 4. Suppress duplicate "To Lobby" label
+            try:
+                txt = getattr(disp, 'returnBtnTxt', None)
+                if txt is not None:
+                    txt.setVisible(False)
+            except Exception:
+                pass
+
+            # 5. Walk nodes to ensure all back/confirm/leave widgets are armed
+            for path, node in walk_ui_nodes(disp, limit=400):
+                p_low = path.lower()
+                if 'return_btn_txt' in p_low:
+                    try:
+                        node.setVisible(False)
+                    except Exception:
+                        pass
+                    continue
+                if any(k in p_low for k in ('btn_back', 'btn_return', 'btnback', 'button_back', 'btn_close', 'returnbtn')):
+                    if any(p_low.endswith(x) for x in ('_txt', '/text', '/txt', '_label')):
+                        continue
+                    try:
+                        node.setVisible(True)
+                        node.setTouchEnabled(True)
+                        node.addTouchEventListener(_on_leave)
+                    except Exception:
+                        pass
+                elif any(k in p_low for k in ('btn_confirm', 'btnconfirm', 'buyagain')):
+                    if any(p_low.endswith(x) for x in ('_txt', '/text', '/txt', '_label')):
+                        continue
+                    try:
+                        node.setVisible(True)
+                        node.setTouchEnabled(True)
+                        node.addTouchEventListener(_on_confirm)
+                    except Exception:
+                        pass
+
+            # 6. Floating fail-safe BACK button on running scene
+            try:
+                cc = _dh_cc()
+                if cc:
+                    sc = cc.Director.getInstance().getRunningScene()
+                    if sc and sc.getChildByName('dh_item_disp_fail_safe') is None:
+                        win = cc.Director.getInstance().getWinSize()
+                        lbl = cc.LabelTTF.create("< BACK", "Arial", 22)
+                        lbl.setColor(cc.c3b(255, 255, 255))
+                        lbl.setName('dh_item_disp_fail_safe')
+                        lbl.setPosition(65.0, win.height - 40.0)
+                        lbl.setTouchEnabled(True)
+                        lbl.addTouchEventListener(_on_leave)
+                        sc.addChild(lbl, 99999)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
+    """Handle Workshop Tune: base.appearanceCultivateCompound(srcID, targetID, flag).
+    Deducts 1x src item and 1000 Gold, grants 1x target item, and calls onAppearanceCultivateCompound."""
+    try:
+        src_id = kwargs.get('src_id') if kwargs.get('src_id') is not None else (args[0] if len(args) > 0 else 0)
+        target_id = kwargs.get('target_id') if kwargs.get('target_id') is not None else (args[1] if len(args) > 1 else 0)
+        flag = kwargs.get('flag') if kwargs.get('flag') is not None else (args[2] if len(args) > 2 else 0)
+        src_id = int(src_id or 0)
+        target_id = int(target_id or 0)
+    except Exception:
+        log_error('local-cultivate-parse-error', args=safe(args))
+        return None
+
+    if not target_id:
+        log('local-cultivate-no-target', src_id=src_id, target_id=target_id)
+        return None
+
+    try:
+        import BigWorld
+        BigWorld._dh_last_cultivate_target = target_id
+    except Exception:
+        pass
+
+    log('local-cultivate-start', src_id=src_id, target_id=target_id)
+
+    # 1. Deduct cost / source appearance item (1 copy)
+    if src_id:
+        try:
+            remove_appearance_copies(player, src_id, 1)
+        except Exception:
+            log_error('local-cultivate-remove-src-error', src_id=src_id)
+
+    # 2. Deduct Gold (1000 GP)
+    cost = 1000
+    try:
+        current_gp = getattr(player, 'gp', 0) or 0
+        if current_gp >= cost:
+            setattr(player, 'gp', current_gp - cost)
+            refresh_currency_ui(player, set(['gp']))
+            refresh_lobby_profile()
+    except Exception:
+        log_error('local-cultivate-gp-error')
+
+    # 3. Add target appearance item to player's package
+    try:
+        _push_one_item(player, target_id, 1, 0, package='appearance')
+    except Exception:
+        log_error('local-cultivate-push-target-error', target_id=target_id)
+
+    # 4. Notify backend server if reachable to persist in database
+    try:
+        call_pyserver('appearanceCultivateCompound', (src_id, target_id, flag), kwargs)
+    except Exception:
+        pass
+
+    # 5. Deliver callback onAppearanceCultivateCompound to player
+    cb = getattr(player, 'onAppearanceCultivateCompound', None)
+    if callable(cb):
+        try:
+            call_later(0.1, cb, target_id)
+        except Exception:
+            log_error('local-cultivate-cb-error', target_id=target_id)
+
+    # 6. Safety check: ensure UIItemDisplay BACK button is armed
+    try:
+        call_later(0.3, _dh_fix_item_display_ui)
+        call_later(1.0, _dh_fix_item_display_ui)
+        call_later(2.0, _dh_fix_item_display_ui)
+    except Exception:
+        pass
+
+    return True
+
+try:
+    RPC_HANDLERS['appearanceCultivateCompound'] = _dh_rpc_appearance_cultivate_compound
+except Exception:
+    pass
+
+
+# ==========================================================================
+# UNIVERSAL STORE PACK PITY (100x / N-x GUARANTEE) & BUY-AGAIN CONTINUATION
+# ==========================================================================
+
+_dh_pity_cache = {
+    'loaded': False,
+    'state': {},
+    'supp_gl': None,
+    'box_rules': {},
+    'prob_parent_map': None
+}
+
+
+def _dh_pity_state_path():
+    try:
+        import os as _os
+        base_dir = _os.path.dirname(CATALOG_PATH) if 'CATALOG_PATH' in globals() and CATALOG_PATH else 'local_update/logs'
+        return _os.path.join(base_dir, 'pack_pity_state.json')
+    except Exception:
+        return 'local_update/logs/pack_pity_state.json'
+
+
+def _dh_load_pity_state():
+    if _dh_pity_cache['loaded']:
+        return _dh_pity_cache['state']
+    _dh_pity_cache['loaded'] = True
+    try:
+        import BigWorld
+        mem = getattr(BigWorld, '_dh_pack_pity_state', None)
+        if isinstance(mem, dict) and mem:
+            _dh_pity_cache['state'] = mem
+            return mem
+    except Exception:
+        pass
+    try:
+        import json as _json, os as _os
+        p = _dh_pity_state_path()
+        if _os.path.exists(p):
+            with open(p, 'r') as f:
+                data = _json.load(f)
+            if isinstance(data, dict):
+                _dh_pity_cache['state'] = data
+    except Exception:
+        pass
+    try:
+        import BigWorld
+        BigWorld._dh_pack_pity_state = _dh_pity_cache['state']
+    except Exception:
+        pass
+    return _dh_pity_cache['state']
+
+
+def _dh_save_pity_state():
+    try:
+        import BigWorld
+        BigWorld._dh_pack_pity_state = _dh_pity_cache['state']
+    except Exception:
+        pass
+    try:
+        import json as _json
+        p = _dh_pity_state_path()
+        with open(p, 'w') as f:
+            _json.dump(_dh_pity_cache['state'], f)
+    except Exception:
+        pass
+
+
+def _dh_extract_guarantee_rules(gl_obj):
+    rules = []
+    if not gl_obj:
+        return rules
+    for g in list(gl_obj):
+        try:
+            if isinstance(g, dict):
+                gtype = str(g.get('__type__') or 'PropIDsGuarantee')
+                gid = int(g.get('GUARANTEE_PROP_ID') or 0)
+                cnt = int(g.get('PROP_GET_CNT') or 99)
+                cset = [int(x) for x in (g.get('CHECK_PROP_SET') or []) if x]
+                qual = int(g.get('QUALITY_CONDITION') or 0)
+            else:
+                gtype = str(getattr(g, '__type__', None) or type(g).__name__ or 'PropIDsGuarantee')
+                gid = int(getattr(g, 'GUARANTEE_PROP_ID', 0) or 0)
+                cnt = int(getattr(g, 'PROP_GET_CNT', 99) or 99)
+                raw_cset = getattr(g, 'CHECK_PROP_SET', None) or []
+                cset = [int(x) for x in list(raw_cset) if x]
+                qual = int(getattr(g, 'QUALITY_CONDITION', 0) or 0)
+            if gid > 0:
+                if qual > 0 and 'Quality' not in gtype:
+                    gtype = 'QualityGuarantee'
+                rules.append({
+                    'type': gtype,
+                    'check_set': cset,
+                    'guarantee_id': gid,
+                    'cnt': max(1, cnt),
+                    'quality': qual
+                })
+        except Exception:
+            continue
+    return rules
+
+
+def _dh_get_supplement_gl_map(legacy):
+    if _dh_pity_cache['supp_gl'] is not None:
+        return _dh_pity_cache['supp_gl']
+    smap = {}
+    try:
+        for _sid, srow in legacy.iterSupplementData():
+            try:
+                gl = _dh_extract_guarantee_rules(getattr(srow, 'GUARANTEE_LIST', None))
+                if not gl:
+                    continue
+                for sl_entry in list(getattr(srow, 'SUPPLEMENT_LIST', None) or []):
+                    pid = int(getattr(sl_entry, 'PROP_ID', 0) or 0)
+                    if pid > 0 and pid not in smap:
+                        smap[pid] = gl
+            except Exception:
+                continue
+    except Exception:
+        pass
+    _dh_pity_cache['supp_gl'] = smap
+    return smap
+
+
+def _dh_get_prob_parent_map(legacy):
+    if _dh_pity_cache['prob_parent_map'] is not None:
+        return _dh_pity_cache['prob_parent_map']
+    pmap = {}
+    try:
+        iter_fn = getattr(legacy, 'iterHallPropShowProbabilityData', None)
+        if callable(iter_fn):
+            for k, _row in iter_fn():
+                try:
+                    pk = int(k)
+                    prow = legacy.getDtsHallPropData(pk)
+                    pl = list(getattr( getattr(prow, 'PROP_TYPE', None), 'PROP_LIST', None) or [])
+                    if pl and not hasattr(pl[0], 'PROBABILITY'):
+                        child_id = int(pl[0])
+                        pmap.setdefault(child_id, []).append(pk)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    _dh_pity_cache['prob_parent_map'] = pmap
+    return pmap
+
+
+def _dh_get_prop_list_ids(legacy, prop_id):
+    out = set()
+    try:
+        pt = getattr(legacy.getDtsHallPropData(int(prop_id)), 'PROP_TYPE', None)
+        for entry in list(getattr(pt, 'PROP_LIST', None) or []):
+            pid = getattr(entry, 'PROP_ID', None)
+            if pid is not None:
+                out.add(int(pid))
+            elif isinstance(entry, (int, long)):
+                out.add(int(entry))
+    except Exception:
+        pass
+    return out
+
+
+def _dh_get_display_model_ids(legacy, prop_id):
+    out = []
+    if not prop_id:
+        return out
+    try:
+        pt = getattr(legacy.getDtsHallPropData(int(prop_id)), 'PROP_TYPE', None)
+        for d in list(getattr(pt, 'DISPLAY_IN_MODEL', None) or []):
+            for x in list(getattr(d, 'DISPLAY_PROP_LIST', None) or []):
+                ix = int(x or 0)
+                if ix > 0 and ix not in out:
+                    out.append(ix)
+    except Exception:
+        pass
+    return out
+
+
+def _dh_get_box_guarantee_rules(box_id, parent_id, utils, legacy):
+    box_id = int(box_id)
+    parent_id = int(parent_id or 0)
+    ckey = (box_id, parent_id)
+    if ckey in _dh_pity_cache['box_rules']:
+        return _dh_pity_cache['box_rules'][ckey]
+
+    rules = []
+    try:
+        # 1. Direct GUARANTEE_LIST on box_id in DtsHallProp
+        pt = getattr(legacy.getDtsHallPropData(box_id), 'PROP_TYPE', None)
+        rules = _dh_extract_guarantee_rules(getattr(pt, 'GUARANTEE_LIST', None))
+
+        # 2. Direct GUARANTEE_LIST on box_id in Supplement table
+        supp_map = _dh_get_supplement_gl_map(legacy)
+        if not rules and box_id in supp_map:
+            rules = list(supp_map[box_id])
+
+        # 3. Neighbor (box_id + 1 or box_id - 1) in DtsHallProp or Supplement matching PROP_LIST or DISPLAY_PROP_LIST
+        if not rules:
+            box_pids = _dh_get_prop_list_ids(legacy, box_id)
+            disp_ids = set(_dh_get_display_model_ids(legacy, parent_id) + _dh_get_display_model_ids(legacy, box_id))
+            for cand in (box_id + 1, box_id - 1):
+                cand_rules = supp_map.get(cand)
+                if not cand_rules:
+                    cpt = getattr(legacy.getDtsHallPropData(cand), 'PROP_TYPE', None)
+                    cand_rules = _dh_extract_guarantee_rules(getattr(cpt, 'GUARANTEE_LIST', None))
+                if not cand_rules:
+                    continue
+                cand_pids = _dh_get_prop_list_ids(legacy, cand)
+                rule_ids = set()
+                for r in cand_rules:
+                    rule_ids.update(r.get('check_set') or [])
+                    if r.get('guarantee_id'):
+                        rule_ids.add(int(r['guarantee_id']))
+                if (box_pids and cand_pids and box_pids == cand_pids) or (disp_ids and (rule_ids & disp_ids)) or (box_pids and (rule_ids & box_pids)):
+                    rules = list(cand_rules)
+                    break
+            if not rules:
+                for cand in (box_id + 1, box_id - 1):
+                    if cand in supp_map:
+                        rules = list(supp_map[cand])
+                        break
+
+        # 4. Universal fallback synthesis from HallPropShowProbability DESC + DISPLAY_IN_MODEL + PROP_LIST
+        if not rules:
+            desc = ''
+            prob_getter = getattr(legacy, 'getHallPropShowProbabilityData', None)
+            cand_parents = [parent_id, box_id] if parent_id else [box_id]
+            for extra_p in _dh_get_prob_parent_map(legacy).get(box_id, []):
+                if extra_p not in cand_parents:
+                    cand_parents.append(extra_p)
+            if callable(prob_getter):
+                for pid_cand in cand_parents:
+                    if not pid_cand:
+                        continue
+                    try:
+                        p_row = prob_getter(int(pid_cand))
+                        if p_row is not None and getattr(p_row, 'DESC', None):
+                            desc = str(getattr(p_row, 'DESC'))
+                            break
+                    except Exception:
+                        continue
+            import re as _re
+            m = _re.findall(r'(?:draw|open)\s*[x\xd7]?\s*(\d+)\s*[x\xd7]?', desc, _re.I)
+            thresh = int(m[-1]) if m else 100
+            if thresh <= 1:
+                thresh = 100
+
+            featured = []
+            for p_cand in cand_parents:
+                for did in _dh_get_display_model_ids(legacy, p_cand):
+                    if did not in featured:
+                        featured.append(did)
+
+            pl = list(getattr(pt, 'PROP_LIST', None) or [])
+            total_w = 0
+            weighted_entries = []
+            for entry in pl:
+                try:
+                    epid = int(getattr(entry, 'PROP_ID', 0) or 0)
+                    ew = max(0, int(getattr(entry, 'PROBABILITY', 0) or 0))
+                    if epid > 0:
+                        total_w += ew
+                        weighted_entries.append((epid, ew))
+                except Exception:
+                    continue
+
+            rare_from_pool = []
+            for epid, ew in weighted_entries:
+                if (290000 <= epid < 300000) or epid in (360000, 300001, 300002, 300012):
+                    continue
+                is_curr = False
+                try:
+                    is_curr = bool(utils.isDtsHallCurrency(epid))
+                except Exception:
+                    pass
+                if is_curr:
+                    continue
+                qual = 0
+                try:
+                    qual = int(utils.getDtsHallPropQuality(epid) or 0)
+                except Exception:
+                    pass
+                if (total_w > 0 and ew * 100 <= 15 * total_w) or qual >= 4:
+                    if epid not in rare_from_pool:
+                        rare_from_pool.append(epid)
+
+            target_ids = rare_from_pool if rare_from_pool else featured
+            for tid in target_ids:
+                rules.append({
+                    'type': 'PropIDsGuarantee',
+                    'check_set': [int(tid)],
+                    'guarantee_id': int(tid),
+                    'cnt': max(1, thresh - 1),
+                    'quality': 0
+                })
+    except Exception:
+        log_error('local-pack-pity-rules-error', box_id=box_id)
+
+    _dh_pity_cache['box_rules'][ckey] = rules
+    return rules
+
+
+def _dh_open_hall_prop_with_pity(prop_id, depth=0, rand=None, parent_id=None, prefer_unpulled=None):
+    """Universal replacement for open_hall_prop with full Guarantee / Pity tracking across all Store Packs."""
+    utils, legacy = hall_prop_tables()
+    if utils is None or depth >= HALL_PROP_DEPTH:
+        return [prop_id]
+    try:
+        prop_id = int(prop_id)
+        kind = utils.getDtsHallPropType(prop_id)
+        contents = list(legacy.getDtsHallPropData(prop_id).PROP_TYPE.PROP_LIST)
+    except Exception:
+        return [prop_id]
+
+    if kind == 'GiftBag':
+        opened = []
+        for content in contents:
+            opened.extend(_dh_open_hall_prop_with_pity(int(content), depth + 1, rand, parent_id=prop_id))
+        if depth == 0:
+            _dh_save_pity_state()
+        return opened
+
+    if kind == 'RandomItem':
+        # If this is a guarantee sub-box ('打包') and the caller specified unpulled items, filter to them first
+        if prefer_unpulled:
+            filtered = []
+            for entry in contents:
+                try:
+                    if int(entry.PROP_ID) in prefer_unpulled:
+                        filtered.append(entry)
+                except Exception:
+                    continue
+            if filtered:
+                contents = filtered
+
+        rules = _dh_get_box_guarantee_rules(prop_id, parent_id, utils, legacy) if not prefer_unpulled else []
+        if not rules:
+            rolled = roll_random_item(contents, rand)
+            return _dh_open_hall_prop_with_pity(rolled, depth + 1, rand, parent_id=prop_id) if rolled is not None else []
+
+        pstate = _dh_load_pity_state()
+        bkey = str(prop_id)
+        bstate = pstate.get(bkey)
+        if not isinstance(bstate, dict) or not isinstance(bstate.get('misses'), list) or len(bstate['misses']) != len(rules):
+            bstate = {'misses': [0] * len(rules), 'total': 0}
+            pstate[bkey] = bstate
+
+        misses = bstate['misses']
+        bstate['total'] = int(bstate.get('total') or 0) + 1
+
+        # Count how many single-item rules sharing the same cnt are currently unobtained (misses > 0)
+        same_cnt_unobtained = {}
+        unpulled_items = set()
+        for idx, r in enumerate(rules):
+            cset = r.get('check_set') or []
+            if len(cset) == 1 and misses[idx] > 0:
+                rcnt = int(r.get('cnt') or 99)
+                same_cnt_unobtained[rcnt] = same_cnt_unobtained.get(rcnt, 0) + 1
+                unpulled_items.add(int(cset[0]))
+
+        triggered_idx = None
+        best_priority = None
+        for idx, r in enumerate(rules):
+            rcnt = int(r.get('cnt') or 99)
+            cset = r.get('check_set') or []
+            stagger = max(0, same_cnt_unobtained.get(rcnt, 1) - 1) if len(cset) == 1 else 0
+            if misses[idx] + stagger >= rcnt:
+                # Prefer more specific rules (smaller check_set) and higher threshold rules first
+                prio = (-len(cset) if cset else 0, rcnt, misses[idx])
+                if best_priority is None or prio > best_priority:
+                    best_priority = prio
+                    triggered_idx = idx
+
+        if triggered_idx is not None:
+            tr = rules[triggered_idx]
+            rolled = int(tr['guarantee_id'])
+            leaf_ids = _dh_open_hall_prop_with_pity(
+                rolled, depth + 1, rand, parent_id=prop_id,
+                prefer_unpulled=unpulled_items if unpulled_items else None
+            )
+            log('local-pack-pity-triggered', box_id=prop_id, parent_id=parent_id,
+                guarantee_id=rolled, leaf_ids=leaf_ids, misses=misses[triggered_idx],
+                threshold=int(tr.get('cnt') or 99) + 1, total_draws=bstate['total'])
+        else:
+            rolled = roll_random_item(contents, rand)
+            leaf_ids = _dh_open_hall_prop_with_pity(rolled, depth + 1, rand, parent_id=prop_id) if rolled is not None else []
+
+        obtained = set([int(rolled)] if rolled is not None else [])
+        for lid in leaf_ids:
+            try:
+                obtained.add(int(lid))
+            except Exception:
+                pass
+
+        for idx, r in enumerate(rules):
+            rtype = str(r.get('type') or 'PropIDsGuarantee')
+            gid = int(r.get('guarantee_id') or 0)
+            hit = False
+            if 'Quality' in rtype and int(r.get('quality') or 0) > 0:
+                min_q = int(r['quality'])
+                if gid in obtained:
+                    hit = True
+                else:
+                    for lid in leaf_ids:
+                        try:
+                            if int(utils.getDtsHallPropQuality(int(lid)) or 0) >= min_q:
+                                hit = True
+                                break
+                        except Exception:
+                            continue
+            else:
+                cset = set(int(x) for x in (r.get('check_set') or []))
+                if gid > 0:
+                    cset.add(gid)
+                if obtained & cset:
+                    hit = True
+            if hit:
+                misses[idx] = 0
+            else:
+                misses[idx] = int(misses[idx]) + 1
+
+        if depth == 0:
+            _dh_save_pity_state()
+        return leaf_ids
+
+    return [prop_id]
+
+
+open_hall_prop = _dh_open_hall_prop_with_pity
+
+
+_dh_orig_mall_buy_details = globals().get('mall_buy_details')
+
+
+def _dh_mall_buy_details_with_pack_state(player, args):
+    """Wraps mall_buy_details so Store Pack purchases record their parameters for 'Buy Again' and use Pity open_hall_prop."""
+    try:
+        goods_id = int(args[0])
+        row = mall_properties(player).getMallData(goods_id)
+    except Exception:
+        if callable(_dh_orig_mall_buy_details):
+            return _dh_orig_mall_buy_details(player, args)
+        return {}
+    discount = mall_field(row, 'CURRENT_DISCOUNT') or MALL_FULL_PRICE
+    item = mall_field(row, 'HALL_PROP_ID') or goods_id
+    try:
+        count = max(1, int(args[1]))
+    except Exception:
+        count = 1
+    coupons = list(args[2]) if len(args) > 2 and isinstance(args[2], (list, tuple)) else []
+    log_str = str(args[3]) if len(args) > 3 and args[3] else 'MallGiftBag'
+    currency_id = mall_field(row, 'CURRENCY_ID')
+    unit_price = int(mall_field(row, 'PRICE') * discount / MALL_FULL_PRICE)
+
+    opened = []
+    for _index in range(count):
+        opened.extend(_dh_open_hall_prop_with_pity(item))
+
+    try:
+        utils, _legacy = hall_prop_tables()
+        kind = utils.getDtsHallPropType(item) if utils is not None else ''
+        if kind in ('GiftBag', 'RandomItem') or log_str == 'MallGiftBag':
+            _dh_last_pack_buy['goodID'] = goods_id
+            _dh_last_pack_buy['buyNum'] = count
+            _dh_last_pack_buy['cashCoupons'] = coupons
+            _dh_last_pack_buy['MallLogStr'] = log_str
+            _dh_last_pack_buy['currencyID'] = currency_id
+            _dh_last_pack_buy['price'] = unit_price
+            _dh_last_pack_buy['active'] = True
+            _dh_last_pack_buy['seq'] = int(_dh_last_pack_buy.get('seq') or 0) + 1
+            _dh_last_pack_buy['last_opened'] = list(opened)
+    except Exception:
+        pass
+
+    return {
+        'item': item,
+        'items': opened,
+        'currency_id': currency_id,
+        'price': unit_price
+    }
+
+
+mall_buy_details = _dh_mall_buy_details_with_pack_state
+try:
+    if 'WELFARE_DETAILS' in globals() and isinstance(WELFARE_DETAILS, dict):
+        for _m_rpc in ('buyMallGood', 'buyMallGoodInAppearanceMall'):
+            if _m_rpc in WELFARE_DETAILS:
+                WELFARE_DETAILS[_m_rpc] = _dh_mall_buy_details_with_pack_state
+except Exception:
+    pass
+
+
+_dh_orig_finish_rpc = globals().get('finish_rpc')
+if callable(_dh_orig_finish_rpc) and not getattr(_dh_orig_finish_rpc, '_dh_pack_wrapped', False):
+    def _dh_finish_rpc_pack_wrapper(player, name, args, kwargs, reply, count):
+        res = _dh_orig_finish_rpc(player, name, args, kwargs, reply, count)
+        try:
+            if name in ('buyMallGood', 'buyMallGoodInAppearanceMall') and isinstance(reply, dict) and reply.get('ok'):
+                if _dh_last_pack_buy.get('active'):
+                    items = (kwargs or {}).get('items') or _dh_last_pack_buy.get('last_opened') or []
+                    curr_id = (kwargs or {}).get('currency_id') or _dh_last_pack_buy.get('currencyID') or 2
+                    if items:
+                        call_later(0.15, show_bought_items, items, curr_id)
+        except Exception:
+            pass
+        return res
+    _dh_finish_rpc_pack_wrapper._dh_pack_wrapped = True
+    finish_rpc = _dh_finish_rpc_pack_wrapper
 
 
 try:
@@ -7746,10 +8816,128 @@ while getattr(_dh_push_inner, '_dh_m119', False):          # m123: a second load
 _dh_push_skipped = globals().get('_dh_push_skipped') or set()
 
 
-def _dh_client_knows_item(item_id):
+_dh_synthetic_props = globals().get('_dh_synthetic_props') or {}
+
+
+def _dh_ensure_synthetic_props():
+    if 121363 in _dh_synthetic_props:
+        return _dh_synthetic_props
+    try:
+        import copy
+        legacy = __import__('helpers.character_scene', fromlist=['legacyProperties']).legacyProperties
+        medusa = legacy.getDtsHallPropData(121248)
+        if medusa is not None:
+            bow = copy.copy(medusa)
+            ptype = copy.copy(getattr(medusa, 'PROP_TYPE', None))
+            if ptype is not None:
+                for attr, val in (('BATTLE_GROUND_PROP_ID', 91164),
+                                  ('DISPLAY_USING_GUN_ID', 90191),
+                                  ('PROP_ITEM_ID', 300)):
+                    try:
+                        setattr(ptype, attr, val)
+                    except Exception:
+                        pass
+                bow.PROP_TYPE = ptype
+            for attr, val in (('NAME', 'Compound Bow-Pink Lady'),
+                              ('QUALITY', 5),
+                              ('ICON_PATH', 'ui/images/dts_item/package/icn_gong_package.png'),
+                              ('ICON_PATH_DISPLAY', 'ui/images/dts_item/package/icn_gong_package.png')):
+                try:
+                    setattr(bow, attr, val)
+                except Exception:
+                    pass
+
+            _dh_synthetic_props[121363] = bow
+            _dh_synthetic_props[492081] = bow
+            _dh_synthetic_props[492082] = bow
+            log('local-synthetic-props-installed', ids=sorted(_dh_synthetic_props.keys()))
+    except Exception as e:
+        log_error('local-synthetic-props-error', err=str(e))
+    return _dh_synthetic_props
+
+
+def _dh_install_prop_table_hooks():
     try:
         legacy = __import__('helpers.character_scene', fromlist=['legacyProperties']).legacyProperties
-        return legacy.getDtsHallPropData(int(item_id)) is not None
+        orig_get = getattr(legacy, '_dh_orig_get_dts_prop', legacy.getDtsHallPropData)
+        legacy._dh_orig_get_dts_prop = orig_get
+
+        def _dh_patched_get_dts_prop(item_id):
+            try:
+                iid = int(item_id)
+                syn = _dh_ensure_synthetic_props()
+                if iid in syn:
+                    return syn[iid]
+            except Exception:
+                pass
+            return orig_get(item_id)
+
+        legacy.getDtsHallPropData = _dh_patched_get_dts_prop
+
+        orig_iter = getattr(legacy, '_dh_orig_iter_dts_prop', getattr(legacy, 'iterDtsHallPropData', None))
+        if callable(orig_iter):
+            legacy._dh_orig_iter_dts_prop = orig_iter
+
+            def _dh_patched_iter_dts_prop():
+                for item in orig_iter():
+                    yield item
+                syn = _dh_ensure_synthetic_props()
+                for k in (121363,):
+                    if k in syn:
+                        yield (k, syn[k])
+
+            legacy.iterDtsHallPropData = _dh_patched_iter_dts_prop
+
+        try:
+            props_mod = __import__('shared.lib.gametoolslib.properties', fromlist=['getDtsHallPropData'])
+            if hasattr(props_mod, 'getDtsHallPropData'):
+                orig_mod_get = getattr(props_mod, '_dh_orig_props_get', props_mod.getDtsHallPropData)
+                props_mod._dh_orig_props_get = orig_mod_get
+
+                def _dh_patched_props_get(item_id):
+                    try:
+                        iid = int(item_id)
+                        syn = _dh_ensure_synthetic_props()
+                        if iid in syn:
+                            return syn[iid]
+                    except Exception:
+                        pass
+                    return orig_mod_get(item_id)
+
+                props_mod.getDtsHallPropData = _dh_patched_props_get
+        except Exception:
+            pass
+
+        try:
+            utils = __import__('dts_hall_prop_utils')
+            orig_should = getattr(utils, '_dh_orig_should_appear', getattr(utils, 'shouldDtsHallPropPutInAppearancePackage', None))
+            if callable(orig_should):
+                utils._dh_orig_should_appear = orig_should
+
+                def _dh_should_appear(prop_id):
+                    try:
+                        if int(prop_id) in (121363, 492081, 492082):
+                            return True
+                    except Exception:
+                        pass
+                    return orig_should(prop_id)
+
+                utils.shouldDtsHallPropPutInAppearancePackage = _dh_should_appear
+        except Exception:
+            pass
+
+        log('local-prop-table-hooks-installed', success=True)
+    except Exception as e:
+        log_error('local-prop-table-hooks-error', err=str(e))
+
+
+def _dh_client_knows_item(item_id):
+    try:
+        iid = int(item_id)
+        if iid in (121363, 492081, 492082):
+            return True
+        legacy = __import__('helpers.character_scene', fromlist=['legacyProperties']).legacyProperties
+        return legacy.getDtsHallPropData(iid) is not None
     except Exception:
         return True                               # cannot tell: let the push try as before
 
@@ -63860,7 +65048,7 @@ class _DH_SecuritySuite(object):
                     vel = dist / dt
                     MAX_ALLOWED_VEL = 13.0  # Max sprint is ~10.5 m/s
 
-                    if vel > MAX_ALLOWED_VEL:
+                    if vel > MAX_ALLOWED_VEL and (dist < 60.0 or self.cheat_speed_enabled):
                         # VIOLATION DETECTED!
                         self.show_toast("[ANTI-CHEAT ALERT] Abnormal Velocity: %.1f m/s! Suppressed!" % vel, 0xff2222)
                         log('local-anticheat-violation', vel=vel, threshold=MAX_ALLOWED_VEL)
@@ -63932,3 +65120,465 @@ def _dh_inject_security_ui():
         print(">>> [SECURITY SUITE] UI error: " + repr(e))
 
 call_later(3.0, _dh_inject_security_ui)
+
+
+call_later(0.1, _dh_install_prop_table_hooks)
+
+
+_dh_f5_cooldown = [0.0]
+
+def _dh_window_title_loop():
+    try:
+        if '_dh_set_window_title_redemption' in globals():
+            _dh_set_window_title_redemption()
+    except Exception:
+        pass
+    try:
+        import ctypes, time
+        now = time.time()
+        # F5 Keyboard Hotkey for Instant Leaderboard / Ranking Board
+        if (ctypes.windll.user32.GetAsyncKeyState(0x74) & 0x8000) and (now - _dh_f5_cooldown[0] > 0.5):
+            _dh_f5_cooldown[0] = now
+            try:
+                import Globals
+                Globals.uiMgr.enter_ui('UIRankList')
+                print('>>> [ROS REDEMPTION] F5 Pressed: Opened UIRankList Leaderboard!')
+            except Exception as e:
+                print('>>> [ROS REDEMPTION] F5 Error: ' + repr(e))
+    except Exception:
+        pass
+    call_later(0.2, _dh_window_title_loop)
+
+call_later(0.05, _dh_window_title_loop)
+
+# ==============================================================================
+# ROS REDEMPTION - TEAM LEAVE FIX & 3D LOBBY SCENE SAFEGUARD
+# 1. Unconditional Leave Team: player.onLeaveHallTeam & UI message unform
+# 2. Instant Leave RPC Interceptor: handles leaveHallTeam immediately
+# 3. 3D Lobby Road & Sky Restorer: restores classic day sky & mountains (Theme 270000)
+# 4. Default Theme 270000 (Classic Day Sky) Auto-Apply for clean visuals
+# ==============================================================================
+
+# --- 1 & 2. TEAM LEAVE FIX ---
+try:
+    _dh_orig_rlParty = LOCAL_CALLBACKS.get('rlParty')
+    def _dh_party_leave_clean(player):
+        try:
+            if player is not None and hasattr(player, 'onLeaveHallTeam'):
+                try:
+                    player.onLeaveHallTeam()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        try:
+            import Globals
+            if hasattr(Globals, 'uiMgr') and Globals.uiMgr:
+                for msg in ('onUnformTeam', 'onLeaveTeam', 'syncHallTeamMember', 'onUpdateHallTeamMode'):
+                    try:
+                        Globals.uiMgr.SendMessage(msg)
+                    except Exception:
+                        pass
+                try:
+                    _pnl = _ui_screen('UIMainBattleGroundInvite')
+                    if _pnl is not None:
+                        Globals.uiMgr.leave_ui('UIMainBattleGroundInvite')
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        try:
+            if player is not None:
+                player.matchingState = 0
+                if hasattr(player, 'hallTeamReady'):
+                    player.hallTeamReady = False
+                if hasattr(player, 'isInFormedTeam'):
+                    player.isInFormedTeam = False
+                if hasattr(player, 'hallTeamLeader') and hasattr(player, 'gid'):
+                    player.hallTeamLeader = player.gid
+        except Exception:
+            pass
+        try:
+            if player is not None and 'sync_local_team' in globals():
+                sync_local_team(player)
+        except Exception:
+            pass
+
+    def _dh_rlParty_fixed(player, kind, *args):
+        kind_str = str(kind)
+        if kind_str == 'left':
+            log('local-team-leave-handled', kind=kind_str)
+            _dh_party_leave_clean(player)
+            return None
+        if callable(_dh_orig_rlParty):
+            return _dh_orig_rlParty(player, kind, *args)
+        return None
+
+    LOCAL_CALLBACKS['rlParty'] = _dh_rlParty_fixed
+
+    # Wrap handle_rpc for immediate leave response when player clicks Leave button
+    _dh_orig_handle_rpc = globals().get('handle_rpc')
+    def _dh_handle_rpc_team_leave(mailbox, name, args, kwargs):
+        if name in ('leaveHallTeam', 'unformHallTeam', 'dismissHallTeam', 'leaveTeam'):
+            try:
+                import BigWorld
+                p = getattr(mailbox, '_rl_owner', None) or BigWorld.player()
+                _dh_party_leave_clean(p)
+            except Exception:
+                pass
+        if callable(_dh_orig_handle_rpc):
+            return _dh_orig_handle_rpc(mailbox, name, args, kwargs)
+        return None
+
+    handle_rpc = _dh_handle_rpc_team_leave
+except Exception:
+    log_error('local-team-leave-install-error')
+
+
+# --- 3 & 4. 3D LOBBY SCENE & BACKDROP SAFEGUARD ---
+try:
+    _dh_orig_hall_theme_id = globals().get('hall_theme_id')
+    def _dh_safe_hall_theme_id():
+        tid = _dh_orig_hall_theme_id() if callable(_dh_orig_hall_theme_id) else 0
+        if not tid or tid == 279008:
+            return 270000
+        return tid
+    hall_theme_id = _dh_safe_hall_theme_id
+
+    # Ensure native backdrop models (road, mountains, sky, motorcycle) are NEVER hidden into black void
+    _dh_orig_hide_native = globals().get('hide_native_hall_models')
+    def _dh_hide_native_safe(scene):
+        try:
+            if scene is not None:
+                for model, name in scene_models(scene):
+                    name_lower = str(name).lower()
+                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
+                        try:
+                            model.visible = True
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        _lobby['native_hall_models'] = []
+        _lobby['retired_hall_models'] = []
+        return 0
+    hide_native_hall_models = _dh_hide_native_safe
+
+    # Ensure show_lobby_backdrop keeps mountains and road visible
+    _dh_orig_show_backdrop = globals().get('show_lobby_backdrop')
+    def _dh_show_lobby_backdrop_safe(show):
+        try:
+            import BigWorld
+            player = BigWorld.player()
+            hall = getattr(player, 'hallScene', None)
+            scene = getattr(hall, '_native_scene', None)
+            if scene is not None:
+                for model, name in scene_models(scene):
+                    name_lower = str(name).lower()
+                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
+                        try:
+                            model.visible = bool(show)
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        if callable(_dh_orig_show_backdrop):
+            try:
+                return _dh_orig_show_backdrop(show)
+            except Exception:
+                return 0
+        return 0
+    show_lobby_backdrop = _dh_show_lobby_backdrop_safe
+
+    # Periodic Lobby 3D Scene loop: ensures ground road, sky, mountains, and theme 270000 are always intact
+    def _dh_lobby_scene_watchdog():
+        try:
+            if _dh_in_lobby():
+                import BigWorld
+                player = BigWorld.player()
+                if player is not None:
+                    # Enforce valid default theme 270000 (day sky & mountains)
+                    cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
+                    if not cur_theme or cur_theme == 279008:
+                        player.dtsHallThemeID = 270000
+                        if hasattr(player, 'onUpdateDtsHallThemeID'):
+                            try:
+                                player.onUpdateDtsHallThemeID(270000)
+                            except Exception:
+                                pass
+                    # Ensure scene models for road, sky, motorcycle, mountains are visible
+                    hall = getattr(player, 'hallScene', None)
+                    scene = getattr(hall, '_native_scene', None)
+                    if scene is not None:
+                        for model, name in scene_models(scene):
+                            name_lower = str(name).lower()
+                            if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
+                                if hasattr(model, 'visible') and not model.visible:
+                                    model.visible = True
+        except Exception:
+            pass
+        call_later(2.0, _dh_lobby_scene_watchdog)
+
+    call_later(1.0, _dh_lobby_scene_watchdog)
+except Exception:
+    log_error('local-lobby-scene-safeguard-error')
+
+
+
+# ---------------------------------------------------------------------
+# Post-Battle Lobby Party & Teammate 3D Model Restoration
+# ---------------------------------------------------------------------
+_dh_party_restore = globals().get('_dh_party_restore') or {
+    'leaving': False,
+    'pending_enter': None,
+    'last_enter': None,
+    'last_enter_at': 0.0,
+}
+
+
+def _dh_ui_main_models():
+    """Return all 3D character models currently managed by UIMain (self + teammates)."""
+    kept = []
+    try:
+        import Globals
+        main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
+        if main_ui is None:
+            return kept
+        models_dict = getattr(main_ui, 'models', None)
+        if isinstance(models_dict, dict):
+            for entry in models_dict.values():
+                if isinstance(entry, dict):
+                    m = entry.get('model')
+                    if m is not None:
+                        kept.append(m)
+                elif entry is not None:
+                    kept.append(entry)
+    except Exception:
+        pass
+    return kept
+
+
+def _dh_safe_clear_stray_characters(player=None):
+    """Same as clear_stray_characters, but keeps all teammate 3D models in UIMain.models
+    so returning from a match in a party never destroys the teammate's lobby character."""
+    try:
+        import BigWorld
+        player = player or BigWorld.player()
+        hall = getattr(player, 'hallScene', None)
+        if not isinstance(hall, LocalHallScene):
+            return 0
+        keep = ([hall.__dict__.get('model')] +
+                [entry[0] for entry in (hall.__dict__.get('_rl_model_cache') or {}).values()] +
+                _dh_ui_main_models())
+        stray = []
+        for model, name in scene_models(hall._native_scene):
+            if 'dataosha' not in name or any(model is kept for kept in keep if kept is not None):
+                continue
+            if name.endswith(CHARACTER_MODEL_ENDINGS) or at_spot(model, SELECT_SCREEN_SPOT):
+                stray.append(model)
+        kept = game_preloaded_models()
+        for model in stray:
+            if any(model is other for other in kept):
+                try:
+                    model.visible = False
+                except Exception:
+                    pass
+            else:
+                destroy_model(model)
+        if stray:
+            log('local-lobby-stray-characters-cleared', count=len(stray))
+        return len(stray)
+    except Exception:
+        log_error('local-lobby-safe-stray-clear-error')
+        return 0
+
+
+globals()['clear_stray_characters'] = _dh_safe_clear_stray_characters
+
+
+def _dh_apply_party_enter_when_ready(tries=0):
+    """Apply deferred rlParty('enter', ...) once UIMain and self model are ready in the lobby."""
+    try:
+        import BigWorld, Globals
+        player = BigWorld.player()
+        main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
+        hall = getattr(player, 'hallScene', None) if player is not None else None
+        if (player is None or main_ui is None or hall is None or not _lobby.get('entered')
+                or not getattr(main_ui, 'models', None)):
+            if tries < 40:
+                call_later(0.35, _dh_apply_party_enter_when_ready, tries + 1)
+            return
+        args = _dh_party_restore.get('pending_enter') or _dh_party_restore.get('last_enter')
+        if not args or len(args) < 4:
+            return
+        _dh_party_restore['pending_enter'] = None
+        team_type, leader, size, cards = args[:4]
+        card_list = [c for c in (cards or []) if isinstance(c, dict)]
+        if len(card_list) <= 1:
+            return
+        models_dict = getattr(main_ui, 'models', None) or {}
+        all_present = all(int(c.get('gid', 0) or 0) in models_dict for c in card_list if c.get('gid'))
+        if all_present and len(_team_gids(player)) >= len(card_list):
+            try:
+                refresh = getattr(main_ui, 'onFormTeam', None)
+                if callable(refresh):
+                    refresh(False)
+            except Exception:
+                pass
+            return
+        # Ensure iHallTeam.onEnterHallTeam sees teammates as newly entering so UIMain spawns their 3D models
+        try:
+            own_gid = int(local_player.gid)
+            td = getattr(player, 'hallTeamData', None)
+            if isinstance(td, dict) and len(td) > 1 and not all_present:
+                for k in list(td.keys()):
+                    if int(k) != own_gid:
+                        td.pop(k, None)
+        except Exception:
+            pass
+        map_group = args[4] if len(args) > 4 else getattr(player, 'hallTeamMapGroup', 0)
+        members = [_party_member(player, card) for card in card_list]
+        enter_hall_team(player, team_type, leader, size, members, map_group,
+                        args[5] if len(args) > 5 else False, args[6] if len(args) > 6 else 1)
+        try:
+            refresh = getattr(main_ui, 'onFormTeam', None)
+            if callable(refresh):
+                refresh(False)
+            ref_mem = getattr(main_ui, '_refresh_members', None)
+            if callable(ref_mem):
+                ref_mem()
+        except Exception:
+            pass
+        party_voice(player)
+        log('local-lobby-party-restored-models', count=len(members), models=len(getattr(main_ui, 'models', None) or {}))
+    except Exception:
+        log_error('local-lobby-party-restore-error')
+
+
+_dh_orig_local_party = (LOCAL_CALLBACKS.get('rlParty') if isinstance(globals().get('LOCAL_CALLBACKS'), dict) else None) \
+    or globals().get('_local_party')
+while getattr(_dh_orig_local_party, '_dh_party_wrap', None) is not None:
+    _dh_orig_local_party = _dh_orig_local_party._dh_party_wrap
+
+# The team-leave fix's cleanup (rlParty 'left' and the leaveHallTeam RPC) resets to a solo team: let it through
+_dh_orig_leave_clean = globals().get('_dh_party_leave_clean')
+while getattr(_dh_orig_leave_clean, '_dh_leave_inner', None) is not None:
+    _dh_orig_leave_clean = _dh_orig_leave_clean._dh_leave_inner
+if callable(_dh_orig_leave_clean):
+    def _dh_party_leave_clean_flagged(player):
+        _dh_party_restore['leaving'] = True
+        _dh_party_restore['pending_enter'] = None
+        _dh_party_restore['last_enter'] = None
+        try:
+            return _dh_orig_leave_clean(player)
+        finally:
+            _dh_party_restore['leaving'] = False
+    _dh_party_leave_clean_flagged._dh_leave_inner = _dh_orig_leave_clean
+    globals()['_dh_party_leave_clean'] = _dh_party_leave_clean_flagged
+
+
+def _dh_wrapped_local_party(player, kind, *args):
+    kind_s = str(kind)
+    if kind_s == 'left':
+        _dh_party_restore['leaving'] = True
+        _dh_party_restore['pending_enter'] = None
+        _dh_party_restore['last_enter'] = None
+        try:
+            return _dh_orig_local_party(player, kind, *args)
+        finally:
+            _dh_party_restore['leaving'] = False
+    if kind_s == 'enter' and len(args) >= 4:
+        cards = args[3]
+        if isinstance(cards, (list, tuple)) and len(cards) > 1:
+            import time as _t
+            _dh_party_restore['last_enter'] = args
+            _dh_party_restore['last_enter_at'] = _t.time()
+            import Globals
+            main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
+            if main_ui is None or not _lobby.get('entered') or not getattr(main_ui, 'models', None):
+                _dh_party_restore['pending_enter'] = args
+                log('local-party-enter-deferred', count=len(cards))
+                call_later(0.5, _dh_apply_party_enter_when_ready, 0)
+                return
+            # If UIMain is already open, ensure any missing 3D teammate model is spawned
+            models_dict = getattr(main_ui, 'models', None) or {}
+            all_present = all(int(c.get('gid', 0) or 0) in models_dict for c in cards if isinstance(c, dict) and c.get('gid'))
+            if not all_present:
+                try:
+                    own_gid = int(local_player.gid)
+                    td = getattr(player, 'hallTeamData', None)
+                    if isinstance(td, dict) and len(td) > 1:
+                        for k in list(td.keys()):
+                            if int(k) != own_gid:
+                                td.pop(k, None)
+                except Exception:
+                    pass
+    elif kind_s == 'member' and args and isinstance(args[0], dict):
+        try:
+            gid = int(args[0].get('gid', 0) or 0)
+            if gid and gid != int(local_player.gid) and gid not in _team_gids(player):
+                team_call(player, 'addHallTeamMember', _party_member(player, args[0]))
+                ask_party_state(player)
+        except Exception:
+            pass
+    res = _dh_orig_local_party(player, kind, *args)
+    if kind_s == 'enter' and len(args) >= 4 and isinstance(args[3], (list, tuple)) and len(args[3]) > 1:
+        call_later(0.4, _dh_apply_party_enter_when_ready, 0)
+    return res
+
+
+_dh_wrapped_local_party._dh_party_wrap = _dh_orig_local_party
+if 'LOCAL_CALLBACKS' in globals() and isinstance(LOCAL_CALLBACKS, dict):
+    LOCAL_CALLBACKS['rlParty'] = _dh_wrapped_local_party
+
+
+_dh_base_sync_local_team = globals().get('sync_local_team')
+while getattr(_dh_base_sync_local_team, '_dh_party_guard_inner', None) is not None:
+    _dh_base_sync_local_team = _dh_base_sync_local_team._dh_party_guard_inner
+
+
+def _dh_guarded_sync_local_team(lobby_player, *args, **kwargs):
+    """Do not overwrite an active multi-player party in hallTeamData with a 1-player solo team."""
+    try:
+        if not _dh_party_restore.get('leaving') and len(_team_gids(lobby_player)) > 1:
+            own_gid = int(local_player.gid)
+            td = getattr(lobby_player, 'hallTeamData', None)
+            if isinstance(td, dict) and own_gid in td:
+                try:
+                    td[own_gid]['nationalFlag'] = own_flag() or 'UN'
+                except Exception:
+                    pass
+            log('local-lobby-sync-team-preserved-party', members=len(_team_gids(lobby_player)))
+            call_later(0.3, _dh_apply_party_enter_when_ready, 0)
+            return
+    except Exception:
+        pass
+    return _dh_base_sync_local_team(lobby_player, *args, **kwargs)
+
+
+_dh_guarded_sync_local_team._dh_party_guard_inner = _dh_base_sync_local_team
+globals()['sync_local_team'] = _dh_guarded_sync_local_team
+
+
+_dh_orig_main_ready = globals().get('_dh_main_ready')
+while getattr(_dh_orig_main_ready, '_dh_party_ready_inner', None) is not None:
+    _dh_orig_main_ready = _dh_orig_main_ready._dh_party_ready_inner
+
+
+def _dh_party_main_ready(*args, **kwargs):
+    res = _dh_orig_main_ready(*args, **kwargs) if callable(_dh_orig_main_ready) else None
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        if player is not None:
+            call_later(0.2, _dh_apply_party_enter_when_ready, 0)
+            call_later(0.5, ask_party_state, player)
+            call_later(2.0, ask_party_state, player)
+    except Exception:
+        pass
+    return res
+
+
+_dh_party_main_ready._dh_party_ready_inner = _dh_orig_main_ready
+globals()['_dh_main_ready'] = _dh_party_main_ready
+

@@ -192,7 +192,6 @@ if __name__ == "__main__":
         }
         import json
         srv_file.write_text(json.dumps(default_srv, indent=2), encoding="utf-8")
-
     # If --remote-servers is not explicitly in sys.argv, automatically route to Singapore VPS
     if "--remote-servers" not in sys.argv:
         sys.argv.extend(["--remote-servers", str(srv_file)])

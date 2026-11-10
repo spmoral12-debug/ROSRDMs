@@ -6,15 +6,21 @@ using the engine's exact keystream cipher, and updates the SHA256 checksum.
 
 import os, zlib, hashlib, base64, glob
 
-UNPACKED = r'C:\Users\seanj\AppData\Local\DieHardROSHook\updates\unpacked_lobby.py'
-REMOTE_LOBBY = r'C:\DieHardROS\local_update\hot\remote-lobby.py'
-SHA_FILE = r'C:\DieHardROS\local_update\hot\remote-lobby.py.sha256'
-HOT_DIR = r'C:\Users\seanj\AppData\Local\DieHardROSHook\updates'
+UNPACKED = os.path.abspath('clean_remote_lobby.py')
+DESTINATIONS = [
+    r'C:\DieHardROS\local_update\hot\remote-lobby.py',
+    os.path.abspath(r'local_update\hot\remote-lobby.py'),
+    os.path.abspath(r'ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py')
+]
+HOT_DIRS = [
+    r'C:\Users\seanj\AppData\Local\DieHardROSHook\updates',
+    os.path.expandvars(r'%LOCALAPPDATA%\DieHardROSHook\updates'),
+]
 
 KEY_HEX = '2a8ec34ed7c4baa57c7b5e4adef0f454f8f854d809daa14616db06b2eac10809'
 KEY = bytes.fromhex(KEY_HEX)
 
-print("Reading unpacked_lobby.py...")
+print("Reading %s..." % UNPACKED)
 with open(UNPACKED, 'rb') as f:
     src_bytes = f.read()
 
@@ -93,39 +99,29 @@ _dh_run()
 packed_text = '\r\n'.join(header) + '\r\n' + runner
 packed_bytes = packed_text.encode('utf-8')
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-dest_files = [
-    os.path.join(base_dir, 'local_update', 'hot', 'remote-lobby.py'),
-    os.path.join(base_dir, 'ROS_Redemption_Server_Package', 'local_update', 'hot', 'remote-lobby.py'),
-    r'C:\DieHardROS\local_update\hot\remote-lobby.py',
-    r'C:\DieHardROS\ROS-REDEMPTION\DieHardROS\local_update\hot\remote-lobby.py',
-    r'C:\DieHardROS\ROS-REDEMPTION\DieHardROS\ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py',
-]
-
+print("Writing remote-lobby.py (%d bytes)..." % len(packed_bytes))
 sha256_hash = hashlib.sha256(packed_bytes).hexdigest()
 print("Computed SHA256:", sha256_hash)
 
-for df in dest_files:
+for dst in DESTINATIONS:
     try:
-        os.makedirs(os.path.dirname(df), exist_ok=True)
-        with open(df, 'wb') as f:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(dst, 'wb') as f:
             f.write(packed_bytes)
-        print("Written destination:", df)
-        sha_p = df + '.sha256'
-        with open(sha_p, 'w') as f:
+        print("Written:", dst)
+        sha_file = dst + '.sha256'
+        with open(sha_file, 'w') as f:
             f.write(sha256_hash)
-        print("Updated SHA:", sha_p)
-    except Exception as ex:
-        print("Skip destination %s: %s" % (df, ex))
+        print("Updated SHA256:", sha_file)
+    except Exception as e:
+        print("Error writing %s: %s" % (dst, e))
 
 # Write to all hot-lobby-*.py
-for hf in glob.glob(os.path.join(HOT_DIR, 'hot-lobby-*.py')):
-    try:
+for hd in HOT_DIRS:
+    for hf in glob.glob(os.path.join(hd, 'hot-lobby-*.py')):
         with open(hf, 'wb') as f:
             f.write(packed_bytes)
-        print("Written hot-lobby:", hf)
-    except Exception as ex:
-        print("Skip hot-lobby %s: %s" % (hf, ex))
+        print("Written:", hf)
 
 print("PACKING COMPLETED SUCCESSFULLY!")
 

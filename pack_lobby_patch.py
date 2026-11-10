@@ -97,7 +97,9 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 dest_files = [
     os.path.join(base_dir, 'local_update', 'hot', 'remote-lobby.py'),
     os.path.join(base_dir, 'ROS_Redemption_Server_Package', 'local_update', 'hot', 'remote-lobby.py'),
-    r'C:\DieHardROS\local_update\hot\remote-lobby.py'
+    r'C:\DieHardROS\local_update\hot\remote-lobby.py',
+    r'C:\DieHardROS\ROS-REDEMPTION\DieHardROS\local_update\hot\remote-lobby.py',
+    r'C:\DieHardROS\ROS-REDEMPTION\DieHardROS\ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py',
 ]
 
 sha256_hash = hashlib.sha256(packed_bytes).hexdigest()

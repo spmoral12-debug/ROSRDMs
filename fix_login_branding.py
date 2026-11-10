@@ -25,7 +25,7 @@ replacement_brand_pass_head = """def _dh_scene_brand_pass():
         return
 
     # Strictly on Login / Play screen:
-    # 1. Attach ROS Redemption HD Wallpaper (with the epic 3D winged logo)
+    # 1. Attach ROS Redemption HD Wallpaper (with the epic 3D winged logo) BEHIND UI (-999)
     try:
         bg_path = 'dh_brand/dh_bg1.jpg'
         win = cc.Director.getInstance().getWinSize()
@@ -39,7 +39,12 @@ replacement_brand_pass_head = """def _dh_scene_brand_pass():
                 if sz.width > 0 and sz.height > 0:
                     bg.setScaleX(float(win.width) / float(sz.width))
                     bg.setScaleY(float(win.height) / float(sz.height))
-                scene.addChild(bg, 50)
+                scene.addChild(bg, -999)
+        else:
+            try:
+                bg.setLocalZOrder(-999)
+            except Exception:
+                pass
     except Exception:
         pass
 
@@ -79,7 +84,7 @@ def _dh_window_title_loop():
                     if main is not None:
                         _dh_bind_top_tabs(main)
                 else:
-                    # On Login / Play screen: Ensure wallpaper is visible
+                    # On Login / Play screen: Ensure wallpaper is visible behind UI (-999)
                     b = sc.getChildByName('ros_redemption_bg')
                     if b is None:
                         win = cc.Director.getInstance().getWinSize()
@@ -91,7 +96,22 @@ def _dh_window_title_loop():
                             if sz.width > 0 and sz.height > 0:
                                 b.setScaleX(float(win.width) / float(sz.width))
                                 b.setScaleY(float(win.height) / float(sz.height))
-                            sc.addChild(b, 50)
+                            sc.addChild(b, -999)
+                    else:
+                        try:
+                            b.setLocalZOrder(-999)
+                        except Exception:
+                            pass
+                    try:
+                        import Globals
+                        login_ui = getattr(Globals.uiMgr, 'UILoginLoop', None)
+                        if login_ui is not None:
+                            p = getattr(login_ui, 'panel', None) or getattr(login_ui, 'widget', None)
+                            if p is not None:
+                                p.setVisible(True)
+                                p.setLocalZOrder(10)
+                    except Exception:
+                        pass
     except Exception:
         pass
     call_later(0.2, _dh_window_title_loop)
@@ -127,8 +147,11 @@ for file_path in target_files:
     else:
         print("Could not locate _dh_window_title_loop in:", file_path)
 
+    # Test compile
+    compile(text, file_path, 'exec')
+    print("Compiled successfully:", file_path)
+
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(text)
 
 print("Done updating files!")
-

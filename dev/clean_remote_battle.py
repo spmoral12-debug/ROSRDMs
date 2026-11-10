@@ -8751,6 +8751,9 @@ log('ros-redemption-master-patch-active', status='ready')
 
 
 # ==============================================================================
+
+
+# ==============================================================================
 # ROS REDEMPTION - KILLFEED COLOR ENHANCEMENTS & SAFE FALL DAMAGE
 # ==============================================================================
 
@@ -8999,6 +9002,104 @@ try:
 
     call_later(1.5, _dh_fall_damage_monitor)
     log('ros-redemption-fix', fix='safe balanced fall damage active (plane landing only)')
+except Exception:
+    pass
+
+
+# 5. Prepare Island Bot Dispersion (Anti-Clump / Spread out across the island)
+try:
+    def redemption_disperse_island_bots():
+        try:
+            if not on_island_stage():
+                return
+            
+            map_id = BATTLE.get('map') or 700
+            count = int((BATTLE.get('match') or {}).get('bots') or 40)
+            
+            # 1. Try to get official RebornPosition points on the island
+            island_points = []
+            try:
+                pts = level_points(level_record(map_id), 'RebornPosition')
+                if pts:
+                    import random
+                    rng = random.Random()
+                    if len(pts) >= count:
+                        island_points = [[round(p[0], 2), round(p[1], 2), round(p[2], 2)] for p in rng.sample(pts, count)]
+                    else:
+                        island_points = [[round(p[0], 2), round(p[1], 2), round(p[2], 2)] for p in pts]
+            except Exception:
+                island_points = []
+
+            # 2. If no level points, generate wide radial spots around island
+            if not island_points:
+                player = current_player()
+                pos = getattr(player, 'position', None)
+                if pos is not None:
+                    cx = float(pos[0] if hasattr(pos, '__getitem__') else getattr(pos, 'x', 0.0))
+                    cy = float(pos[1] if hasattr(pos, '__getitem__') else getattr(pos, 'y', 10.0))
+                    cz = float(pos[2] if hasattr(pos, '__getitem__') else getattr(pos, 'z', 0.0))
+                    import random, math
+                    rng = random.Random()
+                    for idx in range(count):
+                        angle = (2.0 * math.pi * idx) / float(max(1, count)) + rng.uniform(-0.3, 0.3)
+                        dist = rng.uniform(40.0, 240.0)
+                        px = cx + dist * math.cos(angle)
+                        pz = cz + dist * math.sin(angle)
+                        py = ground_height(px, pz) or cy
+                        island_points.append([round(px, 2), round(py, 2), round(pz, 2)])
+
+            if island_points:
+                send(BOT_PREFIX + json.dumps({'action': 'place', 'points': island_points}))
+                log('ros-redemption-fix', fix='prepare island bots dispersed', count=len(island_points))
+        except Exception as ex:
+            log_error('local-battle-island-disperse-error', err=str(ex))
+
+    # Periodic check on island to keep bots nicely spread out
+    def _dh_island_bot_tick():
+        try:
+            if on_island_stage():
+                redemption_disperse_island_bots()
+                call_later(6.0, _dh_island_bot_tick)
+        except Exception:
+            pass
+
+    # Call on start
+    call_later(1.0, redemption_disperse_island_bots)
+    call_later(3.0, redemption_disperse_island_bots)
+    call_later(6.0, _dh_island_bot_tick)
+
+    # Hook schedule_plane to trigger dispersion right when island starts
+    _orig_schedule_plane = globals().get('schedule_plane')
+    if callable(_orig_schedule_plane):
+        def redemption_schedule_plane():
+            res = _orig_schedule_plane()
+            call_later(0.5, redemption_disperse_island_bots)
+            return res
+        globals()['schedule_plane'] = redemption_schedule_plane
+
+    log('ros-redemption-fix', fix='prepare island anti-clump installed')
+except Exception:
+    pass
+
+
+# 6. Varied Bot Appearance (Gender & Model variety instead of all cloned identical males)
+try:
+    _orig_remote_properties = globals().get('remote_properties')
+    if callable(_orig_remote_properties):
+        def redemption_remote_properties(item, class_name):
+            props = _orig_remote_properties(item, class_name)
+            try:
+                item_id = int(item.get('id') or 0)
+                name = str(item.get('name') or '')
+                if 'Bot' in name or item.get('kind') == 'bot' or item_id >= 900000:
+                    # Alternate male (10002) and female (10001)
+                    props['characterType'] = 10001 if (item_id % 2 == 1) else 10002
+            except Exception:
+                pass
+            return props
+
+        globals()['remote_properties'] = redemption_remote_properties
+        log('ros-redemption-fix', fix='varied bot gender and appearance active')
 except Exception:
     pass
 

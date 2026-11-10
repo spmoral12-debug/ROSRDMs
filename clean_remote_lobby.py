@@ -4944,16 +4944,56 @@ def _dh_clean_depot_duplicates(player=None):
                         pass
 
         # Evolution consumption cleanup:
-        # If Monster - M2 (140404) is owned, remove Monster - M1 (140403)
-        if 140404 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140404) > 0:
+        # 1. Monster - M2 (140404) -> Monster - M1 (140403)
+        is_m2_owned = (140404 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140404) > 0)
+        is_m2_eq = 140404 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
+        if is_m2_owned or is_m2_eq:
+            if 140404 not in all_ids:
+                try:
+                    _push_one_item(player, 140404, 1, 0, package='appearance')
+                except Exception:
+                    pass
             if 140403 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140403) > 0:
                 _dh_remove_all_appearance_copies(player, 140403)
                 cleaned += 1
 
-        # If Velociraptor Lv. 2 (142008) is owned, remove Velociraptor Lv. 1 (142007)
-        if 142008 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(142008) > 0:
+        # 2. Velociraptor Lv. 2 (142008) -> Velociraptor Lv. 1 (142007)
+        is_rap2_owned = (142008 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(142008) > 0)
+        is_rap2_eq = 142008 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
+        if is_rap2_owned or is_rap2_eq:
+            if 142008 not in all_ids:
+                try:
+                    _push_one_item(player, 142008, 1, 0, package='appearance')
+                except Exception:
+                    pass
             if 142007 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(142007) > 0:
                 _dh_remove_all_appearance_copies(player, 142007)
+                cleaned += 1
+
+        # 3. Darksteel Bike Lv. 2 (140077) -> Darksteel Bike Lv. 1 (140076)
+        is_bike2_owned = (140077 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140077) > 0)
+        is_bike2_eq = 140077 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
+        if is_bike2_owned or is_bike2_eq:
+            if 140077 not in all_ids:
+                try:
+                    _push_one_item(player, 140077, 1, 0, package='appearance')
+                except Exception:
+                    pass
+            if 140076 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140076) > 0:
+                _dh_remove_all_appearance_copies(player, 140076)
+                cleaned += 1
+
+        # 4. Summer Bicycle Lv. 2 (140074) -> Summer Bicycle (140073)
+        is_sb2_owned = (140074 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140074) > 0)
+        is_sb2_eq = 140074 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
+        if is_sb2_owned or is_sb2_eq:
+            if 140074 not in all_ids:
+                try:
+                    _push_one_item(player, 140074, 1, 0, package='appearance')
+                except Exception:
+                    pass
+            if 140073 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140073) > 0:
+                _dh_remove_all_appearance_copies(player, 140073)
                 cleaned += 1
 
         if cleaned:
@@ -4992,7 +5032,10 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     # Evolution mappings (target_id -> src_id)
     _tune_src_map = {
         140404: 140403,  # Monster - M2 comes from Monster - M1
+        140406: 140404,  # Wild Beast (M3) comes from Monster - M2
         142008: 142007,  # Velociraptor Lv. 2 comes from Velociraptor Lv. 1
+        140077: 140076,  # Darksteel Bike Lv. 2 comes from Darksteel Bike Lv. 1
+        140074: 140073,  # Summer Bicycle Lv. 2 comes from Summer Bicycle Lv. 1
     }
     effective_src = _tune_src_map.get(target_id, src_id)
 
@@ -8945,19 +8988,32 @@ def _dh_class_wrap(module_name, class_name, method, factory, marker):
 
 
 def _dh_theme_own():
-    """The theme the player equipped (lobby state dhThemeOwn, 0 = none / unloaded)."""
+    """The theme the player equipped (lobby state dhThemeOwn or dtsHallThemeID, 0 = none / unloaded)."""
     if _dh_theme117.get('own') is not None:
         return int(_dh_theme117['own'] or 0)
     try:
-        return int((load_state().get('lobby', {}) or {}).get('dhThemeOwn') or 0)
+        saved = load_state().get('lobby', {}) or {}
+        theme = saved.get('dhThemeOwn') or saved.get('dtsHallThemeID')
+        if not theme:
+            theme = (saved.get('appearance') or {}).get('dtsHallThemeID')
+        if theme:
+            return int(theme)
     except Exception:
-        return 0
+        pass
+    try:
+        import BigWorld
+        p = BigWorld.player()
+        if p is not None:
+            th = getattr(p, 'dtsHallThemeID', 0)
+            if th:
+                return int(th)
+    except Exception:
+        pass
+    return 0
 
 
 def _dh_theme_remember(theme_id):
     theme_id = int(theme_id or 0)
-    if theme_id == _DH_DEFAULT_LOBBY_THEME:
-        theme_id = 0
     _dh_theme117['own'] = theme_id
     try:
         ok, reason = save_state_durable(lobby={'dhThemeOwn': theme_id, 'dtsHallThemeID': theme_id})
@@ -8968,7 +9024,7 @@ def _dh_theme_remember(theme_id):
         import BigWorld
         player = BigWorld.player()
         if player is not None:
-            active_theme = theme_id if theme_id else _DH_DEFAULT_LOBBY_THEME
+            active_theme = theme_id if theme_id else 279008
             player.dtsHallThemeID = active_theme
             if hasattr(player, 'onUpdateDtsHallThemeID'):
                 player.onUpdateDtsHallThemeID(active_theme)
@@ -8999,6 +9055,22 @@ def _dh_theme_unload_factory(inner):
             pass
         return result
     return unloadAppearanceRequestServer
+
+
+def _dh_theme_update_athlete_factory(inner):
+    def onUpdateDtsHallThemeID(self, theme_id, *args, **kwargs):
+        try:
+            tid = int(theme_id or 0)
+            if tid:
+                _dh_theme117['own'] = tid
+                save_state_durable(lobby={'dhThemeOwn': tid, 'dtsHallThemeID': tid})
+                log('local-lobby-theme-athlete-updated', theme=tid)
+        except Exception:
+            pass
+        if callable(inner):
+            return inner(self, theme_id, *args, **kwargs)
+        return None
+    return onUpdateDtsHallThemeID
 
 
 _dh_m116_season_now = _dh_season_now
@@ -9065,6 +9137,11 @@ def _dh_theme117_install(tries=0):
         if _dh_class_wrap('dts_appearance.DtsAppearance', 'HallThemeType', 'unloadAppearanceRequestServer',
                           _dh_theme_unload_factory, '_dh_theme_unload_w'):
             done += 1
+        for mod_name in ('entities.Athlete', 'Athlete'):
+            if _dh_class_wrap(mod_name, 'Athlete', 'onUpdateDtsHallThemeID',
+                              _dh_theme_update_athlete_factory, '_dh_theme_update_w'):
+                done += 1
+                break
     except Exception:
         log_error('local-lobby-theme-own-install-error')
         return
@@ -9232,17 +9309,103 @@ def _dh_ensure_synthetic_props():
                             setattr(ptype, 'DISPLAY_IN_MODEL', [d0])
                     except Exception:
                         pass
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
+                        try:
+                            setattr(ptype, attr, val)
+                        except Exception:
+                            pass
                     raptor_lv2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Velociraptor Lv. 2'),
                                   ('QUALITY', 5),
                                   ('SCORE', 300),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
                     try:
                         setattr(raptor_lv2, attr, val)
                     except Exception:
                         pass
                 _dh_synthetic_props[142008] = raptor_lv2
+
+        # 3. Monster - M2 (140404)
+        if 140404 not in _dh_synthetic_props:
+            m1 = orig_get(140403)
+            if m1 is not None:
+                m2 = copy.copy(m1)
+                ptype = copy.copy(getattr(m1, 'PROP_TYPE', None))
+                if ptype is not None:
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/guaiwupika/cheshen_02.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/guaiwupika/geton_vehicle_02.mtg'),
+                                      ('SCORE', 300),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png')):
+                        try:
+                            setattr(ptype, attr, val)
+                        except Exception:
+                            pass
+                    m2.PROP_TYPE = ptype
+                for attr, val in (('NAME', 'Monster - M2'),
+                                  ('QUALITY', 5),
+                                  ('SCORE', 300),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png')):
+                    try:
+                        setattr(m2, attr, val)
+                    except Exception:
+                        pass
+                _dh_synthetic_props[140404] = m2
+
+        # 4. Darksteel Bike Lv. 2 (140077)
+        if 140077 not in _dh_synthetic_props:
+            b1 = orig_get(140076)
+            if b1 is not None:
+                b2 = copy.copy(b1)
+                ptype = copy.copy(getattr(b1, 'PROP_TYPE', None))
+                if ptype is not None:
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/gthaigumotuo/gthaigumotuo2.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/gthaigumotuo/gthaigumotuo2.mtg'),
+                                      ('SCORE', 300),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_02.png')):
+                        try:
+                            setattr(ptype, attr, val)
+                        except Exception:
+                            pass
+                    b2.PROP_TYPE = ptype
+                for attr, val in (('NAME', 'Darksteel Bike Lv. 2'),
+                                  ('QUALITY', 5),
+                                  ('SCORE', 300),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_02.png')):
+                    try:
+                        setattr(b2, attr, val)
+                    except Exception:
+                        pass
+                _dh_synthetic_props[140077] = b2
+
+        # 5. Summer Bicycle Lv. 2 (140074)
+        if 140074 not in _dh_synthetic_props:
+            sb1 = orig_get(140073)
+            if sb1 is not None:
+                sb2 = copy.copy(sb1)
+                ptype = copy.copy(getattr(sb1, 'PROP_TYPE', None))
+                if ptype is not None:
+                    for attr, val in (('SCORE', 300),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_02.png')):
+                        try:
+                            setattr(ptype, attr, val)
+                        except Exception:
+                            pass
+                    sb2.PROP_TYPE = ptype
+                for attr, val in (('NAME', 'Summer Bicycle Lv. 2'),
+                                  ('QUALITY', 5),
+                                  ('SCORE', 300),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_summerbike_02.png')):
+                    try:
+                        setattr(sb2, attr, val)
+                    except Exception:
+                        pass
+                _dh_synthetic_props[140074] = sb2
 
         log('local-synthetic-props-installed', ids=sorted(_dh_synthetic_props.keys()))
     except Exception as e:
@@ -9278,7 +9441,7 @@ def _dh_install_prop_table_hooks():
                 for item in orig_iter():
                     yield item
                 syn = _dh_ensure_synthetic_props()
-                for k in (121363, 142008):
+                for k in (121363, 140404, 140074, 140077, 142008):
                     if k in syn:
                         yield (k, syn[k])
 
@@ -9312,7 +9475,7 @@ def _dh_install_prop_table_hooks():
 
                 def _dh_should_appear(prop_id):
                     try:
-                        if int(prop_id) in (121363, 142008, 492081, 492082):
+                        if int(prop_id) in (121363, 140404, 140074, 140077, 142008, 492081, 492082):
                             return True
                     except Exception:
                         pass
@@ -9330,7 +9493,7 @@ def _dh_install_prop_table_hooks():
 def _dh_client_knows_item(item_id):
     try:
         iid = int(item_id)
-        if iid in (121363, 142008, 492081, 492082):
+        if iid in (121363, 140404, 140074, 140077, 142008, 492081, 492082):
             return True
         syn = _dh_ensure_synthetic_props()
         if iid in syn:
@@ -65698,53 +65861,17 @@ try:
         return tid
     hall_theme_id = _dh_safe_hall_theme_id
 
-    # Ensure native Arrival backdrop models (road, motorcycle, sky, etc.) are kept visible when Arrival is active
+    # Clean native backdrop passthroughs: respects the game's hiding of backdrops
+    # when inspecting Firearms, Vehicles, or Clothes in Depot (preserving dark smoke/embers)
     _dh_orig_hide_native = globals().get('hide_native_hall_models')
     def _dh_hide_native_safe(scene):
-        own = _dh_theme_own()
-        if own and own != 279008:
-            if callable(_dh_orig_hide_native):
-                return _dh_orig_hide_native(scene)
-            return 0
-        try:
-            if scene is not None:
-                for model, name in scene_models(scene):
-                    name_lower = str(name).lower()
-                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
-                        try:
-                            model.visible = True
-                        except Exception:
-                            pass
-        except Exception:
-            pass
-        _lobby['native_hall_models'] = []
-        _lobby['retired_hall_models'] = []
+        if callable(_dh_orig_hide_native):
+            return _dh_orig_hide_native(scene)
         return 0
     hide_native_hall_models = _dh_hide_native_safe
 
-    # Ensure show_lobby_backdrop keeps arrival backdrop visible
     _dh_orig_show_backdrop = globals().get('show_lobby_backdrop')
     def _dh_show_lobby_backdrop_safe(show):
-        own = _dh_theme_own()
-        if own and own != 279008:
-            if callable(_dh_orig_show_backdrop):
-                return _dh_orig_show_backdrop(show)
-            return 0
-        try:
-            import BigWorld
-            player = BigWorld.player()
-            hall = getattr(player, 'hallScene', None)
-            scene = getattr(hall, '_native_scene', None)
-            if scene is not None:
-                for model, name in scene_models(scene):
-                    name_lower = str(name).lower()
-                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
-                        try:
-                            model.visible = bool(show)
-                        except Exception:
-                            pass
-        except Exception:
-            pass
         if callable(_dh_orig_show_backdrop):
             try:
                 return _dh_orig_show_backdrop(show)
@@ -65753,33 +65880,53 @@ try:
         return 0
     show_lobby_backdrop = _dh_show_lobby_backdrop_safe
 
-    # Periodic Lobby 3D Scene loop: ensures default Arrival theme 279008 or player equipped theme is intact
+    # Periodic Lobby 3D Scene loop: maintains equipped lobby theme on UIMain,
+    # but strictly suspends while inspecting firearms, vehicles, clothes, workshop, or mall
     def _dh_lobby_scene_watchdog():
         try:
             if _dh_in_lobby():
-                import BigWorld
-                BigWorld._dh_theme_suspended = False
-                player = BigWorld.player()
-                if player is not None:
-                    own = _dh_theme_own()
-                    target_theme = own if own else 279008
-                    cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
-                    if not cur_theme or (not own and cur_theme == 270000):
-                        player.dtsHallThemeID = target_theme
-                        if hasattr(player, 'onUpdateDtsHallThemeID'):
-                            try:
-                                player.onUpdateDtsHallThemeID(target_theme)
-                            except Exception:
-                                pass
-                    if target_theme == 279008:
-                        hall = getattr(player, 'hallScene', None)
-                        scene = getattr(hall, '_native_scene', None)
-                        if scene is not None:
-                            for model, name in scene_models(scene):
-                                name_lower = str(name).lower()
-                                if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
-                                    if hasattr(model, 'visible') and not model.visible:
-                                        model.visible = True
+                import Globals
+                ui_mgr = getattr(Globals, 'uiMgr', None)
+                _inspecting = False
+                if ui_mgr is not None:
+                    _inspect_screens = (
+                        'UIDtsAppearanceVehicle', 'UIDtsAppearanceWeapon', 'UIDtsAppearanceCostume',
+                        'UIDtsAppearanceOthers', 'UIDtsAppearancePet', 'UIDtsAppearanceRole',
+                        'UIDtsAppearance', 'UIDtsAppearanceNewAdded', 'UIDtsAppearanceVehicleCultivate2',
+                        'UIWorkshop', 'UIItemDisplay', 'UIMallController', 'UIMall', 'UIMallCloth',
+                        'UISupplyController', 'UISupplyPackage', 'UIAdvanceSupplyPackage'
+                    )
+                    for sname in _inspect_screens:
+                        scr = getattr(ui_mgr, sname, None)
+                        if scr is not None:
+                            is_ent = getattr(scr, 'is_enter', False)
+                            if callable(is_ent):
+                                is_ent = is_ent()
+                            is_vis = getattr(scr, 'isVisible', None)
+                            if callable(is_vis):
+                                is_vis = is_vis()
+                            else:
+                                is_vis = getattr(scr, 'visible', False)
+                            if is_ent or is_vis:
+                                _inspecting = True
+                                break
+
+                # Only manage theme and scene backdrop when player is in the main lobby, NOT inspecting!
+                if not _inspecting:
+                    import BigWorld
+                    player = BigWorld.player()
+                    if player is not None:
+                        own = _dh_theme_own()
+                        target_theme = own if own else 279008
+                        cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
+                        if cur_theme != target_theme:
+                            BigWorld._dh_theme_suspended = False
+                            player.dtsHallThemeID = target_theme
+                            if hasattr(player, 'onUpdateDtsHallThemeID'):
+                                try:
+                                    player.onUpdateDtsHallThemeID(target_theme)
+                                except Exception:
+                                    pass
         except Exception:
             pass
         call_later(2.0, _dh_lobby_scene_watchdog)

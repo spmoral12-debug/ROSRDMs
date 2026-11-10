@@ -93,7 +93,10 @@ def cultivate_compound(server, args, kwargs):
     
     _tune_src_map = {
         140404: 140403,  # Monster - M2 -> Monster - M1
+        140406: 140404,  # Wild Beast (M3) -> Monster - M2
         142008: 142007,  # Velociraptor Lv. 2 -> Velociraptor Lv. 1
+        140077: 140076,  # Darksteel Bike Lv. 2 -> Darksteel Bike Lv. 1
+        140074: 140073,  # Summer Bicycle Lv. 2 -> Summer Bicycle Lv. 1
     }
     effective_src = _tune_src_map.get(target_id, src_id)
     account = server.account
@@ -151,9 +154,22 @@ try:
                         if "140404" in depot and "140403" in depot:
                             del depot["140403"]
                             changed = True
+                        if "140406" in depot:
+                            for old_m in ("140404", "140403"):
+                                if old_m in depot:
+                                    del depot[old_m]
+                                    changed = True
                         # Velociraptor Lv. 2 -> delete Lv. 1
                         if "142008" in depot and "142007" in depot:
                             del depot["142007"]
+                            changed = True
+                        # Darksteel Bike Lv. 2 -> delete Lv. 1
+                        if "140077" in depot and "140076" in depot:
+                            del depot["140076"]
+                            changed = True
+                        # Summer Bicycle Lv. 2 -> delete Lv. 1
+                        if "140074" in depot and "140073" in depot:
+                            del depot["140073"]
                             changed = True
                         # 2. Clamp duplicate permanent cosmetics:
                         for k, v in list(depot.items()):
@@ -279,6 +295,7 @@ def rpc_update_dts_hall_theme(server, args, kwargs):
                 equipped["dtsHallThemeID"] = theme_id
                 lobby = data.setdefault("lobby", {})
                 lobby["dtsHallThemeID"] = theme_id
+                lobby["dhThemeOwn"] = theme_id
     except Exception as error:
         raise AccountError("theme_update_error", str(error))
     return {

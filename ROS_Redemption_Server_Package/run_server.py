@@ -157,6 +157,25 @@ def install_session_checks():
             managers[server.id] = self.sessions
         api_port = int(os.environ.get("API_PORT", 30063))
         start_auth_api(self.db, host="0.0.0.0", port=api_port)
+        try:
+            import backend_server.admin as admin_mod
+            admin_port = int(os.environ.get("ADMIN_PORT", 8790))
+            admin_key = admin_mod.local_key(admin_mod.LOCAL_KEY_PATH)
+            admin_api = admin_mod.AdminApi(
+                self.db,
+                self.listening,
+                admin_key,
+                None,
+                None,
+                admin_mod.AUDIT_PATH,
+                admin_mod.BATTLE_PATH,
+                admin_mod.ITEMS_PATH,
+                admin_mod.MATCH_SETTINGS_PATH,
+            )
+            admin_mod.local_server(admin_api, port=admin_port, host="127.0.0.1")
+            print(f"[admin] Private Admin Panel listening on http://127.0.0.1:{admin_port}/admin", flush=True)
+        except Exception as e:
+            print(f"[admin] Warning starting admin server: {e}", flush=True)
 
     def join(self, sock, peer, server, data):
         data = strip_packet_mac(data)

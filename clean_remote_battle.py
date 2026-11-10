@@ -9513,6 +9513,10 @@ log('ros-redemption-vehicle-system-complete-active', status='ready')
 # 6. DUO / SQUAD TEAMMATE SYSTEM, OVERHEAD NAME/NUMBER UI, TEAM HP HUD & QUIT FIX
 # ==============================================================================
 
+# ==============================================================================
+# SECTION 6: DUO/SQUAD TEAMMATE TRACKING, NATIVE HUD SYNC & QUIT CRASH FIXES
+# ==============================================================================
+
 # 6A. Quitting an unfinished match early does NOT record stats or rank changes
 def _dh_no_settle_unfinished_match(player=None, *args, **kwargs):
     log('local-battle-quit-unrecorded', phase=BATTLE.get('phase'), shown=_round.get('shown'))
@@ -9521,7 +9525,216 @@ def _dh_no_settle_unfinished_match(player=None, *args, **kwargs):
 globals()['settle_unfinished_match'] = _dh_no_settle_unfinished_match
 
 
-# 6B. Fix ClientTeammate.PlayerClientTeammate & Avatar.setPosition crashes in iBattleGround
+# 6B. Fix Battle Quit Crashes (RemoveBehaviour, initTeleportPanel, PhysicsAdapter, iPerspective)
+def _dh_install_battle_quit_guards():
+    # 1. Catch ValueError in BehaviourContainer.RemoveBehaviour so leaveWorld does not crash
+    try:
+        for bc_mod_name in (
+            'libclaudia.internals.BehaviourProtocol.BehaviourContainer',
+            'internals.BehaviourProtocol.BehaviourContainer',
+            'BehaviourContainer',
+        ):
+            mod = sys.modules.get(bc_mod_name)
+            if mod is None:
+                try:
+                    mod = __import__(bc_mod_name, fromlist=['BehaviourContainer'])
+                except Exception:
+                    continue
+            cls = getattr(mod, 'BehaviourContainer', None)
+            if cls is not None:
+                orig_rb = getattr(cls, 'RemoveBehaviour', None)
+                if callable(orig_rb) and not getattr(orig_rb, '_dh_safe', False):
+                    def _safe_remove_behaviour(self, *a, **k):
+                        try:
+                            return orig_rb(self, *a, **k)
+                        except (ValueError, Exception):
+                            return None
+                    _safe_remove_behaviour._dh_safe = True
+                    cls.RemoveBehaviour = _safe_remove_behaviour
+    except Exception:
+        pass
+
+    # 2. Catch KeyError in UIPanelSkill.initTeleportPanel (PC Exit Button)
+    try:
+        for ps_mod_name in ('ui.UIPanelSkill', 'UIPanelSkill'):
+            mod = sys.modules.get(ps_mod_name)
+            if mod is None:
+                try:
+                    mod = __import__(ps_mod_name, fromlist=['UIPanelSkill'])
+                except Exception:
+                    continue
+            cls = getattr(mod, 'UIPanelSkill', None)
+            if cls is not None:
+                orig_itp = getattr(cls, 'initTeleportPanel', None)
+                if callable(orig_itp) and not getattr(orig_itp, '_dh_safe', False):
+                    def _safe_itp(self, *a, **k):
+                        try:
+                            return orig_itp(self, *a, **k)
+                        except (KeyError, Exception):
+                            return None
+                    _safe_itp._dh_safe = True
+                    cls.initTeleportPanel = _safe_itp
+    except Exception:
+        pass
+
+    # 3. Catch AttributeError in PhysicsAdapter during world teardown
+    try:
+        for pa_mod_name in ('helpers.PhysicsAdapter', 'PhysicsAdapter'):
+            mod = sys.modules.get(pa_mod_name)
+            if mod is None:
+                try:
+                    mod = __import__(pa_mod_name, fromlist=['PhysicsAdapter'])
+                except Exception:
+                    continue
+            cls = getattr(mod, 'PhysicsAdapter', None)
+            if cls is not None:
+                for fn_name in ('_getStartPos', '_doRecastWithScene'):
+                    orig_fn = getattr(cls, fn_name, None)
+                    if callable(orig_fn) and not getattr(orig_fn, '_dh_safe', False):
+                        def _make_safe_pa(f):
+                            def _safe_fn(self, *a, **k):
+                                try:
+                                    return f(self, *a, **k)
+                                except (AttributeError, Exception):
+                                    return None
+                            _safe_fn._dh_safe = True
+                            return _safe_fn
+                        setattr(cls, fn_name, _make_safe_pa(orig_fn))
+    except Exception:
+        pass
+
+    # 4. Catch AttributeError in iPerspective.isPerspected
+    try:
+        for ip_mod_name in ('entities.iPerspective', 'iPerspective'):
+            mod = sys.modules.get(ip_mod_name)
+            if mod is None:
+                try:
+                    mod = __import__(ip_mod_name, fromlist=['iPerspective'])
+                except Exception:
+                    continue
+            cls = getattr(mod, 'iPerspective', None)
+            if cls is not None:
+                orig_isp = getattr(cls, 'isPerspected', None)
+                if callable(orig_isp) and not getattr(orig_isp, '_dh_safe', False):
+                    def _safe_isp(self, *a, **k):
+                        try:
+                            return orig_isp(self, *a, **k)
+                        except (AttributeError, Exception):
+                            return False
+                    _safe_isp._dh_safe = True
+                    cls.isPerspected = _safe_isp
+    except Exception:
+        pass
+
+
+_dh_install_battle_quit_guards()
+
+
+# 6C. Purge ClientTeammate entities on leave_battle & drop_battle_world
+def _dh_purge_client_teammates():
+    try:
+        import BigWorld
+        for ent in list(BigWorld.entities.values()):
+            if ent is None:
+                continue
+            cname = getattr(getattr(ent, '__class__', None), '__name__', '')
+            if cname == 'ClientTeammate' or 'ClientTeammate' in str(type(ent)):
+                try:
+                    BigWorld.destroyEntity(ent.id)
+                except Exception:
+                    pass
+        p = BigWorld.player()
+        if p is not None:
+            p_cname = getattr(getattr(p, '__class__', None), '__name__', '')
+            if p_cname == 'ClientTeammate' or 'ClientTeammate' in str(type(p)):
+                try:
+                    BigWorld.destroyEntity(p.id)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
+_dh_orig_leave_battle_purge = globals().get('leave_battle')
+while getattr(_dh_orig_leave_battle_purge, '_dh_purge_inner', None) is not None:
+    _dh_orig_leave_battle_purge = _dh_orig_leave_battle_purge._dh_purge_inner
+
+
+def _dh_leave_battle_purge_wrapper(*a, **k):
+    try:
+        _dh_install_battle_quit_guards()
+        _dh_purge_client_teammates()
+    except Exception:
+        pass
+    res = None
+    if callable(_dh_orig_leave_battle_purge):
+        try:
+            res = _dh_orig_leave_battle_purge(*a, **k)
+        except Exception:
+            pass
+    try:
+        _dh_purge_client_teammates()
+    except Exception:
+        pass
+    return res
+
+
+_dh_leave_battle_purge_wrapper._dh_purge_inner = _dh_orig_leave_battle_purge
+globals()['leave_battle'] = _dh_leave_battle_purge_wrapper
+
+
+_dh_orig_drop_battle_world = globals().get('drop_battle_world')
+while getattr(_dh_orig_drop_battle_world, '_dh_purge_inner', None) is not None:
+    _dh_orig_drop_battle_world = _dh_orig_drop_battle_world._dh_purge_inner
+
+
+def _dh_drop_battle_world_wrapper(*a, **k):
+    try:
+        _dh_install_battle_quit_guards()
+        _dh_purge_client_teammates()
+    except Exception:
+        pass
+    res = None
+    if callable(_dh_orig_drop_battle_world):
+        try:
+            res = _dh_orig_drop_battle_world(*a, **k)
+        except Exception:
+            pass
+    try:
+        _dh_purge_client_teammates()
+    except Exception:
+        pass
+    return res
+
+
+if callable(_dh_orig_drop_battle_world):
+    _dh_drop_battle_world_wrapper._dh_purge_inner = _dh_orig_drop_battle_world
+    globals()['drop_battle_world'] = _dh_drop_battle_world_wrapper
+
+
+# 6D. ClientTeammate Plumbing: Hide White Stand-in Mesh & Support Lifecycle
+def _dh_hide_ct_model(ct):
+    if ct is None:
+        return
+    try:
+        if hasattr(ct, 'model') and ct.model is not None:
+            ct.model.visible = False
+            ct.model.scale = (0.0001, 0.0001, 0.0001)
+    except Exception:
+        pass
+
+
+def _dh_register_client_teammate(ct):
+    try:
+        if ct is None:
+            return
+        _dh_hide_ct_model(ct)
+        ct.onBecomePlayer = lambda self=None: None
+        ct.onBecomeNonPlayer = lambda self=None: None
+    except Exception:
+        pass
+
+
 def _dh_install_teammate_entity_plumbing():
     try:
         for mod_name in ('ClientTeammate', 'entities.ClientTeammate'):
@@ -9535,6 +9748,8 @@ def _dh_install_teammate_entity_plumbing():
             if cls is not None:
                 if not hasattr(mod, 'PlayerClientTeammate'):
                     setattr(mod, 'PlayerClientTeammate', cls)
+                cls.onBecomePlayer = lambda self=None: None
+                cls.onBecomeNonPlayer = lambda self=None: None
                 if not hasattr(cls, 'setPosition'):
                     def _ct_set_pos(self, pos=None, *a, **k):
                         try:
@@ -9543,13 +9758,26 @@ def _dh_install_teammate_entity_plumbing():
                         except Exception:
                             pass
                     cls.setPosition = _ct_set_pos
+                orig_enter = getattr(cls, 'enterWorld', None)
+                if not getattr(orig_enter, '_dh_ct_enter', False):
+                    def _ct_enter_world(self, *a, **k):
+                        try:
+                            _dh_register_client_teammate(self)
+                        except Exception:
+                            pass
+                        if callable(orig_enter):
+                            try:
+                                return orig_enter(self, *a, **k)
+                            except Exception:
+                                pass
+                        return None
+                    _ct_enter_world._dh_ct_enter = True
+                    cls.enterWorld = _ct_enter_world
         install_class_defaults('ClientTeammate')
         install_remote_fallback('ClientTeammate')
     except Exception:
         pass
 
-    # Safe setPosition on Avatar / BattleGroundAvatar / PlayerBattleGroundAvatar
-    # so iBattleGround.tickClientTeamate never raises AttributeError
     def _avatar_noop_set_position(self, pos=None, *a, **k):
         return None
 
@@ -9573,8 +9801,6 @@ def _dh_install_teammate_entity_plumbing():
 
 
 def _dh_install_ct_create_wrapper():
-    # Wrap BigWorld.createEntity so 'ClientTeammate' calls from iBattleGround._createClientTeammate
-    # succeed even if called with 4-tuple / 5-tuple / Vector3 arguments
     try:
         import BigWorld
         orig_ce = getattr(BigWorld, 'createEntity', None)
@@ -9584,26 +9810,29 @@ def _dh_install_ct_create_wrapper():
             def _dh_create_entity_ct_wrapper(*args, **kwargs):
                 if args and args[0] == 'ClientTeammate':
                     _dh_install_teammate_entity_plumbing()
+                    res = None
                     try:
                         res = orig_ce(*args, **kwargs)
-                        if res is not None:
-                            return res
                     except Exception:
                         pass
-                    try:
-                        space = int(args[1]) if len(args) > 1 and isinstance(args[1], (int, long_type)) else _space_id()
-                        pos = (0.0, 0.0, 0.0)
-                        props = {}
-                        for arg in args[2:]:
-                            if isinstance(arg, dict):
-                                props = dict(arg)
-                            elif hasattr(arg, '__len__') and len(arg) == 3:
-                                pos = _point(arg)
-                            elif hasattr(arg, 'x') and hasattr(arg, 'y') and hasattr(arg, 'z'):
-                                pos = (float(arg.x), float(arg.y), float(arg.z))
-                        return orig_ce('ClientTeammate', space, 0, tuple(pos), (0.0, 0.0, 0.0), props)
-                    except Exception:
-                        return None
+                    if res is None:
+                        try:
+                            space = int(args[1]) if len(args) > 1 and isinstance(args[1], (int, long_type)) else _space_id()
+                            pos = (0.0, 0.0, 0.0)
+                            props = {}
+                            for arg in args[2:]:
+                                if isinstance(arg, dict):
+                                    props = dict(arg)
+                                elif hasattr(arg, '__len__') and len(arg) == 3:
+                                    pos = _point(arg)
+                                elif hasattr(arg, 'x') and hasattr(arg, 'y') and hasattr(arg, 'z'):
+                                    pos = (float(arg.x), float(arg.y), float(arg.z))
+                            res = orig_ce('ClientTeammate', space, 0, tuple(pos), (0.0, 0.0, 0.0), props)
+                        except Exception:
+                            res = None
+                    if res is not None:
+                        _dh_register_client_teammate(res)
+                    return res
                 return orig_ce(*args, **kwargs)
             _dh_create_entity_ct_wrapper._dh_ct_inner = orig_ce
             BigWorld.createEntity = _dh_create_entity_ct_wrapper
@@ -9615,10 +9844,107 @@ _dh_install_teammate_entity_plumbing()
 _dh_install_ct_create_wrapper()
 
 
-# 6C. Enhanced Party Teammate Sync (with live HP, maxHp, distinct GID, validBattleTeammates, and camp sync)
+# 6E. Synchronize ClientTeammate Position to Live Teammate Avatar Every Frame
+def _dh_find_all_client_teammates():
+    try:
+        import BigWorld
+        cts = []
+        for ent in list(BigWorld.entities.values()):
+            if ent is None:
+                continue
+            cname = getattr(getattr(ent, '__class__', None), '__name__', '')
+            if cname == 'ClientTeammate' or 'ClientTeammate' in str(type(ent)):
+                cts.append(ent)
+        return cts
+    except Exception:
+        return []
+
+
+def _dh_sync_client_teammates():
+    """Pin every ClientTeammate to its matching teammate avatar position every frame,
+    ensuring native 3D overhead names & seat numbers follow them smoothly, and keeping the white pillar hidden."""
+    try:
+        import BigWorld
+        cts = _dh_find_all_client_teammates()
+        if not cts:
+            return
+        mates = list(_dh_mates.get('live_list') or [])
+        pos_map = _dh_mates.get('positions', {})
+
+        for ct in cts:
+            _dh_hide_ct_model(ct)
+
+            target_pos = None
+            target_yaw = None
+
+            ct_name = getattr(ct, 'nickname', None) or getattr(ct, 'name', None)
+            matched_mate = None
+            if ct_name and mates:
+                for m in mates:
+                    if m[2] == ct_name:
+                        matched_mate = m
+                        break
+            if matched_mate is None and len(mates) == 1:
+                matched_mate = mates[0]
+
+            if matched_mate is not None:
+                client_id, entity_id, name, alive, hp, max_hp, down = matched_mate
+                avatar = BigWorld.entities.get(client_id)
+                if avatar is None:
+                    avatar = _resolve_entity(_remote.get(entity_id))
+                if avatar is not None and hasattr(avatar, 'position'):
+                    try:
+                        target_pos = avatar.position
+                        target_yaw = getattr(avatar, 'yaw', 0.0)
+                    except Exception:
+                        pass
+                if target_pos is None and entity_id in pos_map:
+                    target_pos = pos_map[entity_id]
+
+            if target_pos is not None:
+                try:
+                    ct.position = target_pos
+                except Exception:
+                    pass
+                if hasattr(ct, 'setPosition') and callable(ct.setPosition):
+                    try:
+                        ct.setPosition(target_pos)
+                    except Exception:
+                        pass
+                if target_yaw is not None:
+                    try:
+                        ct.yaw = float(target_yaw)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+
+# Hook _dh_sync_client_teammates into step_motion so it runs every physics frame
+_dh_orig_step_motion_sync = globals().get('step_motion')
+while getattr(_dh_orig_step_motion_sync, '_dh_ct_sync_inner', None) is not None:
+    _dh_orig_step_motion_sync = _dh_orig_step_motion_sync._dh_ct_sync_inner
+
+
+def _dh_step_motion_ct_sync_wrapper(now):
+    try:
+        _dh_sync_client_teammates()
+    except Exception:
+        pass
+    if callable(_dh_orig_step_motion_sync):
+        return _dh_orig_step_motion_sync(now)
+    return None
+
+
+_dh_step_motion_ct_sync_wrapper._dh_ct_sync_inner = _dh_orig_step_motion_sync
+globals()['step_motion'] = _dh_step_motion_ct_sync_wrapper
+
+
+# 6F. Rich Teammate State Synchronization & HUD Panel Updates
 _dh_mates.setdefault('client_ids', {})
 _dh_mates.setdefault('live_list', [])
 _dh_mates.setdefault('positions', {})
+_dh_mates.setdefault('last_hud_push', 0.0)
 
 
 def _dh_rich_team_mates_from(snapshot):
@@ -9662,7 +9988,6 @@ def _dh_rich_team_mates_from(snapshot):
         act = item.get('act') if isinstance(item.get('act'), dict) else {}
         down = bool(item.get('down') or act.get('pose') == 'down')
         name = str(item.get('name') or 'Teammate')
-        # Sync campType on the teammate's avatar so engine friendly checks recognize them
         if resolved is not None:
             try:
                 p = current_player()
@@ -9675,11 +10000,53 @@ def _dh_rich_team_mates_from(snapshot):
     return mates
 
 
+def _dh_refresh_hud_teammates(force=False):
+    """Deliver teammate updates to player and active UIBattlegroundsInGame."""
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        if player is None:
+            return
+        records = getattr(player, 'battleTeammates', None)
+        if not records:
+            return
+
+        update = getattr(player, 'onBattleTeammateUpdate', None)
+        if callable(update):
+            for idx in range(len(records)):
+                try:
+                    update(idx)
+                except Exception:
+                    pass
+
+        import Globals
+        ig = getattr(getattr(Globals, 'uiMgr', None), 'UIBattlegroundsInGame', None)
+        if ig is None:
+            ig = (getattr(getattr(Globals, 'uiMgr', None), '____all_ui__', {}) or {}).get('UIBattlegroundsInGame')
+        if ig is not None:
+            for m in ('initTeammate', 'refreshTeammate', 'updateTeammate', 'onTeammateUpdate', 'updateTeamMateInfo', 'initTeamPanel', 'updateTeamPanel'):
+                fn = getattr(ig, m, None)
+                if callable(fn):
+                    try:
+                        fn()
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+
 def _dh_rich_sync_teammates(mates):
     _dh_mates['live_list'] = list(mates or [])
     signature = tuple(mates or [])
-    if signature == _dh_mates.get('sig'):
+    now = time.time()
+    last_push = float(_dh_mates.get('last_hud_push') or 0.0)
+
+    sig_changed = (signature != _dh_mates.get('sig'))
+    time_to_refresh = (now - last_push >= 1.5)
+    if not sig_changed and not time_to_refresh:
         return False
+    _dh_mates['last_hud_push'] = now
+
     import BigWorld
     player = BigWorld.player()
     if player is None:
@@ -9780,7 +10147,6 @@ def _dh_rich_sync_teammates(mates):
         except Exception:
             log_error('local-mates-setter-error')
 
-    # Ensure validBattleTeammates remains populated if set_battleTeammates cleared it
     try:
         if valid_mates and not getattr(player, 'validBattleTeammates', None):
             player.validBattleTeammates = list(valid_mates)
@@ -9798,6 +10164,9 @@ def _dh_rich_sync_teammates(mates):
                     log_error('local-mates-update-error', index=index)
                 break
 
+    _dh_refresh_hud_teammates()
+    _dh_sync_client_teammates()
+
     _dh_mates['sig'] = signature
     _dh_mates['updates'] = int(_dh_mates.get('updates') or 0) + 1
     if _dh_mates['updates'] <= 15:
@@ -9811,7 +10180,6 @@ globals()['_dh_team_mates_from'] = _dh_rich_team_mates_from
 globals()['_dh_sync_teammates'] = _dh_rich_sync_teammates
 
 
-# Prevent _dh_pin_retire from stripping 'me' out of battleTeammates while in a multi-player party
 _dh_orig_pin_retire = globals().get('_dh_pin_retire')
 while getattr(_dh_orig_pin_retire, '_dh_party_pin_inner', None) is not None:
     _dh_orig_pin_retire = _dh_orig_pin_retire._dh_party_pin_inner
@@ -9831,506 +10199,35 @@ _dh_party_safe_pin_retire._dh_party_pin_inner = _dh_orig_pin_retire
 globals()['_dh_pin_retire'] = _dh_party_safe_pin_retire
 
 
-# 6D. In-Battle Cocos2d-x Teammate Overhead Marker (Seat # + Name + HP Bar + Distance)
-#     & Teammate HP Bar HUD (Directly Below / Above Player's HP Bar)
+# 6G. Background Tick for Teammate Tracking & HUD Refresh
 _dh_team_ui_state = {
     'running': False,
-    'hp_anchor': None,
-    'logged_anchor': False,
+    'last_tick': 0.0,
 }
 
 
-def _dh_battle_cc():
-    for mod_name in ('cc', 'ui.ingame.RadarMap', 'ui.UIBattlegroundsInGame', 'ui.UIDtsMap'):
-        mod = sys.modules.get(mod_name)
-        if mod is not None:
-            cc_mod = mod if mod_name == 'cc' else getattr(mod, 'cc', None)
-            if cc_mod is not None and hasattr(cc_mod, 'Director'):
-                return cc_mod
+def _dh_teammate_tick():
     try:
-        import cc as _cc
-        return _cc
-    except Exception:
-        return None
-
-
-def _dh_project_3d_to_screen(world_pos, win_w, win_h):
-    """Project 3D world position (x, y, z) to 2D Cocos screen coordinates (sx, sy, in_front)."""
-    try:
-        cam_mod = sys.modules.get('libclaudia.Classes.Camera')
-        cam_cls = getattr(cam_mod, 'Camera', None) if cam_mod is not None else None
-        if cam_cls is None:
-            from libclaudia import Camera as cam_cls
-        cam = getattr(cam_cls, 'main', None) if cam_cls is not None else None
-        if cam is None:
-            return None
-        transform = getattr(cam, 'transform', None)
-        if transform is None:
-            return None
-        eye = _point(transform.position)
-        fwd = unit(_point(transform.forward))
-        right = unit(_point(transform.right))
-        try:
-            up = unit(_point(transform.up))
-        except Exception:
-            # Cross product of fwd and right, oriented with +Y upward
-            ux = fwd[1] * right[2] - fwd[2] * right[1]
-            uy = fwd[2] * right[0] - fwd[0] * right[2]
-            uz = fwd[0] * right[1] - fwd[1] * right[0]
-            if uy < 0.0:
-                ux, uy, uz = -ux, -uy, -uz
-            up = unit((ux, uy, uz))
-
-        rx = float(world_pos[0]) - float(eye[0])
-        ry = float(world_pos[1]) - float(eye[1])
-        rz = float(world_pos[2]) - float(eye[2])
-
-        z_cam = rx * fwd[0] + ry * fwd[1] + rz * fwd[2]
-        x_cam = rx * right[0] + ry * right[1] + rz * right[2]
-        y_cam = rx * up[0] + ry * up[1] + rz * up[2]
-
-        fov = 60.0
-        for attr in ('fieldOfView', 'fov'):
-            try:
-                val = float(getattr(cam, attr, 0.0) or 0.0)
-                if 20.0 <= val <= 130.0:
-                    fov = val
-                    break
-            except Exception:
-                pass
-        tan_half_v = math.tan(math.radians(fov * 0.5))
-        aspect = float(win_w) / float(max(1.0, win_h))
-        tan_half_h = tan_half_v * aspect
-
-        if z_cam <= 0.15:
-            # Behind camera: clamp toward screen edge in the horizontal direction of x_cam
-            sx = (win_w - 45.0) if x_cam >= 0.0 else 45.0
-            sy = max(90.0, min(win_h - 90.0, win_h * 0.5))
-            return (sx, sy, False)
-
-        ndc_x = x_cam / (z_cam * tan_half_h)
-        ndc_y = y_cam / (z_cam * tan_half_v)
-        sx = (win_w * 0.5) * (1.0 + ndc_x)
-        sy = (win_h * 0.5) * (1.0 + ndc_y)
-        on_screen = (20.0 <= sx <= win_w - 20.0) and (20.0 <= sy <= win_h - 20.0)
-        if not on_screen:
-            sx = max(45.0, min(win_w - 45.0, sx))
-            sy = max(75.0, min(win_h - 75.0, sy))
-        return (sx, sy, on_screen)
-    except Exception:
-        return None
-
-
-def _dh_find_player_hp_bar_anchor(cc, win_w, win_h):
-    """Locate the player's own HP bar on UIBattlegroundsInGame in world space so the teammate HP bar
-    can sit directly below/above it (with a fallback to the standard ROS HUD position)."""
-    cached = _dh_team_ui_state.get('hp_anchor')
-    if cached is not None:
-        return cached
-    try:
-        import Globals
-        ig = getattr(getattr(Globals, 'uiMgr', None), 'UIBattlegroundsInGame', None)
-        if ig is None:
-            ig = (getattr(getattr(Globals, 'uiMgr', None), '____all_ui__', {}) or {}).get('UIBattlegroundsInGame')
-        root = getattr(ig, '____ccwidget__', None) or getattr(ig, 'layer', None) or getattr(ig, 'widget', None) or ig
-        if root is not None and hasattr(root, 'getChildren'):
-            queue = [(root, getattr(root, 'getName', lambda: '')() or 'root', 0)]
-            candidates = []
-            visited = set()
-            while queue and len(visited) < 1500:
-                node, path, depth = queue.pop(0)
-                if node is None or id(node) in visited:
-                    continue
-                visited.add(id(node))
-                try:
-                    if hasattr(node, 'isVisible') and not node.isVisible():
-                        continue
-                except Exception:
-                    pass
-                name_l = str(path.rsplit('/', 1)[-1]).lower()
-                if any(k in name_l for k in ('hp_bar', 'bar_hp', 'hpbar', 'blood_bar', 'bloodbar', 'prog_hp', 'loadingbar_hp', 'bar_blood', 'hp_prog')):
-                    try:
-                        sz = node.getContentSize()
-                        a = node.convertToWorldSpace(cc.Vec2(0.0, 0.0))
-                        b = node.convertToWorldSpace(cc.Vec2(sz.width, sz.height))
-                        left = min(a.x, b.x)
-                        bottom = min(a.y, b.y)
-                        w = abs(b.x - a.x)
-                        h = abs(b.y - a.y)
-                        if w >= 60.0 and 2.0 <= h <= 60.0:
-                            candidates.append((name_l, left, bottom, w, h))
-                    except Exception:
-                        pass
-                if depth < 8 and hasattr(node, 'getChildren'):
-                    try:
-                        for ch in node.getChildren() or []:
-                            cname = ''
-                            try:
-                                cname = ch.getName() or ''
-                            except Exception:
-                                pass
-                            queue.append((ch, path + '/' + cname, depth + 1))
-                    except Exception:
-                        pass
-            if candidates:
-                # Prefer the widest HP bar (the player's main HP bar)
-                candidates.sort(key=lambda item: item[3], reverse=True)
-                best = candidates[0]
-                anchor = (best[1], best[2], best[3], best[4])
-                _dh_team_ui_state['hp_anchor'] = anchor
-                if not _dh_team_ui_state.get('logged_anchor'):
-                    _dh_team_ui_state['logged_anchor'] = True
-                    log('local-battle-hp-anchor-found', name=best[0], rect=[round(v, 1) for v in anchor])
-                return anchor
-    except Exception:
-        pass
-    # Fallback: bottom-center below the standard ROS PC HP bar
-    return (win_w * 0.5 - 125.0, 22.0, 250.0, 18.0)
-
-
-def _dh_clear_team_overlay(cc):
-    try:
-        if cc is None:
-            return
-        scene = cc.Director.getInstance().getRunningScene()
-        if scene is None:
-            return
-        for name in ('dh_mate_overhead_layer', 'dh_mate_hud_panel'):
-            node = scene.getChildByName(name)
-            if node is not None:
-                try:
-                    node.removeFromParent()
-                except Exception:
-                    node.setVisible(False)
+        _dh_sync_client_teammates()
     except Exception:
         pass
 
-
-def _dh_seat_colors(cc, seat_num):
-    palette = (
-        (0, 210, 255),    # Seat 1/2: Cyan-Blue
-        (50, 235, 120),   # Seat 2/3: Emerald Green
-        (255, 195, 40),   # Seat 3/4: Gold
-        (235, 110, 255),  # Seat 4/5: Violet
-    )
-    r, g, b = palette[(max(1, int(seat_num)) - 1) % len(palette)]
-    return cc.c3b(r, g, b), cc.c4f(r / 255.0, g / 255.0, b / 255.0, 0.95)
-
-
-def _dh_update_teammate_ui():
-    cc = _dh_battle_cc()
     try:
-        phase = BATTLE.get('phase')
-        team = int((BATTLE.get('ticket') or {}).get('team') or 0)
-        in_party_battle = (phase in ('entering', 'fighting') and (_DH_PARTY_LOW <= team < _DH_PARTY_HIGH))
-        mates = list(_dh_mates.get('live_list') or []) if in_party_battle else []
-        if not in_party_battle or not mates or cc is None:
-            _dh_team_ui_state['hp_anchor'] = None
-            _dh_clear_team_overlay(cc)
-            return
-
-        scene = cc.Director.getInstance().getRunningScene()
-        if scene is None:
-            return
-        win = cc.Director.getInstance().getWinSize()
-        win_w, win_h = float(win.width), float(win.height)
-
-        import BigWorld
-        player = BigWorld.player()
-        if player is None:
-            return
-        my_pos = _point(getattr(player, 'position', (0.0, 0.0, 0.0)))
-
-        # ------------------------------------------------------------------
-        # 1. OVERHEAD TEAMMATE UI (Seat Number + Name + Mini HP Bar + Dist)
-        # ------------------------------------------------------------------
-        ov_layer = scene.getChildByName('dh_mate_overhead_layer')
-        if ov_layer is None:
-            ov_layer = cc.Node.create()
-            ov_layer.setName('dh_mate_overhead_layer')
-            scene.addChild(ov_layer, 9850)
-
-        active_ov_names = set()
-        for idx, (client_id, entity_id, name, alive, hp, max_hp, down) in enumerate(mates):
-            seat_num = idx + 2
-            tag_name = 'mate_ov_%d' % entity_id
-            active_ov_names.add(tag_name)
-            entity = BigWorld.entities.get(client_id)
-            if entity is None:
-                entity = _resolve_entity(_remote.get(entity_id))
-
-            tag_node = ov_layer.getChildByName(tag_name)
-
-            # Determine world position: live entity position first, fallback to server snapshot position
-            epos = None
-            if entity is not None and hasattr(entity, 'position'):
-                try:
-                    epos = _point(entity.position)
-                except Exception:
-                    epos = None
-            if epos is None:
-                epos = _dh_mates.get('positions', {}).get(entity_id)
-
-            # If the teammate is dead and eliminated, or position is unknown, hide overhead tag
-            if not alive or epos is None:
-                if tag_node is not None:
-                    tag_node.setVisible(False)
-                continue
-
-            # Hide duplicate native _ui3DName plate if present so our richer marker displays cleanly
-            if entity is not None:
-                plate = getattr(entity, '_ui3DName', None)
-                if plate is not None:
-                    try:
-                        if hasattr(plate, 'setVisible'):
-                            plate.setVisible(False)
-                        elif hasattr(plate, 'visible'):
-                            plate.visible = False
-                    except Exception:
-                        pass
-
-            dx = epos[0] - my_pos[0]
-            dy = epos[1] - my_pos[1]
-            dz = epos[2] - my_pos[2]
-            dist_m = int(math.sqrt(dx * dx + dy * dy + dz * dz))
-
-            head_pos = (epos[0], epos[1] + 2.15, epos[2])
-            proj = _dh_project_3d_to_screen(head_pos, win_w, win_h)
-            if proj is None:
-                if tag_node is not None:
-                    tag_node.setVisible(False)
-                continue
-            sx, sy, on_screen = proj
-
-            seat_c3b, seat_c4f = _dh_seat_colors(cc, seat_num)
-            if tag_node is None:
-                tag_node = cc.Node.create()
-                tag_node.setName(tag_name)
-                ov_layer.addChild(tag_node)
-
-                bg_draw = cc.DrawNode.create()
-                bg_draw.setName('ov_draw')
-                tag_node.addChild(bg_draw, 1)
-
-                lbl_title = cc.LabelTTF.create('', 'Arial', 14)
-                lbl_title.setName('ov_title')
-                lbl_title.setPosition(0.0, 12.0)
-                tag_node.addChild(lbl_title, 2)
-
-                lbl_shadow = cc.LabelTTF.create('', 'Arial', 14)
-                lbl_shadow.setName('ov_shadow')
-                lbl_shadow.setColor(cc.c3b(0, 0, 0))
-                lbl_shadow.setPosition(1.0, 11.0)
-                tag_node.addChild(lbl_shadow, 1)
-
-            tag_node.setVisible(True)
-            tag_node.setPosition(sx, sy)
-
-            status_prefix = '[DOWN] ' if down else ''
-            if on_screen:
-                title_str = '[%d] %s%s (%dm)' % (seat_num, status_prefix, name, dist_m)
-            else:
-                if sx <= 60.0:
-                    arrow = '< '
-                elif sx >= win_w - 60.0:
-                    arrow = ' >'
-                elif sy >= win_h - 90.0:
-                    arrow = '^ '
-                elif sy <= 90.0:
-                    arrow = 'v '
-                else:
-                    arrow = '* '
-                title_str = '%s[%d] %s (%dm)' % (arrow, seat_num, name, dist_m)
-
-            lbl_title = tag_node.getChildByName('ov_title')
-            lbl_shadow = tag_node.getChildByName('ov_shadow')
-            if lbl_title is not None:
-                lbl_title.setString(title_str)
-                lbl_title.setColor(cc.c3b(255, 90, 90) if down else seat_c3b)
-            if lbl_shadow is not None:
-                lbl_shadow.setString(title_str)
-
-            bg_draw = tag_node.getChildByName('ov_draw')
-            if bg_draw is not None:
-                bg_draw.clear()
-                bar_w = 84.0
-                bar_h = 5.0
-                left_x = -bar_w * 0.5
-                if on_screen:
-                    # Dark pill background behind overhead text + HP bar
-                    bg_draw.drawSolidRect(cc.Vec2(left_x - 8.0, -3.0), cc.Vec2(left_x + bar_w + 8.0, 23.0),
-                                          cc.c4f(0.04, 0.07, 0.12, 0.68))
-                    # HP bar track
-                    bg_draw.drawSolidRect(cc.Vec2(left_x, 0.0), cc.Vec2(left_x + bar_w, bar_h),
-                                          cc.c4f(0.18, 0.18, 0.22, 0.92))
-                    ratio = max(0.0, min(1.0, float(hp) / float(max(1, max_hp))))
-                    if ratio > 0.0:
-                        if down or ratio < 0.25:
-                            hp_col = cc.c4f(1.0, 0.25, 0.25, 0.98)
-                        elif ratio < 0.55:
-                            hp_col = cc.c4f(1.0, 0.80, 0.20, 0.98)
-                        else:
-                            hp_col = cc.c4f(0.20, 0.95, 0.50, 0.98)
-                        bg_draw.drawSolidRect(cc.Vec2(left_x, 0.0), cc.Vec2(left_x + bar_w * ratio, bar_h), hp_col)
-                    # Downward pointer triangle right above teammate's head
-                    bg_draw.drawSolidRect(cc.Vec2(-3.0, -7.0), cc.Vec2(3.0, -3.0), seat_c4f)
-                else:
-                    # Off-screen indicator: compact directional pill
-                    bg_draw.drawSolidRect(cc.Vec2(-55.0, 2.0), cc.Vec2(55.0, 22.0),
-                                          cc.c4f(0.04, 0.07, 0.12, 0.75))
-
-        # Hide any stale overhead nodes
-        try:
-            for ch in ov_layer.getChildren() or []:
-                if ch.getName() not in active_ov_names:
-                    ch.setVisible(False)
-        except Exception:
-            pass
-
-        # ------------------------------------------------------------------
-        # 2. TEAMMATE HP HUD PANEL (Stacked Directly Above/Below Player's HP Bar)
-        # ------------------------------------------------------------------
-        anchor = _dh_find_player_hp_bar_anchor(cc, win_w, win_h)
-        hp_left, hp_bottom, hp_w, hp_h = anchor
-
-        hud_panel = scene.getChildByName('dh_mate_hud_panel')
-        if hud_panel is None:
-            hud_panel = cc.Node.create()
-            hud_panel.setName('dh_mate_hud_panel')
-            scene.addChild(hud_panel, 9860)
-
-        # Position relative to player's HP bar
-        # In ROS PC, the player's HP bar is at the bottom of the screen (hp_bottom < win_h * 0.45).
-        # Stacking downward would push teammate rows below the screen, so stack upward!
-        panel_w = max(210.0, min(280.0, hp_w))
-        row_h = 26.0
-        base_x = max(10.0, min(win_w - panel_w - 10.0, hp_left))
-        stack_upward = (hp_bottom < win_h * 0.45)
-        base_y = (hp_bottom + hp_h + 8.0) if stack_upward else (hp_bottom - 8.0)
-
-        active_hud_rows = set()
-        for idx, (client_id, entity_id, name, alive, hp, max_hp, down) in enumerate(mates):
-            seat_num = idx + 2
-            row_name = 'mate_hud_%d' % entity_id
-            active_hud_rows.add(row_name)
-
-            entity = BigWorld.entities.get(client_id) or _resolve_entity(_remote.get(entity_id))
-            epos = None
-            if entity is not None and hasattr(entity, 'position'):
-                try:
-                    epos = _point(entity.position)
-                except Exception:
-                    epos = None
-            if epos is None:
-                epos = _dh_mates.get('positions', {}).get(entity_id)
-
-            dist_txt = ''
-            if epos is not None and alive:
-                d = int(math.sqrt((epos[0] - my_pos[0]) ** 2 + (epos[1] - my_pos[1]) ** 2 + (epos[2] - my_pos[2]) ** 2))
-                dist_txt = '  %dm' % d
-
-            row_node = hud_panel.getChildByName(row_name)
-            seat_c3b, seat_c4f = _dh_seat_colors(cc, seat_num)
-            if row_node is None:
-                row_node = cc.Node.create()
-                row_node.setName(row_name)
-                hud_panel.addChild(row_node)
-
-                r_draw = cc.DrawNode.create()
-                r_draw.setName('row_draw')
-                row_node.addChild(r_draw, 1)
-
-                r_lbl = cc.LabelTTF.create('', 'Arial', 13)
-                r_lbl.setName('row_lbl')
-                r_lbl.setAnchorPoint(cc.Vec2(0.0, 0.5))
-                r_lbl.setPosition(8.0, 16.0)
-                row_node.addChild(r_lbl, 2)
-
-                r_hp_lbl = cc.LabelTTF.create('', 'Arial', 12)
-                r_hp_lbl.setName('row_hp_lbl')
-                r_hp_lbl.setAnchorPoint(cc.Vec2(1.0, 0.5))
-                r_hp_lbl.setPosition(panel_w - 8.0, 16.0)
-                row_node.addChild(r_hp_lbl, 2)
-
-            row_y = (base_y + idx * (row_h + 3.0)) if stack_upward else (base_y - (idx + 1) * (row_h + 3.0))
-            row_y = max(4.0, min(win_h - row_h - 4.0, row_y))
-            row_node.setVisible(True)
-            row_node.setPosition(base_x, row_y)
-
-            if not alive:
-                state_str = 'ELIMINATED'
-                hp_val_str = '0/%d' % max_hp
-                txt_col = cc.c3b(170, 170, 170)
-            elif down:
-                state_str = 'DOWN' + dist_txt
-                hp_val_str = '%d/%d' % (hp, max_hp)
-                txt_col = cc.c3b(255, 100, 100)
-            else:
-                state_str = dist_txt.strip()
-                hp_val_str = '%d/%d' % (hp, max_hp)
-                txt_col = seat_c3b
-
-            r_lbl = row_node.getChildByName('row_lbl')
-            if r_lbl is not None:
-                left_label = '[%d] %s' % (seat_num, name)
-                if state_str:
-                    left_label += ' (%s)' % state_str
-                r_lbl.setString(left_label)
-                r_lbl.setColor(txt_col)
-
-            r_hp_lbl = row_node.getChildByName('row_hp_lbl')
-            if r_hp_lbl is not None:
-                r_hp_lbl.setPosition(panel_w - 8.0, 16.0)
-                r_hp_lbl.setString(hp_val_str)
-                r_hp_lbl.setColor(cc.c3b(235, 245, 255))
-
-            r_draw = row_node.getChildByName('row_draw')
-            if r_draw is not None:
-                r_draw.clear()
-                # Sleek dark translucent bar container
-                r_draw.drawSolidRect(cc.Vec2(0.0, 0.0), cc.Vec2(panel_w, row_h),
-                                     cc.c4f(0.04, 0.07, 0.12, 0.76))
-                # Left seat accent stripe
-                r_draw.drawSolidRect(cc.Vec2(0.0, 0.0), cc.Vec2(4.0, row_h), seat_c4f)
-                # Teammate HP bar track (bottom of row)
-                bar_left = 8.0
-                bar_right = panel_w - 8.0
-                bar_w = bar_right - bar_left
-                r_draw.drawSolidRect(cc.Vec2(bar_left, 3.0), cc.Vec2(bar_right, 8.5),
-                                     cc.c4f(0.18, 0.20, 0.25, 0.95))
-                ratio = max(0.0, min(1.0, float(hp) / float(max(1, max_hp)))) if alive else 0.0
-                if ratio > 0.0:
-                    if down or ratio < 0.25:
-                        fill_col = cc.c4f(1.0, 0.25, 0.25, 0.98)
-                    elif ratio < 0.55:
-                        fill_col = cc.c4f(1.0, 0.80, 0.20, 0.98)
-                    else:
-                        fill_col = cc.c4f(0.20, 0.95, 0.55, 0.98)
-                    r_draw.drawSolidRect(cc.Vec2(bar_left, 3.0), cc.Vec2(bar_left + bar_w * ratio, 8.5), fill_col)
-
-        try:
-            for ch in hud_panel.getChildren() or []:
-                if ch.getName() not in active_hud_rows:
-                    ch.setVisible(False)
-        except Exception:
-            pass
+        now = time.time()
+        if now - float(_dh_team_ui_state.get('last_tick') or 0.0) >= 1.0:
+            _dh_team_ui_state['last_tick'] = now
+            _dh_refresh_hud_teammates()
     except Exception:
         pass
 
-
-def _dh_teammate_ui_tick():
-    try:
-        _dh_update_teammate_ui()
-    except Exception:
-        pass
     phase = BATTLE.get('phase')
     team = int((BATTLE.get('ticket') or {}).get('team') or 0)
     fast = (phase in ('entering', 'fighting') and (_DH_PARTY_LOW <= team < _DH_PARTY_HIGH))
-    call_later(0.05 if fast else 0.5, _dh_teammate_ui_tick)
+    call_later(0.04 if fast else 0.5, _dh_teammate_tick)
 
 
 if not _dh_team_ui_state.get('running'):
     _dh_team_ui_state['running'] = True
-    call_later(0.5, _dh_teammate_ui_tick)
+    call_later(0.5, _dh_teammate_tick)
 
 log('ros-redemption-duo-teammate-and-quit-fix-active', status='ready')

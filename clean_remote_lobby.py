@@ -360,6 +360,10 @@ def _dh_push_display_items(plain, counted):
     done = []
     for item, count in items.items():
         try:
+            # Dedup guard: if player already owns this permanent item, do not push another copy
+            own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
+            if callable(own_fn) and own_fn(int(item)) > 0:
+                continue
             push(player, item, count, 0)         # expires 0 (permanent); relog re-syncs the real expiry
             done.append((item, count))
         except Exception:
@@ -653,7 +657,13 @@ def _dh_finish_entry_wrapper(Globals, lobby_player, scene_attempt=0, _retry=0):
                 return None
     except Exception:
         log_error('local-lobby-enter-retry-error')
-    return _dh_original_finish_entry(Globals, lobby_player, scene_attempt)
+    res = _dh_original_finish_entry(Globals, lobby_player, scene_attempt)
+    try:
+        call_later(1.0, _dh_clean_depot_duplicates, lobby_player)
+        call_later(3.0, _dh_clean_depot_duplicates, lobby_player)
+    except Exception:
+        pass
+    return res
 
 
 if _dh_original_finish_entry is not None:
@@ -4846,9 +4856,117 @@ def _dh_fix_item_display_ui():
         pass
 
 
+def _dh_remove_all_appearance_copies(player, item_id):
+    """Safely remove ALL copies of an appearance item from player's package so no duplicates remain."""
+    if not item_id:
+        return 0
+    try:
+        pkg = getattr(player, 'dtsAppearancePackage', None)
+        if pkg is None:
+            return 0
+        entries = pkg._getItemById(int(item_id)) or {}
+        uuids = list(entries.keys())
+        for u in uuids:
+            try:
+                player.onDelDtsAppearanceItem(int(item_id), u)
+            except Exception:
+                pass
+        return len(uuids)
+    except Exception:
+        return 0
+
+
+def _dh_clean_depot_duplicates(player=None):
+    """Scan player's dtsAppearancePackage:
+    1. Clamp all permanent cosmetic items to 1 copy and delete duplicate uuids.
+    2. If Monster - M2 (140404) is owned, remove Monster - M1 (140403).
+    3. If Velociraptor Lv. 2 (142008) is owned, remove Velociraptor Lv. 1 (142007).
+    """
+    try:
+        if player is None:
+            import BigWorld
+            player = BigWorld.player()
+        pkg = getattr(player, 'dtsAppearancePackage', None)
+        if pkg is None:
+            return 0
+        
+        get_all = getattr(player, 'getDtsAppearanceAllItems', None)
+        if callable(get_all):
+            all_ids = list(get_all() or [])
+        else:
+            item_list = getattr(pkg, 'itemList', None)
+            all_ids = list(item_list.keys()) if isinstance(item_list, dict) else []
+            
+        cleaned = 0
+        for item_id in all_ids:
+            try:
+                entries = pkg._getItemById(int(item_id)) or {}
+            except Exception:
+                continue
+            if not isinstance(entries, dict) or not entries:
+                continue
+                
+            uuids = list(entries.keys())
+            perm_uuids = []
+            for u in uuids:
+                data = entries[u]
+                info = data.get('info') if isinstance(data, dict) else getattr(data, 'info', None)
+                ex_tm = 0
+                if isinstance(info, dict):
+                    ex_tm = int(info.get('ex_tm') or 0)
+                elif hasattr(info, 'ex_tm'):
+                    ex_tm = int(getattr(info, 'ex_tm', 0) or 0)
+                if ex_tm == 0:
+                    perm_uuids.append(u)
+                    
+            if len(perm_uuids) > 1:
+                for extra_u in perm_uuids[1:]:
+                    try:
+                        player.onDelDtsAppearanceItem(int(item_id), extra_u)
+                        cleaned += 1
+                    except Exception:
+                        pass
+                perm_uuids = [perm_uuids[0]]
+                
+            if perm_uuids:
+                keep_u = perm_uuids[0]
+                keep_data = entries.get(keep_u)
+                num = 1
+                if isinstance(keep_data, dict):
+                    num = int(keep_data.get('number') or 1)
+                elif hasattr(keep_data, 'number'):
+                    num = int(getattr(keep_data, 'number', 1) or 1)
+                if num > 1:
+                    try:
+                        player.onUpdateDtsAppearanceItemNumber(int(item_id), keep_u, 1)
+                        cleaned += 1
+                    except Exception:
+                        pass
+
+        # Evolution consumption cleanup:
+        # If Monster - M2 (140404) is owned, remove Monster - M1 (140403)
+        if 140404 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140404) > 0:
+            if 140403 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140403) > 0:
+                _dh_remove_all_appearance_copies(player, 140403)
+                cleaned += 1
+
+        # If Velociraptor Lv. 2 (142008) is owned, remove Velociraptor Lv. 1 (142007)
+        if 142008 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(142008) > 0:
+            if 142007 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(142007) > 0:
+                _dh_remove_all_appearance_copies(player, 142007)
+                cleaned += 1
+
+        if cleaned:
+            log('local-depot-cleaned', cleaned=cleaned)
+        return cleaned
+    except Exception:
+        log_error('local-depot-clean-error')
+        return 0
+
+
 def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     """Handle Workshop Tune: base.appearanceCultivateCompound(srcID, targetID, flag).
-    Deducts 1x src item and 1000 Gold, grants 1x target item, and calls onAppearanceCultivateCompound."""
+    Deducts src item and 1000 Gold, grants 1x target item, and calls onAppearanceCultivateCompound."""
     try:
         src_id = kwargs.get('src_id') if kwargs.get('src_id') is not None else (args[0] if len(args) > 0 else 0)
         target_id = kwargs.get('target_id') if kwargs.get('target_id') is not None else (args[1] if len(args) > 1 else 0)
@@ -4871,12 +4989,26 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
 
     log('local-cultivate-start', src_id=src_id, target_id=target_id)
 
-    # 1. Deduct cost / source appearance item (1 copy)
-    if src_id:
+    # Evolution mappings (target_id -> src_id)
+    _tune_src_map = {
+        140404: 140403,  # Monster - M2 comes from Monster - M1
+        142008: 142007,  # Velociraptor Lv. 2 comes from Velociraptor Lv. 1
+    }
+    effective_src = _tune_src_map.get(target_id, src_id)
+
+    # 1. Deduct cost / source appearance item (ALL copies)
+    if effective_src:
         try:
-            remove_appearance_copies(player, src_id, 1)
+            _dh_remove_all_appearance_copies(player, effective_src)
         except Exception:
-            log_error('local-cultivate-remove-src-error', src_id=src_id)
+            log_error('local-cultivate-remove-src-error', src_id=effective_src)
+    if src_id and src_id != target_id and src_id != effective_src:
+        try:
+            _dh_remove_all_appearance_copies(player, src_id)
+        except Exception:
+            pass
+    if target_id in _tune_src_map:
+        _dh_remove_all_appearance_copies(player, _tune_src_map[target_id])
 
     # 2. Deduct Gold (1000 GP)
     cost = 1000
@@ -4889,9 +5021,11 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     except Exception:
         log_error('local-cultivate-gp-error')
 
-    # 3. Add target appearance item to player's package
+    # 3. Add target appearance item to player's package (1 copy only)
     try:
-        _push_one_item(player, target_id, 1, 0, package='appearance')
+        own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
+        if not callable(own_fn) or own_fn(target_id) == 0:
+            _push_one_item(player, target_id, 1, 0, package='appearance')
     except Exception:
         log_error('local-cultivate-push-target-error', target_id=target_id)
 
@@ -4899,8 +5033,16 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     try:
         for prop in ('dtsVehicleAppearanceList', 'dtsWeaponAppearanceList', 'dtsBodyAppearanceList', 'dtsWearableAppearanceList'):
             lst = getattr(player, prop, None)
-            if isinstance(lst, (list, tuple)) and src_id in lst:
-                new_lst = [target_id if x == src_id else x for x in lst]
+            matched_old = None
+            if isinstance(lst, (list, tuple)):
+                if src_id in lst:
+                    matched_old = src_id
+                elif effective_src in lst:
+                    matched_old = effective_src
+                elif _tune_src_map.get(target_id) in lst:
+                    matched_old = _tune_src_map[target_id]
+            if matched_old is not None:
+                new_lst = [target_id if x == matched_old else x for x in lst]
                 setattr(player, prop, new_lst)
                 cb_name = 'onUpdate' + prop[0].upper() + prop[1:]
                 cb = getattr(player, cb_name, None)
@@ -4919,21 +5061,27 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     except Exception:
         log_error('local-cultivate-equip-update-error')
 
-    # 5. Notify backend server if reachable to persist in database
+    # 5. Clean any residual duplicate copies
+    try:
+        call_later(0.1, _dh_clean_depot_duplicates, player)
+    except Exception:
+        pass
+
+    # 6. Notify backend server if reachable to persist in database
     try:
         call_pyserver('appearanceCultivateCompound', (src_id, target_id, flag), kwargs)
     except Exception:
         pass
 
-    # 6. Deliver callback onAppearanceCultivateCompound to player
+    # 7. Deliver callback onAppearanceCultivateCompound to player
     cb = getattr(player, 'onAppearanceCultivateCompound', None)
     if callable(cb):
         try:
-            call_later(0.1, cb, target_id)
+            call_later(0.15, cb, target_id)
         except Exception:
             log_error('local-cultivate-cb-error', target_id=target_id)
 
-    # 7. Refresh appearance UIs
+    # 8. Refresh appearance UIs
     try:
         import Globals
         ui_mgr = getattr(Globals, 'uiMgr', None)
@@ -4944,15 +5092,16 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
                     for mname in ('refreshAppearanceList', 'refresh', 'refreshView'):
                         fn = getattr(scr, mname, None)
                         if callable(fn):
-                            fn()
+                            try:
+                                fn()
+                            except Exception:
+                                pass
     except Exception:
         pass
 
-    # 8. Safety check: ensure UIItemDisplay BACK button is armed
+    # 9. Clean duplicate result UI screen buttons
     try:
-        call_later(0.3, _dh_fix_item_display_ui)
-        call_later(1.0, _dh_fix_item_display_ui)
-        call_later(2.0, _dh_fix_item_display_ui)
+        call_later(0.2, _dh_fix_item_display_ui)
     except Exception:
         pass
 
@@ -5455,13 +5604,49 @@ except Exception:
     pass
 
 
+_DH_ITEM_CALLBACK_RPCS = set([
+    'openSupplyBox',
+    'openMultipleSupplyBox',
+    'openFreeSupplyBox',
+    'buyMallGood',
+    'buyMallGoodInAppearanceMall',
+    'buyMultipleMallGood',
+    'buyDtsHallProp',
+    'appearanceCultivateCompound',
+    'composeItem',
+    'requestDtsLevelAward',
+    'requestDtsSigninAward',
+])
+
+_dh_orig_push_server_items = globals().get('push_server_items')
+if callable(_dh_orig_push_server_items) and not getattr(_dh_orig_push_server_items, '_dh_dedup_wrapped', False):
+    def _dh_push_server_items_wrapper(player, items, reason='reply'):
+        if reason in _DH_ITEM_CALLBACK_RPCS:
+            try:
+                log('local-depot-push-suppressed-for-callback', reason=reason, count=len(items) if isinstance(items, (list, tuple)) else 0)
+            except Exception:
+                pass
+            return 0
+        return _dh_orig_push_server_items(player, items, reason=reason)
+    _dh_push_server_items_wrapper._dh_dedup_wrapped = True
+    push_server_items = _dh_push_server_items_wrapper
+    globals()['push_server_items'] = _dh_push_server_items_wrapper
+
 _dh_orig_finish_rpc = globals().get('finish_rpc')
 if callable(_dh_orig_finish_rpc) and not getattr(_dh_orig_finish_rpc, '_dh_pack_wrapped', False):
     def _dh_finish_rpc_pack_wrapper(player, name, args, kwargs, reply, count):
-        res = _dh_orig_finish_rpc(player, name, args, kwargs, reply, count)
+        items_for_ui = reply.get('items') if isinstance(reply, dict) else None
+        # If this RPC already delivers items via engine callbacks, strip reply['items']
+        # before the base finish_rpc can invoke push_server_items
+        if name in _DH_ITEM_CALLBACK_RPCS and isinstance(reply, dict) and 'items' in reply:
+            reply_copy = dict(reply)
+            reply_copy.pop('items', None)
+            res = _dh_orig_finish_rpc(player, name, args, kwargs, reply_copy, count)
+        else:
+            res = _dh_orig_finish_rpc(player, name, args, kwargs, reply, count)
         try:
             if name in ('buyMallGood', 'buyMallGoodInAppearanceMall', 'buyMultipleMallGood', 'buyDtsHallProp') and isinstance(reply, dict) and reply.get('ok'):
-                items = (reply.get('items') if isinstance(reply.get('items'), list) else None) or (kwargs or {}).get('items') or _dh_last_pack_buy.get('last_opened') or []
+                items = (items_for_ui if isinstance(items_for_ui, list) else None) or (kwargs or {}).get('items') or _dh_last_pack_buy.get('last_opened') or []
                 curr_id = (kwargs or {}).get('currency_id') or _dh_last_pack_buy.get('currencyID') or 2
                 if items:
                     call_later(0.15, show_bought_items, items, curr_id)
@@ -9035,6 +9220,14 @@ if callable(_dh_push_inner):
                 _dh_push_skipped.add(item_id)
                 log('local-depot-push-unknown-item', item=item_id, count=count)
             return None
+        # Dedup guard: if permanent cosmetic and already owned, skip adding duplicate copy
+        try:
+            if not int(expires or 0):
+                own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
+                if callable(own_fn) and own_fn(int(item_id)) > 0:
+                    return 'appearance'
+        except Exception:
+            pass
         return _dh_base(player, item_id, count, expires, package)
     _push_one_item._dh_m119 = True
     _push_one_item._dh_inner = _dh_push_inner
@@ -65711,3 +65904,33 @@ def _dh_party_main_ready(*args, **kwargs):
 _dh_party_main_ready._dh_party_ready_inner = _dh_orig_main_ready
 globals()['_dh_main_ready'] = _dh_party_main_ready
 
+
+
+# Guard start_local_lobby against lingering ClientTeammate entities from battle quit
+_dh_orig_start_local_lobby = globals().get('start_local_lobby')
+while getattr(_dh_orig_start_local_lobby, '_dh_guard_inner', None) is not None:
+    _dh_orig_start_local_lobby = _dh_orig_start_local_lobby._dh_guard_inner
+
+
+def _dh_guarded_start_local_lobby(*args, **kwargs):
+    try:
+        import BigWorld
+        p = BigWorld.player()
+        p_cname = getattr(getattr(p, '__class__', None), '__name__', '')
+        if p_cname == 'ClientTeammate' or 'ClientTeammate' in str(type(p)):
+            for ent in list(BigWorld.entities.values()):
+                if ent is not None and getattr(getattr(ent, '__class__', None), '__name__', '') == 'ClientTeammate':
+                    try:
+                        BigWorld.destroyEntity(ent.id)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+    if callable(_dh_orig_start_local_lobby):
+        return _dh_orig_start_local_lobby(*args, **kwargs)
+    return None
+
+
+if callable(_dh_orig_start_local_lobby):
+    _dh_guarded_start_local_lobby._dh_guard_inner = _dh_orig_start_local_lobby
+    globals()['start_local_lobby'] = _dh_guarded_start_local_lobby

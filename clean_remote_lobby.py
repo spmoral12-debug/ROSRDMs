@@ -4895,13 +4895,37 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     except Exception:
         log_error('local-cultivate-push-target-error', target_id=target_id)
 
-    # 4. Notify backend server if reachable to persist in database
+    # 4. If src_id was equipped, equip target_id instead
+    try:
+        for prop in ('dtsVehicleAppearanceList', 'dtsWeaponAppearanceList', 'dtsBodyAppearanceList', 'dtsWearableAppearanceList'):
+            lst = getattr(player, prop, None)
+            if isinstance(lst, (list, tuple)) and src_id in lst:
+                new_lst = [target_id if x == src_id else x for x in lst]
+                setattr(player, prop, new_lst)
+                cb_name = 'onUpdate' + prop[0].upper() + prop[1:]
+                cb = getattr(player, cb_name, None)
+                if callable(cb):
+                    try:
+                        cb(new_lst)
+                    except Exception:
+                        pass
+                shown_prop = 'dtsShow' + prop[3:] if prop.startswith('dts') else None
+                if shown_prop and hasattr(player, shown_prop):
+                    setattr(player, shown_prop, new_lst)
+                try:
+                    save_appearance(player)
+                except Exception:
+                    pass
+    except Exception:
+        log_error('local-cultivate-equip-update-error')
+
+    # 5. Notify backend server if reachable to persist in database
     try:
         call_pyserver('appearanceCultivateCompound', (src_id, target_id, flag), kwargs)
     except Exception:
         pass
 
-    # 5. Deliver callback onAppearanceCultivateCompound to player
+    # 6. Deliver callback onAppearanceCultivateCompound to player
     cb = getattr(player, 'onAppearanceCultivateCompound', None)
     if callable(cb):
         try:
@@ -4909,7 +4933,22 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
         except Exception:
             log_error('local-cultivate-cb-error', target_id=target_id)
 
-    # 6. Safety check: ensure UIItemDisplay BACK button is armed
+    # 7. Refresh appearance UIs
+    try:
+        import Globals
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        if ui_mgr:
+            for ui_name in ('UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2', 'UIDtsAppearance'):
+                scr = getattr(ui_mgr, ui_name, None)
+                if scr and getattr(scr, 'is_enter', False):
+                    for mname in ('refreshAppearanceList', 'refresh', 'refreshView'):
+                        fn = getattr(scr, mname, None)
+                        if callable(fn):
+                            fn()
+    except Exception:
+        pass
+
+    # 8. Safety check: ensure UIItemDisplay BACK button is armed
     try:
         call_later(0.3, _dh_fix_item_display_ui)
         call_later(1.0, _dh_fix_item_display_ui)
@@ -8819,42 +8858,81 @@ _dh_push_skipped = globals().get('_dh_push_skipped') or set()
 
 
 _dh_synthetic_props = globals().get('_dh_synthetic_props') or {}
+_dh_synthetic_building = False
 
 
 def _dh_ensure_synthetic_props():
-    if 121363 in _dh_synthetic_props:
+    global _dh_synthetic_building
+    if 121363 in _dh_synthetic_props and 142008 in _dh_synthetic_props:
         return _dh_synthetic_props
+    if _dh_synthetic_building:
+        return _dh_synthetic_props
+    _dh_synthetic_building = True
     try:
         import copy
         legacy = __import__('helpers.character_scene', fromlist=['legacyProperties']).legacyProperties
-        medusa = legacy.getDtsHallPropData(121248)
-        if medusa is not None:
-            bow = copy.copy(medusa)
-            ptype = copy.copy(getattr(medusa, 'PROP_TYPE', None))
-            if ptype is not None:
-                for attr, val in (('BATTLE_GROUND_PROP_ID', 91164),
-                                  ('DISPLAY_USING_GUN_ID', 90191),
-                                  ('PROP_ITEM_ID', 300)):
+        orig_get = getattr(legacy, '_dh_orig_get_dts_prop', legacy.getDtsHallPropData)
+
+        # 1. Compound Bow-Pink Lady (121363)
+        if 121363 not in _dh_synthetic_props:
+            medusa = orig_get(121248)
+            if medusa is not None:
+                bow = copy.copy(medusa)
+                ptype = copy.copy(getattr(medusa, 'PROP_TYPE', None))
+                if ptype is not None:
+                    for attr, val in (('BATTLE_GROUND_PROP_ID', 91164),
+                                      ('DISPLAY_USING_GUN_ID', 90191),
+                                      ('PROP_ITEM_ID', 300)):
+                        try:
+                            setattr(ptype, attr, val)
+                        except Exception:
+                            pass
+                    bow.PROP_TYPE = ptype
+                for attr, val in (('NAME', 'Compound Bow-Pink Lady'),
+                                  ('QUALITY', 5),
+                                  ('ICON_PATH', 'ui/images/dts_item/package/icn_gong_package.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_item/package/icn_gong_package.png')):
                     try:
-                        setattr(ptype, attr, val)
+                        setattr(bow, attr, val)
                     except Exception:
                         pass
-                bow.PROP_TYPE = ptype
-            for attr, val in (('NAME', 'Compound Bow-Pink Lady'),
-                              ('QUALITY', 5),
-                              ('ICON_PATH', 'ui/images/dts_item/package/icn_gong_package.png'),
-                              ('ICON_PATH_DISPLAY', 'ui/images/dts_item/package/icn_gong_package.png')):
-                try:
-                    setattr(bow, attr, val)
-                except Exception:
-                    pass
 
-            _dh_synthetic_props[121363] = bow
-            _dh_synthetic_props[492081] = bow
-            _dh_synthetic_props[492082] = bow
-            log('local-synthetic-props-installed', ids=sorted(_dh_synthetic_props.keys()))
+                _dh_synthetic_props[121363] = bow
+                _dh_synthetic_props[492081] = bow
+                _dh_synthetic_props[492082] = bow
+
+        # 2. Velociraptor Lv. 2 (142008)
+        if 142008 not in _dh_synthetic_props:
+            raptor_lv1 = orig_get(142007)
+            if raptor_lv1 is not None:
+                raptor_lv2 = copy.copy(raptor_lv1)
+                ptype = copy.copy(getattr(raptor_lv1, 'PROP_TYPE', None))
+                if ptype is not None:
+                    try:
+                        disp_models = getattr(ptype, 'DISPLAY_IN_MODEL', None)
+                        if isinstance(disp_models, list) and disp_models:
+                            d0 = copy.copy(disp_models[0])
+                            setattr(d0, 'DISPLAY_PROP_LIST', [142008])
+                            setattr(ptype, 'DISPLAY_IN_MODEL', [d0])
+                    except Exception:
+                        pass
+                    raptor_lv2.PROP_TYPE = ptype
+                for attr, val in (('NAME', 'Velociraptor Lv. 2'),
+                                  ('QUALITY', 5),
+                                  ('SCORE', 300),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
+                    try:
+                        setattr(raptor_lv2, attr, val)
+                    except Exception:
+                        pass
+                _dh_synthetic_props[142008] = raptor_lv2
+
+        log('local-synthetic-props-installed', ids=sorted(_dh_synthetic_props.keys()))
     except Exception as e:
         log_error('local-synthetic-props-error', err=str(e))
+    finally:
+        _dh_synthetic_building = False
     return _dh_synthetic_props
 
 
@@ -8884,7 +8962,7 @@ def _dh_install_prop_table_hooks():
                 for item in orig_iter():
                     yield item
                 syn = _dh_ensure_synthetic_props()
-                for k in (121363,):
+                for k in (121363, 142008):
                     if k in syn:
                         yield (k, syn[k])
 
@@ -8918,7 +8996,7 @@ def _dh_install_prop_table_hooks():
 
                 def _dh_should_appear(prop_id):
                     try:
-                        if int(prop_id) in (121363, 492081, 492082):
+                        if int(prop_id) in (121363, 142008, 492081, 492082):
                             return True
                     except Exception:
                         pass
@@ -8936,10 +9014,16 @@ def _dh_install_prop_table_hooks():
 def _dh_client_knows_item(item_id):
     try:
         iid = int(item_id)
-        if iid in (121363, 492081, 492082):
+        if iid in (121363, 142008, 492081, 492082):
+            return True
+        syn = _dh_ensure_synthetic_props()
+        if iid in syn:
             return True
         legacy = __import__('helpers.character_scene', fromlist=['legacyProperties']).legacyProperties
-        return legacy.getDtsHallPropData(iid) is not None
+        orig_get = getattr(legacy, '_dh_orig_get_dts_prop', legacy.getDtsHallPropData)
+        return orig_get(iid) is not None
+    except Exception:
+        return True
     except Exception:
         return True                               # cannot tell: let the push try as before
 

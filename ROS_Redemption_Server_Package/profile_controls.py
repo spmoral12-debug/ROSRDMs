@@ -104,6 +104,12 @@ def cultivate_compound(server, args, kwargs):
                 except Exception:
                     pass
                 account.add_item(data, target_id, 1)
+                equipped = data.setdefault("equipped", {})
+                for k, v in list(equipped.items()):
+                    if isinstance(v, list) and src_id in v:
+                        equipped[k] = [target_id if x == src_id else x for x in v]
+                    elif v == src_id:
+                        equipped[k] = target_id
     except Exception as error:
         raise AccountError("cultivate_error", str(error))
     return {

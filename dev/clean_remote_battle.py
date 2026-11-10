@@ -9513,12 +9513,33 @@ log('ros-redemption-vehicle-system-complete-active', status='ready')
 # 6. DUO / SQUAD TEAMMATE SYSTEM, OVERHEAD NAME/NUMBER UI, TEAM HP HUD & QUIT FIX
 # ==============================================================================
 
-# 6A. Quitting an unfinished match early does NOT record stats or rank changes
-def _dh_no_settle_unfinished_match(player=None, *args, **kwargs):
-    log('local-battle-quit-unrecorded', phase=BATTLE.get('phase'), shown=_round.get('shown'))
-    return False
+# 6A. Settle unfinished match ONLY if leaving during actual match (after landing), NOT at starting island or plane
+def _dh_conditional_settle_unfinished_match(player=None, *args, **kwargs):
+    player = player or current_player()
+    # If still on starting island, or aboard plane, or hasn't landed on ground yet: DO NOT COUNT
+    if on_island_stage() or not _flight.get('landed_once') or _flight.get('stage') in ('island', 'plane'):
+        log('local-battle-quit-ignored-starting', stage=_flight.get('stage'), landed=_flight.get('landed_once'))
+        return False
 
-globals()['settle_unfinished_match'] = _dh_no_settle_unfinished_match
+    # In the actual match on the ground: record the match!
+    if _round.get('shown') or _round.get('settled') or not BATTLE.get('match') or player is None:
+        return False
+    _round['settled'] = True
+    try:
+        space = zone_space()
+        rank = max(1, int(getattr(space, 'aliveNum', 1) or 1))
+        total = max(rank, match_total())
+        record = result_record(player, rank, total)
+        owner = owner_result(rank, total, record)
+        record['score'] = owner['score']
+        record_match(match_summary(record, rank, total))
+        log('local-battle-settled-on-leave', rank=rank, total=total, kills=record.get('kill'), exp=record.get('exp'))
+        return True
+    except Exception:
+        log_error('local-battle-settle-error')
+        return False
+
+globals()['settle_unfinished_match'] = _dh_conditional_settle_unfinished_match
 
 
 # 6B. Fix ClientTeammate.PlayerClientTeammate & Avatar.setPosition crashes in iBattleGround

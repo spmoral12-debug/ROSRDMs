@@ -13,5 +13,13 @@
     980001,
     980002,
     980003
-  ]
+  ],
+  "rlSeason": {
+    "id": 1,
+    "name": "Season 1",
+    "client": 17,
+    "offset": 16,
+    "starts": 0,
+    "ends": 0
+  }
 }

@@ -5666,10 +5666,9 @@ except Exception:
 # --- m73: ROS Redemption seasons (server_ext/season.py).  The server sends rlSeason {id, name, starts, ends, client, offset}:
 # our Season N runs in the game's season slot N + offset (its tier tables end at its season 17), so the ladder is
 # pointed at that slot, its "Season 17" labels read "Season 1", and the official seasons before ours are hidden.
-_dh_season = {'info': None}
-# the game writes exactly 'Season N'; ours end in a space ('Season 1 '), so a later pass never reads them back as an
-# official season (widget wrappers are new objects on every walk, so nodes cannot be remembered by id)
-_DH_SEASON_LABEL = __import__('re').compile(r'^Season (\d+)$')
+_DH_DEFAULT_SEASON = {'id': 1, 'name': 'Season 1', 'client': 17, 'offset': 16, 'starts': 0, 'ends': 0}
+_dh_season = {'info': dict(_DH_DEFAULT_SEASON)}
+_DH_SEASON_LABEL = __import__('re').compile(r'\bSeason\s*(\d+)\b', __import__('re').I)
 
 
 def _dh_ladder_module():
@@ -5702,33 +5701,51 @@ def _dh_point_ladder():
 
 
 def _dh_relabel_seasons(ui):
-    """'Season 17' -> 'Season 1' on the ladder screens; the official seasons before ours are hidden."""
-    info = _dh_season['info']
-    if not info or ui is None:
+    """'Season 17' -> 'Season 1' on ladder, stats, and profile screens; older official seasons are hidden."""
+    info = _dh_season.get('info') or globals().get('_DH_DEFAULT_SEASON') or {'offset': 16}
+    if ui is None:
         return 0
-    offset = int(info['offset'])
+    offset = int(info.get('offset', 16))
     changed = 0
-    for path, node in walk_ui_nodes(ui, limit=2000):
-        getter = getattr(node, 'getString', None)
+    walker = walk_ui_nodes if (hasattr(ui, 'getChildren') or hasattr(ui, 'panels')) else _dh_cc_walk
+    try:
+        nodes = list(walker(ui, limit=3000))
+    except Exception:
+        nodes = []
+    for path, node in nodes:
+        getter = getattr(node, 'getString', None) or getattr(node, 'getText', None)
         if not callable(getter):
             continue
         try:
             text = str(getter())
         except Exception:
             continue
-        match = _DH_SEASON_LABEL.match(text)
+        if not text:
+            continue
+        if 'Season 1 ' in text:
+            continue
+        if 'Season 17' in text or 'Season17' in text:
+            try:
+                new_text = re.sub(r'\bSeason\s*17\b', 'Season 1 ', text)
+                node.setString(new_text)
+                changed += 1
+                continue
+            except Exception:
+                pass
+        match = _DH_SEASON_LABEL.search(text)
         if not match:
             continue
-        number = int(match.group(1))
         try:
-            if number > offset:
-                node.setString('Season %d ' % (number - offset))
-            else:
-                # an official season (before ours): hide its dropdown entry (the label's own small item)
+            number = int(match.group(1))
+            if number == 17 or number > offset:
+                new_text = _DH_SEASON_LABEL.sub('Season %d ' % (number - offset), text)
+                node.setString(new_text)
+                changed += 1
+            elif number < 17:
                 parent = node.getParent()
-                small = parent is not None and len(list(parent.getChildren())) <= 3
+                small = parent is not None and len(list(parent.getChildren())) <= 4
                 (parent if small else node).setVisible(False)
-            changed += 1
+                changed += 1
         except Exception:
             continue
     return changed
@@ -65410,6 +65427,46 @@ def _dh_window_title_loop():
     try:
         if '_dh_set_window_title_redemption' in globals():
             _dh_set_window_title_redemption()
+    except Exception:
+        pass
+    try:
+        import Globals
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        if ui_mgr is not None:
+            all_ui = getattr(ui_mgr, '____all_ui__', None) or {}
+            for _uin, _uio in all_ui.items():
+                if _uio is not None:
+                    try:
+                        if hasattr(_uio, 'isVisible') and not _uio.isVisible():
+                            continue
+                    except Exception:
+                        pass
+                    _dh_relabel_seasons(_uio)
+        cc = _dh_cc()
+        if cc is not None:
+            sc = cc.Director.getInstance().getRunningScene()
+            if sc is not None:
+                _dh_relabel_seasons(sc)
+    except Exception:
+        pass
+    try:
+        import Globals
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        if ui_mgr is not None:
+            all_ui = getattr(ui_mgr, '____all_ui__', None) or {}
+            for _uin, _uio in all_ui.items():
+                if _uio is not None:
+                    try:
+                        if hasattr(_uio, 'isVisible') and not _uio.isVisible():
+                            continue
+                    except Exception:
+                        pass
+                    _dh_relabel_seasons(_uio)
+        cc = _dh_cc()
+        if cc is not None:
+            sc = cc.Director.getInstance().getRunningScene()
+            if sc is not None:
+                _dh_relabel_seasons(sc)
     except Exception:
         pass
     try:

@@ -27,11 +27,19 @@ startup_source = (root / "startup_branding_hook.py").read_text(encoding="utf-8")
 profile_source = (root / "profile_controls_hook.py").read_text(encoding="utf-8")
 welfare_source = (root / "welfare_lobby_hook.py").read_text(encoding="utf-8")
 
+online_forced_port_source = """
+try:
+    if CONFIG.get('backend_host') and CONFIG.get('game_port'):
+        FORCED_PORT = int(CONFIG['game_port'])
+except Exception:
+    pass
+"""
+
 
 def read_with_startup_branding(path):
     source = read_source(path)
     if Path(path) == inject_lobby.HOOK_PATH:
-        return "\n\n".join((source, startup_source, profile_source, welfare_source))
+        return "\n\n".join((source, startup_source, profile_source, welfare_source, online_forced_port_source))
     return source
 
 

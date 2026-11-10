@@ -7479,7 +7479,7 @@ except Exception:
 # The /adm Seasons tab sends theme_mode (auto / off / <season>) and seasons {key: {window, enabled, lobby_theme}} in
 # rlLobby; the active season's lobby_theme goes on, the default comes back when no season is on.  Only the default
 # and the season themes are managed, so a lobby theme a player equipped of their own is left alone.
-_DH_DEFAULT_LOBBY_THEME = 279008
+_DH_DEFAULT_LOBBY_THEME = 270000
 _DH_SEASON_LOBBY = {          # built-in calendar, used until the console sends one
     'halloween': {'window': ('10-15', '11-02'), 'lobby_theme': 279009},   # Haunted Cabin
     'christmas': {'window': ('12-10', '01-05'), 'lobby_theme': 279007},   # Town Square
@@ -65182,8 +65182,8 @@ call_later(0.05, _dh_window_title_loop)
 # ROS REDEMPTION - TEAM LEAVE FIX & 3D LOBBY SCENE SAFEGUARD
 # 1. Unconditional Leave Team: player.onLeaveHallTeam & UI message unform
 # 2. Instant Leave RPC Interceptor: handles leaveHallTeam immediately
-# 3. 3D Lobby Road & Sky Restorer: elevates road mesh under motorcycle & character
-# 4. Default Theme 279008 (Arrival) Auto-Apply for all new and existing accounts
+# 3. 3D Lobby Road & Sky Restorer: restores classic day sky & mountains (Theme 270000)
+# 4. Default Theme 270000 (Classic Day Sky) Auto-Apply for clean visuals
 # ==============================================================================
 
 # --- 1 & 2. TEAM LEAVE FIX ---
@@ -65201,14 +65201,11 @@ try:
         try:
             import Globals
             if hasattr(Globals, 'uiMgr') and Globals.uiMgr:
-                try:
-                    Globals.uiMgr.SendMessage('onUnformTeam')
-                except Exception:
-                    pass
-                try:
-                    Globals.uiMgr.SendMessage('onLeaveTeam')
-                except Exception:
-                    pass
+                for msg in ('onUnformTeam', 'onLeaveTeam', 'syncHallTeamMember', 'onUpdateHallTeamMode'):
+                    try:
+                        Globals.uiMgr.SendMessage(msg)
+                    except Exception:
+                        pass
                 try:
                     _pnl = _ui_screen('UIMainBattleGroundInvite')
                     if _pnl is not None:
@@ -65222,6 +65219,10 @@ try:
                 player.matchingState = 0
                 if hasattr(player, 'hallTeamReady'):
                     player.hallTeamReady = False
+                if hasattr(player, 'isInFormedTeam'):
+                    player.isInFormedTeam = False
+                if hasattr(player, 'hallTeamLeader') and hasattr(player, 'gid'):
+                    player.hallTeamLeader = player.gid
         except Exception:
             pass
         try:
@@ -65245,7 +65246,7 @@ try:
     # Wrap handle_rpc for immediate leave response when player clicks Leave button
     _dh_orig_handle_rpc = globals().get('handle_rpc')
     def _dh_handle_rpc_team_leave(mailbox, name, args, kwargs):
-        if name == 'leaveHallTeam':
+        if name in ('leaveHallTeam', 'unformHallTeam', 'dismissHallTeam', 'leaveTeam'):
             try:
                 import BigWorld
                 p = getattr(mailbox, '_rl_owner', None) or BigWorld.player()
@@ -65266,8 +65267,8 @@ try:
     _dh_orig_hall_theme_id = globals().get('hall_theme_id')
     def _dh_safe_hall_theme_id():
         tid = _dh_orig_hall_theme_id() if callable(_dh_orig_hall_theme_id) else 0
-        if not tid or tid == 270000:
-            return 279008
+        if not tid or tid == 279008:
+            return 270000
         return tid
     hall_theme_id = _dh_safe_hall_theme_id
 
@@ -65278,7 +65279,7 @@ try:
             if scene is not None:
                 for model, name in scene_models(scene):
                     name_lower = str(name).lower()
-                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain')):
+                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
                         try:
                             model.visible = True
                         except Exception:
@@ -65301,7 +65302,7 @@ try:
             if scene is not None:
                 for model, name in scene_models(scene):
                     name_lower = str(name).lower()
-                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain')):
+                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
                         try:
                             model.visible = bool(show)
                         except Exception:
@@ -65316,29 +65317,29 @@ try:
         return 0
     show_lobby_backdrop = _dh_show_lobby_backdrop_safe
 
-    # Periodic Lobby 3D Scene loop: ensures ground road, sky, motorcycle, and theme 279008 are always intact
+    # Periodic Lobby 3D Scene loop: ensures ground road, sky, mountains, and theme 270000 are always intact
     def _dh_lobby_scene_watchdog():
         try:
             if _dh_in_lobby():
                 import BigWorld
                 player = BigWorld.player()
                 if player is not None:
-                    # Enforce valid theme if 0 or 270000
+                    # Enforce valid default theme 270000 (day sky & mountains)
                     cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
-                    if not cur_theme or cur_theme == 270000:
-                        player.dtsHallThemeID = 279008
+                    if not cur_theme or cur_theme == 279008:
+                        player.dtsHallThemeID = 270000
                         if hasattr(player, 'onUpdateDtsHallThemeID'):
                             try:
-                                player.onUpdateDtsHallThemeID(279008)
+                                player.onUpdateDtsHallThemeID(270000)
                             except Exception:
                                 pass
-                    # Ensure scene models for road, sky, motorcycle are visible
+                    # Ensure scene models for road, sky, motorcycle, mountains are visible
                     hall = getattr(player, 'hallScene', None)
                     scene = getattr(hall, '_native_scene', None)
                     if scene is not None:
                         for model, name in scene_models(scene):
                             name_lower = str(name).lower()
-                            if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road')):
+                            if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
                                 if hasattr(model, 'visible') and not model.visible:
                                     model.visible = True
         except Exception:

@@ -190,7 +190,7 @@ def _dh_fix_item_display_ui():
                     pass
 
             def _on_leave(sender, event):
-                if event == 2 or event == 0:
+                if int(event) == 2:
                     try:
                         if hasattr(disp, 'doReturnBtnClick') and callable(disp.doReturnBtnClick):
                             disp.doReturnBtnClick()
@@ -207,13 +207,11 @@ def _dh_fix_item_display_ui():
                     call_later(0.1, _dh_restore_mall_and_supply_ui)
 
             def _on_confirm(sender, event):
-                if event == 2 or event == 0:
+                if int(event) == 2:
                     try:
-                        if hasattr(disp, 'onConfirmBtnClick') and callable(disp.onConfirmBtnClick):
-                            disp.onConfirmBtnClick(sender)
-                        elif callable(getattr(disp, 'confirmBtnCb', None)):
-                            disp.confirmBtnCb()
-                            ui_mgr.leave_ui('UIItemDisplay')
+                        cb = getattr(disp, 'confirmBtnCb', None)
+                        if callable(cb):
+                            cb()
                         else:
                             ui_mgr.leave_ui('UIItemDisplay')
                     except Exception:
@@ -221,7 +219,6 @@ def _dh_fix_item_display_ui():
                             ui_mgr.leave_ui('UIItemDisplay')
                         except Exception:
                             pass
-                    call_later(0.1, _dh_restore_mall_and_supply_ui)
 
             # 2. Wire returnBtn directly
             ret_btn = getattr(disp, 'returnBtn', None) or disp.get_widget_by_path('dlg/result_panel/anchor-upper-left/returnBtn')
@@ -279,14 +276,7 @@ def _dh_fix_item_display_ui():
                     except Exception:
                         pass
 
-            # 6. Background tap to leave
-            try:
-                bg = getattr(disp, 'bg', None) or disp.get_widget_by_path('dlg/result_panel/BG')
-                if bg is not None:
-                    bg.setTouchEnabled(True)
-                    bg.addTouchEventListener(_on_leave)
-            except Exception:
-                pass
+            # 6. Do NOT attach _on_leave to BG (prevent accidental dismissal on Buy Again)
 
             # 7. Floating fail-safe BACK button on running scene
             try:

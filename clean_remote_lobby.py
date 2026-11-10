@@ -4369,6 +4369,74 @@ except Exception:
     log_error('local-crash-guards-start-error')
 
 
+_dh_last_pack_buy = globals().get('_dh_last_pack_buy') or {
+    'active': False,
+    'goodID': 0,
+    'buyNum': 1,
+    'cashCoupons': [],
+    'MallLogStr': 'MallGiftBag',
+    'rpcName': 'buyMallGood',
+    'currencyID': 2,
+    'price': 0,
+    'confirmBtnTxt': 'Buy Again',
+    'gotoCB': None,
+    'seq': 0,
+    'buying_again_at': 0.0,
+    'last_conf_click_at': 0.0,
+    'last_opened': []
+}
+
+
+def _dh_is_buying_again():
+    try:
+        import time as _t
+        return (_t.time() - float(_dh_last_pack_buy.get('buying_again_at', 0.0) or 0.0)) < 2.5
+    except Exception:
+        return False
+
+
+def _dh_buy_again_watchdog():
+    """If a 'Buy Again' purchase failed (e.g. out of diamonds) and UIItemDisplay did not re-open, restore Store UI."""
+    try:
+        import Globals
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        disp = getattr(ui_mgr, 'UIItemDisplay', None) if ui_mgr else None
+        if disp is not None and getattr(disp, 'is_enter', False):
+            return
+        _dh_last_pack_buy['buying_again_at'] = 0.0
+        _dh_last_pack_buy['active'] = False
+        _dh_restore_mall_and_supply_ui()
+    except Exception:
+        pass
+
+
+def _dh_trigger_pack_buy_again():
+    """Re-executes the active Mall Pack / GiftBag purchase when 'Buy Again' is clicked on UIItemDisplay."""
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        if player is None:
+            return False
+        good_id = int(_dh_last_pack_buy.get('goodID') or 0)
+        if good_id <= 0:
+            return False
+        buy_num = max(1, int(_dh_last_pack_buy.get('buyNum') or 1))
+        coupons = list(_dh_last_pack_buy.get('cashCoupons') or [])
+        log_str = str(_dh_last_pack_buy.get('MallLogStr') or 'MallGiftBag')
+        rpc_name = str(_dh_last_pack_buy.get('rpcName') or 'buyMallGood')
+        base_obj = getattr(player, 'base', None)
+        fn = getattr(base_obj, rpc_name, None) if base_obj is not None else None
+        if not callable(fn):
+            fn = getattr(base_obj, 'buyMallGood', None) if base_obj is not None else None
+        if callable(fn):
+            fn(good_id, buy_num, coupons, log_str)
+            log('local-pack-buy-again', good_id=good_id, count=buy_num, rpc=rpc_name)
+            return True
+    except Exception:
+        log_error('local-pack-buy-again-error')
+    return False
+
+
 def _dh_install_main_watch():
     import Globals
     mgr = getattr(Globals, 'uiMgr', None)
@@ -4383,17 +4451,49 @@ def _dh_install_main_watch():
                 _dh_install_death_killer_guard()
             except Exception:
                 log_error('local-death-killer-install-error')
-        if ui_name == 'UIItemDisplay':
+        elif ui_name == 'UIGiftBagConfirm':
+            try:
+                if args and isinstance(args[0], dict):
+                    gb_args = args[0]
+                    if gb_args.get('goodID') is not None:
+                        _dh_last_pack_buy['goodID'] = int(gb_args.get('goodID') or 0)
+                    if gb_args.get('currencyID') is not None:
+                        _dh_last_pack_buy['currencyID'] = int(gb_args.get('currencyID') or 2)
+                    if gb_args.get('price') is not None:
+                        _dh_last_pack_buy['price'] = int(gb_args.get('price') or 0)
+                    if gb_args.get('MallLogStr'):
+                        _dh_last_pack_buy['MallLogStr'] = str(gb_args.get('MallLogStr'))
+                    _dh_last_pack_buy['active'] = True
+                    _dh_last_pack_buy['buying_again_at'] = 0.0
+            except Exception:
+                pass
+        elif ui_name == 'UIItemDisplay':
             try:
                 if args and isinstance(args[0], dict):
                     disp_args = args[0]
+                    _dh_last_pack_buy['buying_again_at'] = 0.0
                     # Ensure isBGShow and isConfirmBtnShow are True so the UI and buttons are always rendered
                     disp_args['isBGShow'] = True
                     disp_args['isConfirmBtnShow'] = True
                     disp_args['onlyItem'] = False
 
+                    if disp_args.get('confirmBtnTxt'):
+                        _dh_last_pack_buy['confirmBtnTxt'] = disp_args.get('confirmBtnTxt')
+                    if disp_args.get('gotoCB') or disp_args.get('gotoBtnCallback'):
+                        _dh_last_pack_buy['gotoCB'] = disp_args.get('gotoCB') or disp_args.get('gotoBtnCallback')
+
+                    if _dh_last_pack_buy.get('active'):
+                        disp_args['onlyShowReturnBtn'] = False
+                        disp_args['confirmBtnTxt'] = disp_args.get('confirmBtnTxt') or _dh_last_pack_buy.get('confirmBtnTxt') or 'Buy Again'
+                        if not disp_args.get('currencyID') and _dh_last_pack_buy.get('currencyID'):
+                            disp_args['currencyID'] = _dh_last_pack_buy.get('currencyID')
+                        if not disp_args.get('gotoCB') and _dh_last_pack_buy.get('gotoCB'):
+                            disp_args['gotoCB'] = _dh_last_pack_buy.get('gotoCB')
+
                     raw_ret = disp_args.get('returnBtnCb')
                     def _dh_safe_leave_ret(*_a, **_kw):
+                        _dh_last_pack_buy['active'] = False
+                        _dh_last_pack_buy['buying_again_at'] = 0.0
                         try:
                             if callable(raw_ret):
                                 raw_ret(*_a, **_kw)
@@ -4408,6 +4508,32 @@ def _dh_install_main_watch():
 
                     raw_conf = disp_args.get('confirmBtnCb')
                     def _dh_safe_leave_conf(*_a, **_kw):
+                        import time as _t
+                        now = _t.time()
+                        if (now - float(_dh_last_pack_buy.get('last_conf_click_at', 0.0) or 0.0)) < 0.35:
+                            return
+                        _dh_last_pack_buy['last_conf_click_at'] = now
+
+                        if _dh_last_pack_buy.get('active') and int(_dh_last_pack_buy.get('goodID') or 0) > 0:
+                            _dh_last_pack_buy['buying_again_at'] = now
+                            seq_before = int(_dh_last_pack_buy.get('seq') or 0)
+                            try:
+                                import Globals
+                                Globals.uiMgr.leave_ui('UIItemDisplay')
+                            except Exception:
+                                pass
+                            try:
+                                if callable(raw_conf) and raw_conf is not raw_ret:
+                                    raw_conf(*_a, **_kw)
+                            except Exception:
+                                pass
+                            if int(_dh_last_pack_buy.get('seq') or 0) == seq_before:
+                                _dh_trigger_pack_buy_again()
+                            call_later(1.2, _dh_buy_again_watchdog)
+                            return
+
+                        # Non-pack confirm button (e.g. Supply Box 'Buy Again' or normal 'Confirm')
+                        _dh_last_pack_buy['buying_again_at'] = now
                         try:
                             if callable(raw_conf):
                                 raw_conf(*_a, **_kw)
@@ -4418,7 +4544,7 @@ def _dh_install_main_watch():
                             Globals.uiMgr.leave_ui('UIItemDisplay')
                         except Exception:
                             pass
-                        _dh_restore_mall_and_supply_ui()
+                        call_later(0.8, _dh_buy_again_watchdog)
 
                     disp_args['returnBtnCb'] = _dh_safe_leave_ret
                     disp_args['confirmBtnCb'] = _dh_safe_leave_conf
@@ -4491,9 +4617,11 @@ def _dh_install_main_watch():
                                 sc.removeChild(b)
                 except Exception:
                     pass
-                call_later(0.05, _dh_restore_mall_and_supply_ui)
-                call_later(0.2, _dh_restore_mall_and_supply_ui)
-                call_later(0.5, _dh_restore_mall_and_supply_ui)
+                if not _dh_is_buying_again():
+                    _dh_last_pack_buy['active'] = False
+                    call_later(0.05, _dh_restore_mall_and_supply_ui)
+                    call_later(0.2, _dh_restore_mall_and_supply_ui)
+                    call_later(0.5, _dh_restore_mall_and_supply_ui)
             return leave_inner(ui_name, *args, **kwargs)
         leave_ui._dh_inner = leave_inner
         mgr.leave_ui = leave_ui
@@ -4583,7 +4711,7 @@ def _dh_restore_mall_and_supply_ui():
 
 
 def _dh_fix_item_display_ui():
-    """Ensure UIItemDisplay's BACK, Return and Confirm buttons are active and responsive."""
+    """Ensure UIItemDisplay's BACK, Return and Confirm ('Buy Again') buttons are active and responsive."""
     try:
         import Globals
         ui_mgr = getattr(Globals, 'uiMgr', None)
@@ -4601,7 +4729,9 @@ def _dh_fix_item_display_ui():
                     pass
 
             def _on_leave(sender, event):
-                if event == 2 or event == 0:
+                if int(event) == 2:
+                    _dh_last_pack_buy['active'] = False
+                    _dh_last_pack_buy['buying_again_at'] = 0.0
                     try:
                         if hasattr(disp, 'doReturnBtnClick') and callable(disp.doReturnBtnClick):
                             disp.doReturnBtnClick()
@@ -4618,21 +4748,27 @@ def _dh_fix_item_display_ui():
                     call_later(0.1, _dh_restore_mall_and_supply_ui)
 
             def _on_confirm(sender, event):
-                if event == 2 or event == 0:
+                if int(event) == 2:
                     try:
-                        if hasattr(disp, 'onConfirmBtnClick') and callable(disp.onConfirmBtnClick):
-                            disp.onConfirmBtnClick(sender)
-                        elif callable(getattr(disp, 'confirmBtnCb', None)):
-                            disp.confirmBtnCb()
+                        cb = getattr(disp, 'confirmBtnCb', None)
+                        if callable(cb):
+                            cb()
+                        elif _dh_last_pack_buy.get('active') and int(_dh_last_pack_buy.get('goodID') or 0) > 0:
+                            import time as _t
+                            _dh_last_pack_buy['buying_again_at'] = _t.time()
                             ui_mgr.leave_ui('UIItemDisplay')
+                            _dh_trigger_pack_buy_again()
+                            call_later(1.2, _dh_buy_again_watchdog)
                         else:
                             ui_mgr.leave_ui('UIItemDisplay')
+                            call_later(0.1, _dh_restore_mall_and_supply_ui)
                     except Exception:
                         try:
                             ui_mgr.leave_ui('UIItemDisplay')
                         except Exception:
                             pass
-                    call_later(0.1, _dh_restore_mall_and_supply_ui)
+                        if not _dh_is_buying_again():
+                            call_later(0.1, _dh_restore_mall_and_supply_ui)
 
             # 2. Wire returnBtn directly
             ret_btn = getattr(disp, 'returnBtn', None) or disp.get_widget_by_path('dlg/result_panel/anchor-upper-left/returnBtn')
@@ -4651,6 +4787,13 @@ def _dh_fix_item_display_ui():
                     conf_btn.setVisible(True)
                     conf_btn.setTouchEnabled(True)
                     conf_btn.addTouchEventListener(_on_confirm)
+                except Exception:
+                    pass
+            if _dh_last_pack_buy.get('active'):
+                try:
+                    ct = getattr(disp, 'confirmBtnTxt', None)
+                    if ct is not None and hasattr(ct, 'setString'):
+                        ct.setString(str(_dh_last_pack_buy.get('confirmBtnTxt') or 'Buy Again'))
                 except Exception:
                     pass
 
@@ -4690,16 +4833,7 @@ def _dh_fix_item_display_ui():
                     except Exception:
                         pass
 
-            # 6. Background tap to leave
-            try:
-                bg = getattr(disp, 'bg', None) or disp.get_widget_by_path('dlg/result_panel/BG')
-                if bg is not None:
-                    bg.setTouchEnabled(True)
-                    bg.addTouchEventListener(_on_leave)
-            except Exception:
-                pass
-
-            # 7. Floating fail-safe BACK button on running scene
+            # 6. Floating fail-safe BACK button on running scene
             try:
                 cc = _dh_cc()
                 if cc:
@@ -4797,6 +4931,514 @@ try:
 except Exception:
     pass
 
+
+# ==========================================================================
+# UNIVERSAL STORE PACK PITY (100x / N-x GUARANTEE) & BUY-AGAIN CONTINUATION
+# ==========================================================================
+
+_dh_pity_cache = {
+    'loaded': False,
+    'state': {},
+    'supp_gl': None,
+    'box_rules': {},
+    'prob_parent_map': None
+}
+
+
+def _dh_pity_state_path():
+    try:
+        import os as _os
+        base_dir = _os.path.dirname(CATALOG_PATH) if 'CATALOG_PATH' in globals() and CATALOG_PATH else 'local_update/logs'
+        return _os.path.join(base_dir, 'pack_pity_state.json')
+    except Exception:
+        return 'local_update/logs/pack_pity_state.json'
+
+
+def _dh_load_pity_state():
+    if _dh_pity_cache['loaded']:
+        return _dh_pity_cache['state']
+    _dh_pity_cache['loaded'] = True
+    try:
+        import BigWorld
+        mem = getattr(BigWorld, '_dh_pack_pity_state', None)
+        if isinstance(mem, dict) and mem:
+            _dh_pity_cache['state'] = mem
+            return mem
+    except Exception:
+        pass
+    try:
+        import json as _json, os as _os
+        p = _dh_pity_state_path()
+        if _os.path.exists(p):
+            with open(p, 'r') as f:
+                data = _json.load(f)
+            if isinstance(data, dict):
+                _dh_pity_cache['state'] = data
+    except Exception:
+        pass
+    try:
+        import BigWorld
+        BigWorld._dh_pack_pity_state = _dh_pity_cache['state']
+    except Exception:
+        pass
+    return _dh_pity_cache['state']
+
+
+def _dh_save_pity_state():
+    try:
+        import BigWorld
+        BigWorld._dh_pack_pity_state = _dh_pity_cache['state']
+    except Exception:
+        pass
+    try:
+        import json as _json
+        p = _dh_pity_state_path()
+        with open(p, 'w') as f:
+            _json.dump(_dh_pity_cache['state'], f)
+    except Exception:
+        pass
+
+
+def _dh_extract_guarantee_rules(gl_obj):
+    rules = []
+    if not gl_obj:
+        return rules
+    for g in list(gl_obj):
+        try:
+            if isinstance(g, dict):
+                gtype = str(g.get('__type__') or 'PropIDsGuarantee')
+                gid = int(g.get('GUARANTEE_PROP_ID') or 0)
+                cnt = int(g.get('PROP_GET_CNT') or 99)
+                cset = [int(x) for x in (g.get('CHECK_PROP_SET') or []) if x]
+                qual = int(g.get('QUALITY_CONDITION') or 0)
+            else:
+                gtype = str(getattr(g, '__type__', None) or type(g).__name__ or 'PropIDsGuarantee')
+                gid = int(getattr(g, 'GUARANTEE_PROP_ID', 0) or 0)
+                cnt = int(getattr(g, 'PROP_GET_CNT', 99) or 99)
+                raw_cset = getattr(g, 'CHECK_PROP_SET', None) or []
+                cset = [int(x) for x in list(raw_cset) if x]
+                qual = int(getattr(g, 'QUALITY_CONDITION', 0) or 0)
+            if gid > 0:
+                if qual > 0 and 'Quality' not in gtype:
+                    gtype = 'QualityGuarantee'
+                rules.append({
+                    'type': gtype,
+                    'check_set': cset,
+                    'guarantee_id': gid,
+                    'cnt': max(1, cnt),
+                    'quality': qual
+                })
+        except Exception:
+            continue
+    return rules
+
+
+def _dh_get_supplement_gl_map(legacy):
+    if _dh_pity_cache['supp_gl'] is not None:
+        return _dh_pity_cache['supp_gl']
+    smap = {}
+    try:
+        for _sid, srow in legacy.iterSupplementData():
+            try:
+                gl = _dh_extract_guarantee_rules(getattr(srow, 'GUARANTEE_LIST', None))
+                if not gl:
+                    continue
+                for sl_entry in list(getattr(srow, 'SUPPLEMENT_LIST', None) or []):
+                    pid = int(getattr(sl_entry, 'PROP_ID', 0) or 0)
+                    if pid > 0 and pid not in smap:
+                        smap[pid] = gl
+            except Exception:
+                continue
+    except Exception:
+        pass
+    _dh_pity_cache['supp_gl'] = smap
+    return smap
+
+
+def _dh_get_prob_parent_map(legacy):
+    if _dh_pity_cache['prob_parent_map'] is not None:
+        return _dh_pity_cache['prob_parent_map']
+    pmap = {}
+    try:
+        iter_fn = getattr(legacy, 'iterHallPropShowProbabilityData', None)
+        if callable(iter_fn):
+            for k, _row in iter_fn():
+                try:
+                    pk = int(k)
+                    prow = legacy.getDtsHallPropData(pk)
+                    pl = list(getattr( getattr(prow, 'PROP_TYPE', None), 'PROP_LIST', None) or [])
+                    if pl and not hasattr(pl[0], 'PROBABILITY'):
+                        child_id = int(pl[0])
+                        pmap.setdefault(child_id, []).append(pk)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    _dh_pity_cache['prob_parent_map'] = pmap
+    return pmap
+
+
+def _dh_get_prop_list_ids(legacy, prop_id):
+    out = set()
+    try:
+        pt = getattr(legacy.getDtsHallPropData(int(prop_id)), 'PROP_TYPE', None)
+        for entry in list(getattr(pt, 'PROP_LIST', None) or []):
+            pid = getattr(entry, 'PROP_ID', None)
+            if pid is not None:
+                out.add(int(pid))
+            elif isinstance(entry, (int, long)):
+                out.add(int(entry))
+    except Exception:
+        pass
+    return out
+
+
+def _dh_get_display_model_ids(legacy, prop_id):
+    out = []
+    if not prop_id:
+        return out
+    try:
+        pt = getattr(legacy.getDtsHallPropData(int(prop_id)), 'PROP_TYPE', None)
+        for d in list(getattr(pt, 'DISPLAY_IN_MODEL', None) or []):
+            for x in list(getattr(d, 'DISPLAY_PROP_LIST', None) or []):
+                ix = int(x or 0)
+                if ix > 0 and ix not in out:
+                    out.append(ix)
+    except Exception:
+        pass
+    return out
+
+
+def _dh_get_box_guarantee_rules(box_id, parent_id, utils, legacy):
+    box_id = int(box_id)
+    parent_id = int(parent_id or 0)
+    ckey = (box_id, parent_id)
+    if ckey in _dh_pity_cache['box_rules']:
+        return _dh_pity_cache['box_rules'][ckey]
+
+    rules = []
+    try:
+        # 1. Direct GUARANTEE_LIST on box_id in DtsHallProp
+        pt = getattr(legacy.getDtsHallPropData(box_id), 'PROP_TYPE', None)
+        rules = _dh_extract_guarantee_rules(getattr(pt, 'GUARANTEE_LIST', None))
+
+        # 2. Direct GUARANTEE_LIST on box_id in Supplement table
+        supp_map = _dh_get_supplement_gl_map(legacy)
+        if not rules and box_id in supp_map:
+            rules = list(supp_map[box_id])
+
+        # 3. Neighbor (box_id + 1 or box_id - 1) in DtsHallProp or Supplement matching PROP_LIST or DISPLAY_PROP_LIST
+        if not rules:
+            box_pids = _dh_get_prop_list_ids(legacy, box_id)
+            disp_ids = set(_dh_get_display_model_ids(legacy, parent_id) + _dh_get_display_model_ids(legacy, box_id))
+            for cand in (box_id + 1, box_id - 1):
+                cand_rules = supp_map.get(cand)
+                if not cand_rules:
+                    cpt = getattr(legacy.getDtsHallPropData(cand), 'PROP_TYPE', None)
+                    cand_rules = _dh_extract_guarantee_rules(getattr(cpt, 'GUARANTEE_LIST', None))
+                if not cand_rules:
+                    continue
+                cand_pids = _dh_get_prop_list_ids(legacy, cand)
+                rule_ids = set()
+                for r in cand_rules:
+                    rule_ids.update(r.get('check_set') or [])
+                    if r.get('guarantee_id'):
+                        rule_ids.add(int(r['guarantee_id']))
+                if (box_pids and cand_pids and box_pids == cand_pids) or (disp_ids and (rule_ids & disp_ids)) or (box_pids and (rule_ids & box_pids)):
+                    rules = list(cand_rules)
+                    break
+            if not rules:
+                for cand in (box_id + 1, box_id - 1):
+                    if cand in supp_map:
+                        rules = list(supp_map[cand])
+                        break
+
+        # 4. Universal fallback synthesis from HallPropShowProbability DESC + DISPLAY_IN_MODEL + PROP_LIST
+        if not rules:
+            desc = ''
+            prob_getter = getattr(legacy, 'getHallPropShowProbabilityData', None)
+            cand_parents = [parent_id, box_id] if parent_id else [box_id]
+            for extra_p in _dh_get_prob_parent_map(legacy).get(box_id, []):
+                if extra_p not in cand_parents:
+                    cand_parents.append(extra_p)
+            if callable(prob_getter):
+                for pid_cand in cand_parents:
+                    if not pid_cand:
+                        continue
+                    try:
+                        p_row = prob_getter(int(pid_cand))
+                        if p_row is not None and getattr(p_row, 'DESC', None):
+                            desc = str(getattr(p_row, 'DESC'))
+                            break
+                    except Exception:
+                        continue
+            import re as _re
+            m = _re.findall(r'(?:draw|open)\s*[x\xd7]?\s*(\d+)\s*[x\xd7]?', desc, _re.I)
+            thresh = int(m[-1]) if m else 100
+            if thresh <= 1:
+                thresh = 100
+
+            featured = []
+            for p_cand in cand_parents:
+                for did in _dh_get_display_model_ids(legacy, p_cand):
+                    if did not in featured:
+                        featured.append(did)
+
+            pl = list(getattr(pt, 'PROP_LIST', None) or [])
+            total_w = 0
+            weighted_entries = []
+            for entry in pl:
+                try:
+                    epid = int(getattr(entry, 'PROP_ID', 0) or 0)
+                    ew = max(0, int(getattr(entry, 'PROBABILITY', 0) or 0))
+                    if epid > 0:
+                        total_w += ew
+                        weighted_entries.append((epid, ew))
+                except Exception:
+                    continue
+
+            rare_from_pool = []
+            for epid, ew in weighted_entries:
+                if (290000 <= epid < 300000) or epid in (360000, 300001, 300002, 300012):
+                    continue
+                is_curr = False
+                try:
+                    is_curr = bool(utils.isDtsHallCurrency(epid))
+                except Exception:
+                    pass
+                if is_curr:
+                    continue
+                qual = 0
+                try:
+                    qual = int(utils.getDtsHallPropQuality(epid) or 0)
+                except Exception:
+                    pass
+                if (total_w > 0 and ew * 100 <= 15 * total_w) or qual >= 4:
+                    if epid not in rare_from_pool:
+                        rare_from_pool.append(epid)
+
+            target_ids = rare_from_pool if rare_from_pool else featured
+            for tid in target_ids:
+                rules.append({
+                    'type': 'PropIDsGuarantee',
+                    'check_set': [int(tid)],
+                    'guarantee_id': int(tid),
+                    'cnt': max(1, thresh - 1),
+                    'quality': 0
+                })
+    except Exception:
+        log_error('local-pack-pity-rules-error', box_id=box_id)
+
+    _dh_pity_cache['box_rules'][ckey] = rules
+    return rules
+
+
+def _dh_open_hall_prop_with_pity(prop_id, depth=0, rand=None, parent_id=None, prefer_unpulled=None):
+    """Universal replacement for open_hall_prop with full Guarantee / Pity tracking across all Store Packs."""
+    utils, legacy = hall_prop_tables()
+    if utils is None or depth >= HALL_PROP_DEPTH:
+        return [prop_id]
+    try:
+        prop_id = int(prop_id)
+        kind = utils.getDtsHallPropType(prop_id)
+        contents = list(legacy.getDtsHallPropData(prop_id).PROP_TYPE.PROP_LIST)
+    except Exception:
+        return [prop_id]
+
+    if kind == 'GiftBag':
+        opened = []
+        for content in contents:
+            opened.extend(_dh_open_hall_prop_with_pity(int(content), depth + 1, rand, parent_id=prop_id))
+        if depth == 0:
+            _dh_save_pity_state()
+        return opened
+
+    if kind == 'RandomItem':
+        # If this is a guarantee sub-box ('打包') and the caller specified unpulled items, filter to them first
+        if prefer_unpulled:
+            filtered = []
+            for entry in contents:
+                try:
+                    if int(entry.PROP_ID) in prefer_unpulled:
+                        filtered.append(entry)
+                except Exception:
+                    continue
+            if filtered:
+                contents = filtered
+
+        rules = _dh_get_box_guarantee_rules(prop_id, parent_id, utils, legacy) if not prefer_unpulled else []
+        if not rules:
+            rolled = roll_random_item(contents, rand)
+            return _dh_open_hall_prop_with_pity(rolled, depth + 1, rand, parent_id=prop_id) if rolled is not None else []
+
+        pstate = _dh_load_pity_state()
+        bkey = str(prop_id)
+        bstate = pstate.get(bkey)
+        if not isinstance(bstate, dict) or not isinstance(bstate.get('misses'), list) or len(bstate['misses']) != len(rules):
+            bstate = {'misses': [0] * len(rules), 'total': 0}
+            pstate[bkey] = bstate
+
+        misses = bstate['misses']
+        bstate['total'] = int(bstate.get('total') or 0) + 1
+
+        # Count how many single-item rules sharing the same cnt are currently unobtained (misses > 0)
+        same_cnt_unobtained = {}
+        unpulled_items = set()
+        for idx, r in enumerate(rules):
+            cset = r.get('check_set') or []
+            if len(cset) == 1 and misses[idx] > 0:
+                rcnt = int(r.get('cnt') or 99)
+                same_cnt_unobtained[rcnt] = same_cnt_unobtained.get(rcnt, 0) + 1
+                unpulled_items.add(int(cset[0]))
+
+        triggered_idx = None
+        best_priority = None
+        for idx, r in enumerate(rules):
+            rcnt = int(r.get('cnt') or 99)
+            cset = r.get('check_set') or []
+            stagger = max(0, same_cnt_unobtained.get(rcnt, 1) - 1) if len(cset) == 1 else 0
+            if misses[idx] + stagger >= rcnt:
+                # Prefer more specific rules (smaller check_set) and higher threshold rules first
+                prio = (-len(cset) if cset else 0, rcnt, misses[idx])
+                if best_priority is None or prio > best_priority:
+                    best_priority = prio
+                    triggered_idx = idx
+
+        if triggered_idx is not None:
+            tr = rules[triggered_idx]
+            rolled = int(tr['guarantee_id'])
+            leaf_ids = _dh_open_hall_prop_with_pity(
+                rolled, depth + 1, rand, parent_id=prop_id,
+                prefer_unpulled=unpulled_items if unpulled_items else None
+            )
+            log('local-pack-pity-triggered', box_id=prop_id, parent_id=parent_id,
+                guarantee_id=rolled, leaf_ids=leaf_ids, misses=misses[triggered_idx],
+                threshold=int(tr.get('cnt') or 99) + 1, total_draws=bstate['total'])
+        else:
+            rolled = roll_random_item(contents, rand)
+            leaf_ids = _dh_open_hall_prop_with_pity(rolled, depth + 1, rand, parent_id=prop_id) if rolled is not None else []
+
+        obtained = set([int(rolled)] if rolled is not None else [])
+        for lid in leaf_ids:
+            try:
+                obtained.add(int(lid))
+            except Exception:
+                pass
+
+        for idx, r in enumerate(rules):
+            rtype = str(r.get('type') or 'PropIDsGuarantee')
+            gid = int(r.get('guarantee_id') or 0)
+            hit = False
+            if 'Quality' in rtype and int(r.get('quality') or 0) > 0:
+                min_q = int(r['quality'])
+                if gid in obtained:
+                    hit = True
+                else:
+                    for lid in leaf_ids:
+                        try:
+                            if int(utils.getDtsHallPropQuality(int(lid)) or 0) >= min_q:
+                                hit = True
+                                break
+                        except Exception:
+                            continue
+            else:
+                cset = set(int(x) for x in (r.get('check_set') or []))
+                if gid > 0:
+                    cset.add(gid)
+                if obtained & cset:
+                    hit = True
+            if hit:
+                misses[idx] = 0
+            else:
+                misses[idx] = int(misses[idx]) + 1
+
+        if depth == 0:
+            _dh_save_pity_state()
+        return leaf_ids
+
+    return [prop_id]
+
+
+open_hall_prop = _dh_open_hall_prop_with_pity
+
+
+_dh_orig_mall_buy_details = globals().get('mall_buy_details')
+
+
+def _dh_mall_buy_details_with_pack_state(player, args):
+    """Wraps mall_buy_details so Store Pack purchases record their parameters for 'Buy Again' and use Pity open_hall_prop."""
+    try:
+        goods_id = int(args[0])
+        row = mall_properties(player).getMallData(goods_id)
+    except Exception:
+        if callable(_dh_orig_mall_buy_details):
+            return _dh_orig_mall_buy_details(player, args)
+        return {}
+    discount = mall_field(row, 'CURRENT_DISCOUNT') or MALL_FULL_PRICE
+    item = mall_field(row, 'HALL_PROP_ID') or goods_id
+    try:
+        count = max(1, int(args[1]))
+    except Exception:
+        count = 1
+    coupons = list(args[2]) if len(args) > 2 and isinstance(args[2], (list, tuple)) else []
+    log_str = str(args[3]) if len(args) > 3 and args[3] else 'MallGiftBag'
+    currency_id = mall_field(row, 'CURRENCY_ID')
+    unit_price = int(mall_field(row, 'PRICE') * discount / MALL_FULL_PRICE)
+
+    opened = []
+    for _index in range(count):
+        opened.extend(_dh_open_hall_prop_with_pity(item))
+
+    try:
+        utils, _legacy = hall_prop_tables()
+        kind = utils.getDtsHallPropType(item) if utils is not None else ''
+        if kind in ('GiftBag', 'RandomItem') or log_str == 'MallGiftBag':
+            _dh_last_pack_buy['goodID'] = goods_id
+            _dh_last_pack_buy['buyNum'] = count
+            _dh_last_pack_buy['cashCoupons'] = coupons
+            _dh_last_pack_buy['MallLogStr'] = log_str
+            _dh_last_pack_buy['currencyID'] = currency_id
+            _dh_last_pack_buy['price'] = unit_price
+            _dh_last_pack_buy['active'] = True
+            _dh_last_pack_buy['seq'] = int(_dh_last_pack_buy.get('seq') or 0) + 1
+            _dh_last_pack_buy['last_opened'] = list(opened)
+    except Exception:
+        pass
+
+    return {
+        'item': item,
+        'items': opened,
+        'currency_id': currency_id,
+        'price': unit_price
+    }
+
+
+mall_buy_details = _dh_mall_buy_details_with_pack_state
+try:
+    if 'WELFARE_DETAILS' in globals() and isinstance(WELFARE_DETAILS, dict):
+        for _m_rpc in ('buyMallGood', 'buyMallGoodInAppearanceMall'):
+            if _m_rpc in WELFARE_DETAILS:
+                WELFARE_DETAILS[_m_rpc] = _dh_mall_buy_details_with_pack_state
+except Exception:
+    pass
+
+
+_dh_orig_finish_rpc = globals().get('finish_rpc')
+if callable(_dh_orig_finish_rpc) and not getattr(_dh_orig_finish_rpc, '_dh_pack_wrapped', False):
+    def _dh_finish_rpc_pack_wrapper(player, name, args, kwargs, reply, count):
+        res = _dh_orig_finish_rpc(player, name, args, kwargs, reply, count)
+        try:
+            if name in ('buyMallGood', 'buyMallGoodInAppearanceMall') and isinstance(reply, dict) and reply.get('ok'):
+                if _dh_last_pack_buy.get('active'):
+                    items = (kwargs or {}).get('items') or _dh_last_pack_buy.get('last_opened') or []
+                    curr_id = (kwargs or {}).get('currency_id') or _dh_last_pack_buy.get('currencyID') or 2
+                    if items:
+                        call_later(0.15, show_bought_items, items, curr_id)
+        except Exception:
+            pass
+        return res
+    _dh_finish_rpc_pack_wrapper._dh_pack_wrapped = True
+    finish_rpc = _dh_finish_rpc_pack_wrapper
 
 
 try:

@@ -364,6 +364,12 @@ def _dh_push_display_items(plain, counted):
             own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
             if callable(own_fn) and own_fn(int(item)) > 0:
                 continue
+            pkg = getattr(player, 'dtsAppearancePackage', None)
+            if pkg is not None:
+                il = getattr(pkg, 'itemList', None)
+                if isinstance(il, dict):
+                    if int(item) in il or str(item) in il:
+                        continue
             push(player, item, count, 0)         # expires 0 (permanent); relog re-syncs the real expiry
             done.append((item, count))
         except Exception:
@@ -4547,6 +4553,8 @@ def _dh_install_main_watch():
                             Globals.uiMgr.leave_ui('UIItemDisplay')
                         except Exception:
                             pass
+                        call_later(0.05, _dh_restore_mall_and_supply_ui)
+                        call_later(0.3, _dh_restore_mall_and_supply_ui)
                         call_later(0.8, _dh_buy_again_watchdog)
 
                     disp_args['returnBtnCb'] = _dh_safe_leave_ret
@@ -4632,7 +4640,7 @@ def _dh_install_main_watch():
 
 
 def _dh_restore_mall_and_supply_ui():
-    """Restores goods panels, subtabs, and visibility for Mall, Supply, and Manual when UIItemDisplay closes."""
+    """Restores goods panels, subtabs, and touch interactivity for Mall, Supply, Workshop, and Depot when UIItemDisplay closes."""
     try:
         import Globals
         ui_mgr = getattr(Globals, 'uiMgr', None)
@@ -4640,7 +4648,7 @@ def _dh_restore_mall_and_supply_ui():
             return
 
         # 1. Dismiss any lingering loading or confirmation dialogs that block touches
-        for modal_name in ('UIPayLoading', 'UIGiftBagConfirm'):
+        for modal_name in ('UIPayLoading', 'UIGiftBagConfirm', 'UICommonMask'):
             try:
                 modal = getattr(ui_mgr, modal_name, None)
                 if modal is not None and getattr(modal, 'is_enter', False):
@@ -4653,11 +4661,27 @@ def _dh_restore_mall_and_supply_ui():
         except Exception:
             pass
 
+        # 2. Hide UIMainActionAndEmoji so its floating stick-figure button never blocks Workshop or Depot touches
+        try:
+            for sub_name in ('UIDtsAppearance', 'UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2', 'UIWorkshop', 'UIMall', 'UIMallController'):
+                sub_scr = getattr(ui_mgr, sub_name, None)
+                if sub_scr is not None and getattr(sub_scr, 'is_enter', False):
+                    act_scr = getattr(ui_mgr, 'UIMainActionAndEmoji', None)
+                    if act_scr is not None:
+                        if hasattr(act_scr, 'setVisible'):
+                            act_scr.setVisible(False)
+                        if hasattr(act_scr, 'setTouchEnabled'):
+                            act_scr.setTouchEnabled(False)
+                    break
+        except Exception:
+            pass
+
+        # 3. Restore all active screen panels and ensure full touch interactivity
         target_screens = [
             'UIMallController', 'UIMallCloth', 'UIMall',
             'UISupplyController', 'UISupplyPackage', 'UIAdvanceSupplyPackage',
-            'UIMonthlySupplyPackage', 'UIMainActionAndEmoji',
-            'UIDtsAppearance', 'UIDtsAppearanceVehicleCultivate2', 'UIWorkshop',
+            'UIMonthlySupplyPackage',
+            'UIDtsAppearance', 'UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2', 'UIWorkshop',
             'UIBraveBook2Tab', 'UIBraveBook2Award', 'UIBraveBook2Task',
             'UIBraveBook2Shop', 'UIBraveBook2'
         ]
@@ -4669,8 +4693,9 @@ def _dh_restore_mall_and_supply_ui():
                         scr.setVisible(True)
                     if hasattr(scr, 'setTouchEnabled'):
                         scr.setTouchEnabled(True)
-                    if hasattr(scr, 'leaveFullScreen') and callable(scr.leaveFullScreen):
-                        scr.leaveFullScreen()
+                    if scr_name in ('UIMall', 'UIMallController', 'UIMallCloth', 'UISupplyController'):
+                        if hasattr(scr, 'leaveFullScreen') and callable(scr.leaveFullScreen):
+                            scr.leaveFullScreen()
                     if hasattr(scr, 'refreshGeneralDisplayPanel') and callable(scr.refreshGeneralDisplayPanel):
                         scr.refreshGeneralDisplayPanel()
                     if hasattr(scr, 'refresh') and callable(scr.refresh):
@@ -4697,15 +4722,16 @@ def _dh_restore_mall_and_supply_ui():
                             root.setVisible(True)
                         if hasattr(root, 'setTouchEnabled'):
                             root.setTouchEnabled(True)
-                        for path, node in walk_ui_nodes(scr, limit=500):
+                    for path, node in walk_ui_nodes(scr, limit=1000):
+                        try:
+                            if hasattr(node, 'setTouchEnabled'):
+                                node.setTouchEnabled(True)
                             p_low = path.lower()
-                            if any(k in p_low for k in ('right', 'goods', 'cloth', 'item_list', 'listview', 'panel_1', 'panel_di', 'panel_content', 'tab', 'btn', 'button', 'back', 'return', 'award')):
-                                try:
+                            if any(k in p_low for k in ('right', 'goods', 'cloth', 'item_list', 'listview', 'panel_1', 'panel_di', 'panel_content', 'tab', 'btn', 'button', 'back', 'return', 'award', 'catalog', 'cell')):
+                                if hasattr(node, 'setVisible'):
                                     node.setVisible(True)
-                                    if hasattr(node, 'setTouchEnabled'):
-                                        node.setTouchEnabled(True)
-                                except Exception:
-                                    pass
+                        except Exception:
+                            pass
                 except Exception:
                     pass
         call_later(0.1, _dh_relabel_manual)
@@ -4756,6 +4782,8 @@ def _dh_fix_item_display_ui():
                         cb = getattr(disp, 'confirmBtnCb', None)
                         if callable(cb):
                             cb()
+                            call_later(0.05, _dh_restore_mall_and_supply_ui)
+                            call_later(0.3, _dh_restore_mall_and_supply_ui)
                         elif _dh_last_pack_buy.get('active') and int(_dh_last_pack_buy.get('goodID') or 0) > 0:
                             import time as _t
                             _dh_last_pack_buy['buying_again_at'] = _t.time()
@@ -4878,123 +4906,151 @@ def _dh_remove_all_appearance_copies(player, item_id):
 
 def _dh_clean_depot_duplicates(player=None):
     """Scan player's dtsAppearancePackage:
-    1. Clamp all permanent cosmetic items to 1 copy and delete duplicate uuids.
-    2. If Monster - M2 (140404) is owned, remove Monster - M1 (140403).
-    3. If Velociraptor Lv. 2 (142008) is owned, remove Velociraptor Lv. 1 (142007).
+    1. Clamp all permanent cosmetic items to strictly 1 copy and delete duplicate UUIDs.
+    2. Handle both str and int keys in pkg.itemList.
+    3. Purge lower-tier source vehicles when upgraded/evolved vehicles are owned or equipped:
+       - Monster - M2 (140404) / M3 (140406) -> remove Monster - M1 (140403)
+       - Velociraptor Lv. 2 (142008) -> remove Velociraptor Lv. 1 (142007)
+       - Darksteel Bike Lv. 2 (140077) -> remove Darksteel Bike Lv. 1 (140076)
+       - Summer Bicycle Lv. 2 (140074) -> remove Summer Bicycle (140073)
+    4. Never push duplicate items; refresh UIDtsAppearanceVehicle if active.
     """
     try:
         if player is None:
             import BigWorld
             player = BigWorld.player()
+        if player is None:
+            return 0
         pkg = getattr(player, 'dtsAppearancePackage', None)
         if pkg is None:
             return 0
-        
-        get_all = getattr(player, 'getDtsAppearanceAllItems', None)
-        if callable(get_all):
-            all_ids = list(get_all() or [])
-        else:
-            item_list = getattr(pkg, 'itemList', None)
-            all_ids = list(item_list.keys()) if isinstance(item_list, dict) else []
-            
+        item_list = getattr(pkg, 'itemList', None)
+        if not isinstance(item_list, dict):
+            return 0
+
         cleaned = 0
-        for item_id in all_ids:
+
+        def _is_owned(iid):
+            if iid in item_list or str(iid) in item_list:
+                return True
+            cnt_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
+            if callable(cnt_fn) and cnt_fn(int(iid)) > 0:
+                return True
+            return False
+
+        def _wipe_id(iid):
+            wiped = 0
+            for k in (iid, str(iid), int(iid) if str(iid).isdigit() else iid):
+                entries = item_list.get(k)
+                if isinstance(entries, dict):
+                    uuids = list(entries.keys())
+                    for u in uuids:
+                        try:
+                            player.onDelDtsAppearanceItem(int(iid), u)
+                        except Exception:
+                            pass
+                        entries.pop(u, None)
+                        wiped += 1
+                    item_list.pop(k, None)
+            return wiped
+
+        # 1. Group all keys by integer ID to resolve str vs int duplicates
+        grouped = {}
+        for k in list(item_list.keys()):
             try:
-                entries = pkg._getItemById(int(item_id)) or {}
+                iid = int(k)
             except Exception:
                 continue
-            if not isinstance(entries, dict) or not entries:
-                continue
-                
-            uuids = list(entries.keys())
-            perm_uuids = []
-            for u in uuids:
-                data = entries[u]
-                info = data.get('info') if isinstance(data, dict) else getattr(data, 'info', None)
-                ex_tm = 0
-                if isinstance(info, dict):
-                    ex_tm = int(info.get('ex_tm') or 0)
-                elif hasattr(info, 'ex_tm'):
-                    ex_tm = int(getattr(info, 'ex_tm', 0) or 0)
-                if ex_tm == 0:
-                    perm_uuids.append(u)
-                    
-            if len(perm_uuids) > 1:
-                for extra_u in perm_uuids[1:]:
-                    try:
-                        player.onDelDtsAppearanceItem(int(item_id), extra_u)
+            grouped.setdefault(iid, []).append(k)
+
+        for iid, keys in grouped.items():
+            if len(keys) > 1:
+                main_k = iid if iid in keys else keys[0]
+                main_dict = item_list.setdefault(main_k, {})
+                for other_k in keys:
+                    if other_k != main_k:
+                        other_dict = item_list.pop(other_k, {})
+                        for u, udata in other_dict.items():
+                            if u not in main_dict:
+                                main_dict[u] = udata
+                cleaned += 1
+
+            main_k = keys[0] if keys[0] in item_list else iid
+            entries = item_list.get(main_k)
+            if isinstance(entries, dict):
+                uuids = list(entries.keys())
+                perm_uuids = []
+                for u in uuids:
+                    data = entries[u]
+                    info = data.get('info') if isinstance(data, dict) else getattr(data, 'info', None)
+                    ex_tm = 0
+                    if isinstance(info, dict):
+                        ex_tm = int(info.get('ex_tm') or 0)
+                    elif hasattr(info, 'ex_tm'):
+                        ex_tm = int(getattr(info, 'ex_tm', 0) or 0)
+                    if ex_tm == 0:
+                        perm_uuids.append(u)
+
+                # Clamp permanent cosmetics strictly to 1 UUID
+                if len(perm_uuids) > 1:
+                    for extra_u in perm_uuids[1:]:
+                        try:
+                            player.onDelDtsAppearanceItem(iid, extra_u)
+                        except Exception:
+                            pass
+                        entries.pop(extra_u, None)
                         cleaned += 1
-                    except Exception:
-                        pass
-                perm_uuids = [perm_uuids[0]]
-                
-            if perm_uuids:
-                keep_u = perm_uuids[0]
-                keep_data = entries.get(keep_u)
-                num = 1
-                if isinstance(keep_data, dict):
-                    num = int(keep_data.get('number') or 1)
-                elif hasattr(keep_data, 'number'):
-                    num = int(getattr(keep_data, 'number', 1) or 1)
-                if num > 1:
-                    try:
-                        player.onUpdateDtsAppearanceItemNumber(int(item_id), keep_u, 1)
-                        cleaned += 1
-                    except Exception:
-                        pass
+                    perm_uuids = [perm_uuids[0]]
 
-        # Evolution consumption cleanup:
-        # 1. Monster - M2 (140404) -> Monster - M1 (140403)
-        is_m2_owned = (140404 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140404) > 0)
-        is_m2_eq = 140404 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
-        if is_m2_owned or is_m2_eq:
-            if 140404 not in all_ids:
-                try:
-                    _push_one_item(player, 140404, 1, 0, package='appearance')
-                except Exception:
-                    pass
-            if 140403 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140403) > 0:
-                _dh_remove_all_appearance_copies(player, 140403)
-                cleaned += 1
+                # Clamp item count to 1 for permanent cosmetics
+                if perm_uuids:
+                    keep_u = perm_uuids[0]
+                    keep_data = entries.get(keep_u)
+                    num = 1
+                    if isinstance(keep_data, dict):
+                        num = int(keep_data.get('number') or 1)
+                    elif hasattr(keep_data, 'number'):
+                        num = int(getattr(keep_data, 'number', 1) or 1)
+                    if num > 1:
+                        try:
+                            player.onUpdateDtsAppearanceItemNumber(iid, keep_u, 1)
+                            cleaned += 1
+                        except Exception:
+                            pass
 
-        # 2. Velociraptor Lv. 2 (142008) -> Velociraptor Lv. 1 (142007)
-        is_rap2_owned = (142008 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(142008) > 0)
-        is_rap2_eq = 142008 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
-        if is_rap2_owned or is_rap2_eq:
-            if 142008 not in all_ids:
-                try:
-                    _push_one_item(player, 142008, 1, 0, package='appearance')
-                except Exception:
-                    pass
-            if 142007 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(142007) > 0:
-                _dh_remove_all_appearance_copies(player, 142007)
-                cleaned += 1
+        # 2. Evolution consumption cleanup
+        eq_vehicles = list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
+        evo_rules = [
+            (140406, (140404, 140403)),
+            (140404, (140403,)),
+            (142008, (142007,)),
+            (140077, (140076,)),
+            (140074, (140073,)),
+        ]
+        for target_id, src_ids in evo_rules:
+            is_target_owned = _is_owned(target_id) or (target_id in eq_vehicles)
+            if is_target_owned:
+                for s_id in src_ids:
+                    if _is_owned(s_id):
+                        cleaned += _wipe_id(s_id)
 
-        # 3. Darksteel Bike Lv. 2 (140077) -> Darksteel Bike Lv. 1 (140076)
-        is_bike2_owned = (140077 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140077) > 0)
-        is_bike2_eq = 140077 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
-        if is_bike2_owned or is_bike2_eq:
-            if 140077 not in all_ids:
-                try:
-                    _push_one_item(player, 140077, 1, 0, package='appearance')
-                except Exception:
-                    pass
-            if 140076 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140076) > 0:
-                _dh_remove_all_appearance_copies(player, 140076)
-                cleaned += 1
-
-        # 4. Summer Bicycle Lv. 2 (140074) -> Summer Bicycle (140073)
-        is_sb2_owned = (140074 in all_ids) or (getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140074) > 0)
-        is_sb2_eq = 140074 in list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
-        if is_sb2_owned or is_sb2_eq:
-            if 140074 not in all_ids:
-                try:
-                    _push_one_item(player, 140074, 1, 0, package='appearance')
-                except Exception:
-                    pass
-            if 140073 in all_ids or getattr(player, 'getPermanentDtsAppearanceItemCnt', lambda x: 0)(140073) > 0:
-                _dh_remove_all_appearance_copies(player, 140073)
-                cleaned += 1
+        # 3. Refresh appearance UIs if open
+        try:
+            import Globals
+            ui_mgr = getattr(Globals, 'uiMgr', None)
+            if ui_mgr:
+                for ui_name in ('UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2', 'UIDtsAppearance'):
+                    scr = getattr(ui_mgr, ui_name, None)
+                    if scr and getattr(scr, 'is_enter', False):
+                        for mname in ('refreshAppearanceList', 'refresh', 'refreshView'):
+                            fn = getattr(scr, mname, None)
+                            if callable(fn):
+                                try:
+                                    fn()
+                                except Exception:
+                                    pass
+        except Exception:
+            pass
 
         if cleaned:
             log('local-depot-cleaned', cleaned=cleaned)
@@ -5107,6 +5163,9 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     # 5. Clean any residual duplicate copies
     try:
         call_later(0.1, _dh_clean_depot_duplicates, player)
+        call_later(0.3, _dh_clean_depot_duplicates, player)
+        call_later(0.8, _dh_clean_depot_duplicates, player)
+        call_later(1.5, _dh_clean_depot_duplicates, player)
     except Exception:
         pass
 
@@ -9301,16 +9360,8 @@ def _dh_ensure_synthetic_props():
                 raptor_lv2 = copy.copy(raptor_lv1)
                 ptype = copy.copy(getattr(raptor_lv1, 'PROP_TYPE', None))
                 if ptype is not None:
-                    try:
-                        disp_models = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                        if isinstance(disp_models, list) and disp_models:
-                            d0 = copy.copy(disp_models[0])
-                            setattr(d0, 'DISPLAY_PROP_LIST', [142008])
-                            setattr(ptype, 'DISPLAY_IN_MODEL', [d0])
-                    except Exception:
-                        pass
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.mtg'),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
                         try:
                             setattr(ptype, attr, val)
@@ -9438,11 +9489,19 @@ def _dh_install_prop_table_hooks():
             legacy._dh_orig_iter_dts_prop = orig_iter
 
             def _dh_patched_iter_dts_prop():
+                seen_ids = set()
                 for item in orig_iter():
+                    try:
+                        iid = item[0] if isinstance(item, (list, tuple)) and item else getattr(item, 'id', None)
+                        if iid is not None:
+                            seen_ids.add(int(iid))
+                    except Exception:
+                        pass
                     yield item
                 syn = _dh_ensure_synthetic_props()
                 for k in (121363, 140404, 140074, 140077, 142008):
-                    if k in syn:
+                    if k in syn and k not in seen_ids:
+                        seen_ids.add(k)
                         yield (k, syn[k])
 
             legacy.iterDtsHallPropData = _dh_patched_iter_dts_prop
@@ -9520,6 +9579,12 @@ if callable(_dh_push_inner):
                 own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
                 if callable(own_fn) and own_fn(int(item_id)) > 0:
                     return 'appearance'
+                pkg = getattr(player, 'dtsAppearancePackage', None)
+                if pkg is not None:
+                    il = getattr(pkg, 'itemList', None)
+                    if isinstance(il, dict):
+                        if int(item_id) in il or str(item_id) in il:
+                            return 'appearance'
         except Exception:
             pass
         return _dh_base(player, item_id, count, expires, package)

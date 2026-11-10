@@ -7481,7 +7481,7 @@ except Exception:
 # The /adm Seasons tab sends theme_mode (auto / off / <season>) and seasons {key: {window, enabled, lobby_theme}} in
 # rlLobby; the active season's lobby_theme goes on, the default comes back when no season is on.  Only the default
 # and the season themes are managed, so a lobby theme a player equipped of their own is left alone.
-_DH_DEFAULT_LOBBY_THEME = 270000
+_DH_DEFAULT_LOBBY_THEME = 279008
 _DH_SEASON_LOBBY = {          # built-in calendar, used until the console sends one
     'halloween': {'window': ('10-15', '11-02'), 'lobby_theme': 279009},   # Haunted Cabin
     'christmas': {'window': ('12-10', '01-05'), 'lobby_theme': 279007},   # Town Square
@@ -65231,8 +65231,8 @@ try:
     _dh_orig_hall_theme_id = globals().get('hall_theme_id')
     def _dh_safe_hall_theme_id():
         tid = _dh_orig_hall_theme_id() if callable(_dh_orig_hall_theme_id) else 0
-        if not tid or tid == 279008:
-            return 270000
+        if not tid or tid == 270000:
+            return 279008
         return tid
     hall_theme_id = _dh_safe_hall_theme_id
 
@@ -65281,20 +65281,21 @@ try:
         return 0
     show_lobby_backdrop = _dh_show_lobby_backdrop_safe
 
-    # Periodic Lobby 3D Scene loop: ensures ground road, sky, mountains, and theme 270000 are always intact
+    # Periodic Lobby 3D Scene loop: ensures ground road, sky, motorcycle, mountains, and theme 279008 are always intact
     def _dh_lobby_scene_watchdog():
         try:
             if _dh_in_lobby():
                 import BigWorld
+                BigWorld._dh_theme_suspended = False
                 player = BigWorld.player()
                 if player is not None:
-                    # Enforce valid default theme 270000 (day sky & mountains)
+                    # Enforce valid default theme 279008 (The Arrival with asphalt road & motorcycle)
                     cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
-                    if not cur_theme or cur_theme == 279008:
-                        player.dtsHallThemeID = 270000
+                    if not cur_theme or cur_theme == 270000:
+                        player.dtsHallThemeID = 279008
                         if hasattr(player, 'onUpdateDtsHallThemeID'):
                             try:
-                                player.onUpdateDtsHallThemeID(270000)
+                                player.onUpdateDtsHallThemeID(279008)
                             except Exception:
                                 pass
                     # Ensure scene models for road, sky, motorcycle, mountains are visible
@@ -65557,6 +65558,21 @@ while getattr(_dh_orig_main_ready, '_dh_party_ready_inner', None) is not None:
 
 
 def _dh_party_main_ready(*args, **kwargs):
+    try:
+        import BigWorld
+        BigWorld._dh_theme_suspended = False
+        p = BigWorld.player()
+        if p is not None:
+            cur_th = getattr(p, 'dtsHallThemeID', 0) or 0
+            if not cur_th or cur_th == 270000:
+                p.dtsHallThemeID = 279008
+                if hasattr(p, 'onUpdateDtsHallThemeID'):
+                    try:
+                        p.onUpdateDtsHallThemeID(279008)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
     res = _dh_orig_main_ready(*args, **kwargs) if callable(_dh_orig_main_ready) else None
     try:
         import BigWorld

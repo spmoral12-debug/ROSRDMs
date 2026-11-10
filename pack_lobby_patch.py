@@ -9,6 +9,7 @@ import os, zlib, hashlib, base64, glob
 UNPACKED = os.path.abspath('clean_remote_lobby.py')
 DESTINATIONS = [
     r'C:\DieHardROS\local_update\hot\remote-lobby.py',
+    r'C:\DieHardROS\ROS-REDEMPTION\DieHardROS\local_update\hot\remote-lobby.py',
     os.path.abspath(r'local_update\hot\remote-lobby.py'),
     os.path.abspath(r'ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py')
 ]

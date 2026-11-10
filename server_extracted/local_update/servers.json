@@ -1,0 +1,15 @@
+{
+  "_doc": "Game servers. Singapore Dedicated Server active.",
+  "host": "143.14.88.9",
+  "servers": [
+    {
+      "id": 10501,
+      "name": "Singapore-Dedicated",
+      "port": 30061,
+      "zone": "Singapore-Dedicated",
+      "load": 1,
+      "status": 2,
+      "ping": 40
+    }
+  ]
+}

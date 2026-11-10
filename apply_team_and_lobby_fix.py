@@ -196,3 +196,4 @@ print("Updated clean_remote_lobby.py successfully! (Bytes: %d)" % len(content))
 print("Checking syntax with compile()...")
 compile(content.encode('utf-8'), 'clean_remote_lobby.py', 'exec')
 print("Syntax check passed 100%!")
+

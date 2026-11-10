@@ -5713,11 +5713,21 @@ def _dh_relabel_seasons(ui):
     except Exception:
         nodes = []
     for path, node in nodes:
-        getter = getattr(node, 'getString', None) or getattr(node, 'getText', None)
-        if not callable(getter):
+        getter = None
+        setter = None
+        if hasattr(node, 'getTitleText') and hasattr(node, 'setTitleText'):
+            getter = getattr(node, 'getTitleText')
+            setter = getattr(node, 'setTitleText')
+        elif hasattr(node, 'getString') and hasattr(node, 'setString'):
+            getter = getattr(node, 'getString')
+            setter = getattr(node, 'setString')
+        elif hasattr(node, 'getText') and hasattr(node, 'setText'):
+            getter = getattr(node, 'getText')
+            setter = getattr(node, 'setText')
+        if not callable(getter) or not callable(setter):
             continue
         try:
-            text = str(getter())
+            text = str(getter() or '')
         except Exception:
             continue
         if not text:
@@ -5727,7 +5737,7 @@ def _dh_relabel_seasons(ui):
         if 'Season 17' in text or 'Season17' in text:
             try:
                 new_text = re.sub(r'\bSeason\s*17\b', 'Season 1 ', text)
-                node.setString(new_text)
+                setter(new_text)
                 changed += 1
                 continue
             except Exception:
@@ -5739,7 +5749,7 @@ def _dh_relabel_seasons(ui):
             number = int(match.group(1))
             if number == 17 or number > offset:
                 new_text = _DH_SEASON_LABEL.sub('Season %d ' % (number - offset), text)
-                node.setString(new_text)
+                setter(new_text)
                 changed += 1
             elif number < 17:
                 parent = node.getParent()

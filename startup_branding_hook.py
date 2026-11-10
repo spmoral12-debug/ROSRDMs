@@ -93,8 +93,144 @@ def _redemption_patch_screen_tick(tick=0):
         call_later(0.5, _redemption_continuous_title_guard)
 
 
+def _walk_fix_season(root):
+    if root is None:
+        return
+    import re
+    stack = [root]
+    while stack:
+        node = stack.pop()
+        try:
+            ch = node.getChildren()
+            if ch:
+                stack.extend(list(ch))
+        except Exception:
+            pass
+        
+        # Check getTitleText / setTitleText (Buttons)
+        if hasattr(node, 'getTitleText') and hasattr(node, 'setTitleText'):
+            try:
+                t = node.getTitleText()
+                if t and ('Season 17' in t or 'Season17' in t):
+                    node.setTitleText(re.sub(r'\bSeason\s*17\b', 'Season 1', t))
+                elif t and re.search(r'\bSeason\s*(1[0-6]|[1-9])\b', t):
+                    p = node.getParent()
+                    if p is not None and len(list(p.getChildren())) <= 4:
+                        p.setVisible(False)
+                    else:
+                        node.setVisible(False)
+            except Exception:
+                pass
+
+        # Check getString / setString (Labels / Texts)
+        if hasattr(node, 'getString') and hasattr(node, 'setString'):
+            try:
+                t = node.getString()
+                if t and ('Season 17' in t or 'Season17' in t):
+                    node.setString(re.sub(r'\bSeason\s*17\b', 'Season 1', t))
+                elif t and re.search(r'\bSeason\s*(1[0-6]|[1-9])\b', t):
+                    p = node.getParent()
+                    if p is not None and len(list(p.getChildren())) <= 4:
+                        p.setVisible(False)
+                    else:
+                        node.setVisible(False)
+            except Exception:
+                pass
+
+
+def _hook_record_panel_class():
+    try:
+        import sys, re
+        mod = sys.modules.get('ui.UIMeetMainPage')
+        if not mod:
+            try:
+                mod = __import__('ui.UIMeetMainPage', fromlist=['UIBattleGroundRecordPanel'])
+            except Exception:
+                return
+        cls = getattr(mod, 'UIBattleGroundRecordPanel', None)
+        if cls and not getattr(cls, '_dh_season_hooked', False):
+            cls._dh_season_hooked = True
+            
+            orig_get_ui = getattr(cls, '_get_ui', None)
+            if orig_get_ui:
+                def wrapped_get_ui(self, *a, **k):
+                    res = orig_get_ui(self, *a, **k)
+                    try:
+                        btn = getattr(self, 'showModeSecondary', None)
+                        if btn and hasattr(btn, 'setTitleText'):
+                            btn.setTitleText('Season 1')
+                        choose = getattr(self, 'modeChooseSecondary', None)
+                        if choose:
+                            _walk_fix_season(choose)
+                    except Exception:
+                        pass
+                    return res
+                cls._get_ui = wrapped_get_ui
+                
+            orig_show_sec = getattr(cls, 'onShowModeSecondaryClick', None)
+            if orig_show_sec:
+                def wrapped_show_sec(self, *a, **k):
+                    res = orig_show_sec(self, *a, **k)
+                    try:
+                        choose = getattr(self, 'modeChooseSecondary', None)
+                        if choose:
+                            _walk_fix_season(choose)
+                    except Exception:
+                        pass
+                    return res
+                cls.onShowModeSecondaryClick = wrapped_show_sec
+
+            orig_game_sec = getattr(cls, 'onGameModeSecondaryClick', None)
+            if orig_game_sec:
+                def wrapped_game_sec(self, *a, **k):
+                    res = orig_game_sec(self, *a, **k)
+                    try:
+                        btn = getattr(self, 'showModeSecondary', None)
+                        if btn and hasattr(btn, 'getTitleText') and hasattr(btn, 'setTitleText'):
+                            t = btn.getTitleText()
+                            if '17' in t:
+                                btn.setTitleText(t.replace('17', '1'))
+                    except Exception:
+                        pass
+                    return res
+                cls.onGameModeSecondaryClick = wrapped_game_sec
+    except Exception:
+        pass
+
+
+def _fix_season_labels_guard():
+    _hook_record_panel_class()
+    try:
+        import Globals, re
+        ui_mgr = getattr(Globals, 'uiMgr', None)
+        if ui_mgr is not None:
+            all_ui = getattr(ui_mgr, '____all_ui__', None) or {}
+            for name, ui in all_ui.items():
+                if ui is None:
+                    continue
+                if name == 'UIMeetMainPage':
+                    for attr in ('battleGroundRecordPanel', 'recordPanel', '_battleGroundRecordPanel'):
+                        p = getattr(ui, attr, None)
+                        if p is not None:
+                            btn = getattr(p, 'showModeSecondary', None)
+                            if btn is not None and hasattr(btn, 'getTitleText') and hasattr(btn, 'setTitleText'):
+                                t = btn.getTitleText()
+                                if '17' in t:
+                                    btn.setTitleText(re.sub(r'\bSeason\s*17\b', 'Season 1', t))
+                            choose = getattr(p, 'modeChooseSecondary', None)
+                            if choose is not None:
+                                _walk_fix_season(choose)
+                    w = getattr(ui, 'widget', None) or ui
+                    _walk_fix_season(w)
+                elif hasattr(ui, 'widget'):
+                    _walk_fix_season(ui.widget)
+    except Exception:
+        pass
+
+
 def _redemption_continuous_title_guard():
     _set_ros_window_title()
+    _fix_season_labels_guard()
     call_later(0.5, _redemption_continuous_title_guard)
 
 

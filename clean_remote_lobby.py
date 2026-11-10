@@ -4237,15 +4237,6 @@ def _dh_main_ready():
             unblocked=_dh_unblock_top_tabs(), at='UIMain')
     except Exception:
         log_error('local-top-tabs-error', at='UIMain')
-    try:
-        bw = globals().get('BigWorld') or __import__('BigWorld')
-        player = bw.player()
-        if player is not None and hasattr(player, 'onAddDtsAppearanceItem'):
-            _push = globals().get('_push_one_item')
-            if callable(_push):
-                _push(player, 121363, 1, 0, package='appearance')
-    except Exception:
-        pass
 
 
 def _dh_relabel_manual():
@@ -8942,6 +8933,12 @@ def _dh_client_knows_item(item_id):
 
 if callable(_dh_push_inner):
     def _push_one_item(player, item_id, count, expires, package=None, _dh_base=_dh_push_inner):
+        try:
+            if int(item_id) in (121363, 492081, 492082):
+                _dh_install_prop_table_hooks()
+                _dh_ensure_synthetic_props()
+        except Exception:
+            pass
         if not _dh_client_knows_item(item_id):
             if item_id not in _dh_push_skipped:
                 _dh_push_skipped.add(item_id)
@@ -8951,6 +8948,38 @@ if callable(_dh_push_inner):
     _push_one_item._dh_m119 = True
     _push_one_item._dh_inner = _dh_push_inner
     log('local-depot-push-guard', installed=True)
+
+
+_dh_orig_push_server_items = globals().get('push_server_items')
+while getattr(_dh_orig_push_server_items, '_dh_quiet_lobby', False):
+    _dh_orig_push_server_items = _dh_orig_push_server_items._dh_inner
+
+if callable(_dh_orig_push_server_items):
+    def _dh_push_server_items_quiet_lobby(player, items, reason='reply', _dh_base=_dh_orig_push_server_items):
+        """Suppress 'You got [...] x1' system message banner during initial/post-battle depot sync
+        (reason in ('lobby', 'lobby-cache', 'lobby-new')), while keeping it active when claiming rewards."""
+        if str(reason) in ('lobby', 'lobby-cache', 'lobby-new'):
+            cu = None
+            orig_msg = None
+            try:
+                cu = __import__('client_utils')
+                orig_msg = getattr(cu, 'showSystemMsg', None)
+                if callable(orig_msg):
+                    cu.showSystemMsg = lambda *_a, **_kw: None
+            except Exception:
+                cu = None
+            try:
+                return _dh_base(player, items, reason=reason)
+            finally:
+                if cu is not None and callable(orig_msg):
+                    try:
+                        cu.showSystemMsg = orig_msg
+                    except Exception:
+                        pass
+        return _dh_base(player, items, reason=reason)
+    _dh_push_server_items_quiet_lobby._dh_quiet_lobby = True
+    _dh_push_server_items_quiet_lobby._dh_inner = _dh_orig_push_server_items
+    push_server_items = _dh_push_server_items_quiet_lobby
 
 log('local-art-installed', version='m119')
 

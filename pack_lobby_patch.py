@@ -93,23 +93,37 @@ _dh_run()
 packed_text = '\r\n'.join(header) + '\r\n' + runner
 packed_bytes = packed_text.encode('utf-8')
 
-print("Writing remote-lobby.py (%d bytes)..." % len(packed_bytes))
-with open(REMOTE_LOBBY, 'wb') as f:
-    f.write(packed_bytes)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+dest_files = [
+    os.path.join(base_dir, 'local_update', 'hot', 'remote-lobby.py'),
+    os.path.join(base_dir, 'ROS_Redemption_Server_Package', 'local_update', 'hot', 'remote-lobby.py'),
+    r'C:\DieHardROS\local_update\hot\remote-lobby.py'
+]
 
-# Write to all hot-lobby-*.py
-for hf in glob.glob(os.path.join(HOT_DIR, 'hot-lobby-*.py')):
-    with open(hf, 'wb') as f:
-        f.write(packed_bytes)
-    print("Written:", hf)
-
-# Compute SHA256 of remote-lobby.py
 sha256_hash = hashlib.sha256(packed_bytes).hexdigest()
 print("Computed SHA256:", sha256_hash)
 
-with open(SHA_FILE, 'w') as f:
-    f.write(sha256_hash)
-print("Updated:", SHA_FILE)
+for df in dest_files:
+    try:
+        os.makedirs(os.path.dirname(df), exist_ok=True)
+        with open(df, 'wb') as f:
+            f.write(packed_bytes)
+        print("Written destination:", df)
+        sha_p = df + '.sha256'
+        with open(sha_p, 'w') as f:
+            f.write(sha256_hash)
+        print("Updated SHA:", sha_p)
+    except Exception as ex:
+        print("Skip destination %s: %s" % (df, ex))
+
+# Write to all hot-lobby-*.py
+for hf in glob.glob(os.path.join(HOT_DIR, 'hot-lobby-*.py')):
+    try:
+        with open(hf, 'wb') as f:
+            f.write(packed_bytes)
+        print("Written hot-lobby:", hf)
+    except Exception as ex:
+        print("Skip hot-lobby %s: %s" % (hf, ex))
 
 print("PACKING COMPLETED SUCCESSFULLY!")
 

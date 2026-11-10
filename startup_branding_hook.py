@@ -88,54 +88,110 @@ def _redemption_patch_screen_tick(tick=0):
     except Exception:
         log_error('local-redemption-patch-screen-error')
     if tick < 400:
+        _fix_season_labels_guard()
         call_later(0.15, _redemption_patch_screen_tick, tick + 1)
     else:
         call_later(0.5, _redemption_continuous_title_guard)
 
 
-def _walk_fix_season(root):
-    if root is None:
-        return
+def _walk_fix_season(target, max_nodes=5000):
+    if target is None:
+        return 0
+    try:
+        import utils
+        utils.getCurrentSeasonID = lambda *a, **k: 1
+    except Exception:
+        pass
+    try:
+        import rank_utils
+        if hasattr(rank_utils, 'getCurrentSeasonID'):
+            rank_utils.getCurrentSeasonID = lambda *a, **k: 1
+    except Exception:
+        pass
     import re
-    stack = [root]
-    while stack:
-        node = stack.pop()
-        try:
-            ch = node.getChildren()
-            if ch:
-                stack.extend(list(ch))
-        except Exception:
-            pass
-        
-        # Check getTitleText / setTitleText (Buttons)
-        if hasattr(node, 'getTitleText') and hasattr(node, 'setTitleText'):
+    seen = set()
+    stack = [target]
+    changed = 0
+    while stack and len(seen) < max_nodes:
+        curr = stack.pop()
+        if curr is None:
+            continue
+        cid = id(curr)
+        if cid in seen:
+            continue
+        seen.add(cid)
+
+        # 1. Traverse Cocos2d-x children
+        if hasattr(curr, 'getChildren'):
             try:
-                t = node.getTitleText()
-                if t and ('Season 17' in t or 'Season17' in t):
-                    node.setTitleText(re.sub(r'\bSeason\s*17\b', 'Season 1', t))
-                elif t and re.search(r'\bSeason\s*(1[0-6]|[1-9])\b', t):
-                    p = node.getParent()
-                    if p is not None and len(list(p.getChildren())) <= 4:
-                        p.setVisible(False)
-                    else:
-                        node.setVisible(False)
+                ch = curr.getChildren()
+                if ch:
+                    stack.extend(list(ch))
             except Exception:
                 pass
 
-        # Check getString / setString (Labels / Texts)
-        if hasattr(node, 'getString') and hasattr(node, 'setString'):
+        # 2. Traverse Python wrapper attributes
+        if hasattr(curr, '__dict__'):
             try:
-                t = node.getString()
-                if t and ('Season 17' in t or 'Season17' in t):
-                    node.setString(re.sub(r'\bSeason\s*17\b', 'Season 1', t))
-                elif t and re.search(r'\bSeason\s*(1[0-6]|[1-9])\b', t):
-                    p = node.getParent()
-                    if p is not None and len(list(p.getChildren())) <= 4:
-                        p.setVisible(False)
-                    else:
-                        node.setVisible(False)
+                for k, v in curr.__dict__.items():
+                    if v is not None:
+                        if hasattr(v, 'getChildren') or hasattr(v, '__dict__'):
+                            stack.append(v)
+                        elif isinstance(v, (list, tuple)):
+                            stack.extend(list(v))
+                        elif isinstance(v, dict):
+                            stack.extend(list(v.values()))
             except Exception:
                 pass
+
+        # 3. Traverse UITabView panels if present
+        if hasattr(curr, 'getTabPanel'):
+            for tab in ('record', 'mainpage', 'peiwan', 'intimate', 'credit', 'vip', 'marriage'):
+                try:
+                    p = curr.getTabPanel(tab)
+                    if p is not None:
+                        stack.append(p)
+                except Exception:
+                    pass
+
+        # 4. Check text modification on current node
+        getter = None
+        setter = None
+        if hasattr(curr, 'getTitleText') and hasattr(curr, 'setTitleText'):
+            getter = getattr(curr, 'getTitleText')
+            setter = getattr(curr, 'setTitleText')
+        elif hasattr(curr, 'getString') and hasattr(curr, 'setString'):
+            getter = getattr(curr, 'getString')
+            setter = getattr(curr, 'setString')
+        elif hasattr(curr, 'getText') and hasattr(curr, 'setText'):
+            getter = getattr(curr, 'getText')
+            setter = getattr(curr, 'setText')
+
+        if callable(getter) and callable(setter):
+            try:
+                text = str(getter() or '')
+            except Exception:
+                text = ''
+            if text:
+                if 'Season 17' in text or 'Season17' in text:
+                    try:
+                        new_text = re.sub(r'\bSeason\s*17\b', 'Season 1', text)
+                        setter(new_text)
+                        changed += 1
+                        continue
+                    except Exception:
+                        pass
+                elif re.search(r'\bSeason\s*(1[0-6]|[2-9])\b', text):
+                    try:
+                        parent = curr.getParent() if hasattr(curr, 'getParent') else None
+                        if parent is not None and hasattr(parent, 'getChildren') and len(list(parent.getChildren())) <= 4:
+                            parent.setVisible(False)
+                        else:
+                            curr.setVisible(False)
+                        changed += 1
+                    except Exception:
+                        pass
+    return changed
 
 
 def _hook_record_panel_class():

@@ -5700,103 +5700,207 @@ def _dh_point_ladder():
     return True
 
 
+def _dh_patch_season_id():
+    try:
+        import utils
+        utils.getCurrentSeasonID = lambda *a, **k: 1
+    except Exception:
+        pass
+    try:
+        import rank_utils
+        if hasattr(rank_utils, 'getCurrentSeasonID'):
+            rank_utils.getCurrentSeasonID = lambda *a, **k: 1
+    except Exception:
+        pass
+
+
 def _dh_relabel_seasons(ui):
     """'Season 17' -> 'Season 1' on ladder, stats, and profile screens; older official seasons are hidden."""
-    info = _dh_season.get('info') or globals().get('_DH_DEFAULT_SEASON') or {'offset': 16}
     if ui is None:
         return 0
-    offset = int(info.get('offset', 16))
+    _dh_patch_season_id()
     changed = 0
-    walker = walk_ui_nodes if (hasattr(ui, 'getChildren') or hasattr(ui, 'panels')) else _dh_cc_walk
-    try:
-        nodes = list(walker(ui, limit=3000))
-    except Exception:
-        nodes = []
-    for path, node in nodes:
-        getter = None
-        setter = None
-        if hasattr(node, 'getTitleText') and hasattr(node, 'setTitleText'):
-            getter = getattr(node, 'getTitleText')
-            setter = getattr(node, 'setTitleText')
-        elif hasattr(node, 'getString') and hasattr(node, 'setString'):
-            getter = getattr(node, 'getString')
-            setter = getattr(node, 'setString')
-        elif hasattr(node, 'getText') and hasattr(node, 'setText'):
-            getter = getattr(node, 'getText')
-            setter = getattr(node, 'setText')
-        if not callable(getter) or not callable(setter):
+    import re
+    seen = set()
+    stack = [ui]
+    limit = 5000
+    while stack and len(seen) < limit:
+        curr = stack.pop()
+        if curr is None:
             continue
-        try:
-            text = str(getter() or '')
-        except Exception:
+        cid = id(curr)
+        if cid in seen:
             continue
-        if not text:
-            continue
-        if 'Season 1 ' in text:
-            continue
-        if 'Season 17' in text or 'Season17' in text:
+        seen.add(cid)
+
+        # 1. Traverse Cocos2d-x children
+        if hasattr(curr, 'getChildren'):
             try:
-                new_text = re.sub(r'\bSeason\s*17\b', 'Season 1 ', text)
-                setter(new_text)
-                changed += 1
-                continue
+                ch = curr.getChildren()
+                if ch:
+                    stack.extend(list(ch))
             except Exception:
                 pass
-        match = _DH_SEASON_LABEL.search(text)
-        if not match:
-            continue
-        try:
-            number = int(match.group(1))
-            if number == 17 or number > offset:
-                new_text = _DH_SEASON_LABEL.sub('Season %d ' % (number - offset), text)
-                setter(new_text)
-                changed += 1
-            elif number < 17:
-                parent = node.getParent()
-                small = parent is not None and len(list(parent.getChildren())) <= 4
-                (parent if small else node).setVisible(False)
-                changed += 1
-        except Exception:
-            continue
+
+        # 2. Traverse Python wrapper attributes
+        if hasattr(curr, '__dict__'):
+            try:
+                for k, v in curr.__dict__.items():
+                    if v is not None:
+                        if hasattr(v, 'getChildren') or hasattr(v, '__dict__'):
+                            stack.append(v)
+                        elif isinstance(v, (list, tuple)):
+                            stack.extend(list(v))
+                        elif isinstance(v, dict):
+                            stack.extend(list(v.values()))
+            except Exception:
+                pass
+
+        # 3. Traverse UITabView panels if present
+        if hasattr(curr, 'getTabPanel'):
+            for tab in ('record', 'mainpage', 'peiwan', 'intimate', 'credit', 'vip', 'marriage'):
+                try:
+                    p = curr.getTabPanel(tab)
+                    if p is not None:
+                        stack.append(p)
+                except Exception:
+                    pass
+
+        # 4. Check text modification on current node
+        getter = None
+        setter = None
+        if hasattr(curr, 'getTitleText') and hasattr(curr, 'setTitleText'):
+            getter = getattr(curr, 'getTitleText')
+            setter = getattr(curr, 'setTitleText')
+        elif hasattr(curr, 'getString') and hasattr(curr, 'setString'):
+            getter = getattr(curr, 'getString')
+            setter = getattr(curr, 'setString')
+        elif hasattr(curr, 'getText') and hasattr(curr, 'setText'):
+            getter = getattr(curr, 'getText')
+            setter = getattr(curr, 'setText')
+
+        if callable(getter) and callable(setter):
+            try:
+                text = str(getter() or '')
+            except Exception:
+                text = ''
+            if text:
+                if 'Season 17' in text or 'Season17' in text:
+                    try:
+                        new_text = re.sub(r'\bSeason\s*17\b', 'Season 1', text)
+                        setter(new_text)
+                        changed += 1
+                        continue
+                    except Exception:
+                        pass
+                elif re.search(r'\bSeason\s*(1[0-6]|[2-9])\b', text):
+                    try:
+                        parent = curr.getParent() if hasattr(curr, 'getParent') else None
+                        if parent is not None and hasattr(parent, 'getChildren') and len(list(parent.getChildren())) <= 4:
+                            parent.setVisible(False)
+                        else:
+                            curr.setVisible(False)
+                        changed += 1
+                    except Exception:
+                        pass
     return changed
 
 
 def _dh_install_season_screens():
     module = _dh_ladder_module()
-    if module is None:
-        return []
     done = []
-    targets = {'UILadder': ('on_enter', '_update_season_panel', '_update_season_id', 'OnChoseSeason',
-                            'onSeasonPanelSelect', '_update_self_ladder', 'set_right_panel'),
-               'UIRankLadder': ('on_enter', '_update_season_num', 'onChoseSeasonEvent', '_update_rank_list')}
-    for cls_name, methods in targets.items():
-        cls = getattr(module, cls_name, None)
-        if cls is None:
-            continue
-        for name in methods:
-            inner = cls.__dict__.get(name)
-            if inner is None or getattr(inner, '_dh_season', False):
+    if module is not None:
+        targets = {'UILadder': ('on_enter', '_update_season_panel', '_update_season_id', 'OnChoseSeason',
+                                'onSeasonPanelSelect', '_update_self_ladder', 'set_right_panel'),
+                   'UIRankLadder': ('on_enter', '_update_season_num', 'onChoseSeasonEvent', '_update_rank_list')}
+        for cls_name, methods in targets.items():
+            cls = getattr(module, cls_name, None)
+            if cls is None:
                 continue
+            for name in methods:
+                inner = cls.__dict__.get(name)
+                if inner is None or getattr(inner, '_dh_season', False):
+                    continue
 
-            def make(inner, name):
-                def wrapped(self, *args, **kwargs):
-                    if name == 'on_enter':
+                def make(inner, name):
+                    def wrapped(self, *args, **kwargs):
+                        if name == 'on_enter':
+                            try:
+                                _dh_point_ladder()
+                            except Exception:
+                                log_error('local-season-point-error')
+                        result = inner(self, *args, **kwargs)
                         try:
-                            _dh_point_ladder()
+                            _dh_relabel_seasons(self)
                         except Exception:
-                            log_error('local-season-point-error')
-                    result = inner(self, *args, **kwargs)
-                    try:
-                        _dh_relabel_seasons(self)
-                    except Exception:
-                        log_error('local-season-label-error', method=name)
-                    return result
-                wrapped._dh_season = True
-                wrapped._dh_inner = inner
-                return wrapped
-            setattr(cls, name, make(inner, name))
-            done.append('%s.%s' % (cls_name, name))
+                            log_error('local-season-label-error', method=name)
+                        return result
+                    wrapped._dh_season = True
+                    wrapped._dh_inner = inner
+                    return wrapped
+                setattr(cls, name, make(inner, name))
+                done.append('%s.%s' % (cls_name, name))
+
+    # Hook UIBattleGroundRecordPanel directly
+    try:
+        meet_mod = _dh_sys.modules.get('ui.UIMeetMainPage')
+        if meet_mod is None:
+            try:
+                meet_mod = __import__('ui.UIMeetMainPage', fromlist=['UIBattleGroundRecordPanel', 'UIMeetMainPage'])
+            except Exception:
+                meet_mod = None
+        if meet_mod is not None:
+            bgrp = getattr(meet_mod, 'UIBattleGroundRecordPanel', None)
+            if bgrp is not None and not getattr(bgrp, '_dh_season_hooked', False):
+                bgrp._dh_season_hooked = True
+                orig_get_ui = getattr(bgrp, '_get_ui', None)
+                if orig_get_ui:
+                    def _wrapped_get_ui(self, *args, **kwargs):
+                        res = orig_get_ui(self, *args, **kwargs)
+                        try:
+                            _dh_relabel_seasons(self)
+                            btn = getattr(self, 'showModeSecondary', None)
+                            if btn and hasattr(btn, 'setTitleText'):
+                                btn.setTitleText('Season 1')
+                        except Exception:
+                            pass
+                        return res
+                    bgrp._get_ui = _wrapped_get_ui
+
+                orig_show_sec = getattr(bgrp, 'onShowModeSecondaryClick', None)
+                if orig_show_sec:
+                    def _wrapped_show_sec(self, *args, **kwargs):
+                        res = orig_show_sec(self, *args, **kwargs)
+                        try:
+                            choose = getattr(self, 'modeChooseSecondary', None)
+                            if choose:
+                                _dh_relabel_seasons(choose)
+                        except Exception:
+                            pass
+                        return res
+                    bgrp.onShowModeSecondaryClick = _wrapped_show_sec
+
+                orig_game_sec = getattr(bgrp, 'onGameModeSecondaryClick', None)
+                if orig_game_sec:
+                    def _wrapped_game_sec(self, *args, **kwargs):
+                        res = orig_game_sec(self, *args, **kwargs)
+                        try:
+                            _dh_relabel_seasons(self)
+                        except Exception:
+                            pass
+                        return res
+                    bgrp.onGameModeSecondaryClick = _wrapped_game_sec
+                done.append('UIBattleGroundRecordPanel')
+    except Exception:
+        pass
+
     return done
+
+
+try:
+    _dh_install_season_screens()
+except Exception:
+    pass
 
 
 def _dh_apply_season(player, info):

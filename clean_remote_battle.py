@@ -9618,6 +9618,7 @@ _dh_install_ct_create_wrapper()
 # 6C. Enhanced Party Teammate Sync (with live HP, maxHp, distinct GID, validBattleTeammates, and camp sync)
 _dh_mates.setdefault('client_ids', {})
 _dh_mates.setdefault('live_list', [])
+_dh_mates.setdefault('positions', {})
 
 
 def _dh_rich_team_mates_from(snapshot):
@@ -9631,6 +9632,7 @@ def _dh_rich_team_mates_from(snapshot):
     me = int(BATTLE.get('entity_id') or 0)
     mates = []
     client_map = _dh_mates.setdefault('client_ids', {})
+    pos_map = _dh_mates.setdefault('positions', {})
     for item in (snapshot or {}).get('entities') or []:
         try:
             if item.get('kind') != 'player' or int(item.get('team') or 0) != team:
@@ -9640,11 +9642,16 @@ def _dh_rich_team_mates_from(snapshot):
             continue
         if entity_id == me:
             continue
+        if item.get('pos') is not None:
+            try:
+                pos_map[entity_id] = _point(item.get('pos'))
+            except Exception:
+                pass
         entity = _remote.get(entity_id)
         resolved = _resolve_entity(entity) if entity is not None else None
         client_id = getattr(resolved, 'id', None) if resolved is not None else client_map.get(entity_id)
         if client_id is None:
-            continue
+            client_id = entity_id
         client_map[entity_id] = client_id
         alive = item.get('alive') is not False
         raw_hp = item.get('hp')
@@ -9750,8 +9757,10 @@ def _dh_rich_sync_teammates(mates):
 
     for record in records:
         if not _dh_place_record(record):
+            eid = getattr(record, 'entID', None)
+            mate_pos = _dh_mates.get('positions', {}).get(eid)
             try:
-                record.position = player.position
+                record.position = mate_pos if mate_pos is not None else player.position
                 record.yaw = 0.0
             except Exception:
                 pass
@@ -9806,7 +9815,6 @@ globals()['_dh_sync_teammates'] = _dh_rich_sync_teammates
 _dh_orig_pin_retire = globals().get('_dh_pin_retire')
 while getattr(_dh_orig_pin_retire, '_dh_party_pin_inner', None) is not None:
     _dh_orig_pin_retire = _dh_orig_pin_retire._dh_party_pin_inner
-# (the own entry stays a plain TeammateRecord, so m41g's _dh_pin_retire keeps working as before)
 
 
 def _dh_party_safe_pin_retire(player):
@@ -9824,7 +9832,7 @@ globals()['_dh_pin_retire'] = _dh_party_safe_pin_retire
 
 
 # 6D. In-Battle Cocos2d-x Teammate Overhead Marker (Seat # + Name + HP Bar + Distance)
-#     & Teammate HP Bar HUD (Directly Below Player's HP Bar)
+#     & Teammate HP Bar HUD (Directly Below / Above Player's HP Bar)
 _dh_team_ui_state = {
     'running': False,
     'hp_anchor': None,
@@ -9915,7 +9923,7 @@ def _dh_project_3d_to_screen(world_pos, win_w, win_h):
 
 def _dh_find_player_hp_bar_anchor(cc, win_w, win_h):
     """Locate the player's own HP bar on UIBattlegroundsInGame in world space so the teammate HP bar
-    can sit directly below it (with a fallback to the standard ROS HUD position)."""
+    can sit directly below/above it (with a fallback to the standard ROS HUD position)."""
     cached = _dh_team_ui_state.get('hp_anchor')
     if cached is not None:
         return cached
@@ -9976,7 +9984,7 @@ def _dh_find_player_hp_bar_anchor(cc, win_w, win_h):
                 return anchor
     except Exception:
         pass
-    # Fallback: bottom-center below the standard ROS PC HP bar (and top-left team slot)
+    # Fallback: bottom-center below the standard ROS PC HP bar
     return (win_w * 0.5 - 125.0, 22.0, 250.0, 18.0)
 
 
@@ -9987,10 +9995,13 @@ def _dh_clear_team_overlay(cc):
         scene = cc.Director.getInstance().getRunningScene()
         if scene is None:
             return
-        for node_name in ('dh_mate_overhead_layer', 'dh_mate_hud_panel', 'dh_mate_top_panel'):
-            old = scene.getChildByName(node_name)
-            if old is not None:
-                scene.removeChild(old)
+        for name in ('dh_mate_overhead_layer', 'dh_mate_hud_panel'):
+            node = scene.getChildByName(name)
+            if node is not None:
+                try:
+                    node.removeFromParent()
+                except Exception:
+                    node.setVisible(False)
     except Exception:
         pass
 
@@ -10049,20 +10060,35 @@ def _dh_update_teammate_ui():
                 entity = _resolve_entity(_remote.get(entity_id))
 
             tag_node = ov_layer.getChildByName(tag_name)
-            # If the teammate is dead and body is gone, or entity not in world, hide overhead tag
-            if entity is None or not hasattr(entity, 'position') or not alive:
+
+            # Determine world position: live entity position first, fallback to server snapshot position
+            epos = None
+            if entity is not None and hasattr(entity, 'position'):
+                try:
+                    epos = _point(entity.position)
+                except Exception:
+                    epos = None
+            if epos is None:
+                epos = _dh_mates.get('positions', {}).get(entity_id)
+
+            # If the teammate is dead and eliminated, or position is unknown, hide overhead tag
+            if not alive or epos is None:
                 if tag_node is not None:
                     tag_node.setVisible(False)
                 continue
 
-            # If native _ui3DName is present and visible on this entity, let native render or hide fallback
-            plate = getattr(entity, '_ui3DName', None)
-            if plate is not None and getattr(plate, 'visible', True):
-                if tag_node is not None:
-                    tag_node.setVisible(False)
-                continue
+            # Hide duplicate native _ui3DName plate if present so our richer marker displays cleanly
+            if entity is not None:
+                plate = getattr(entity, '_ui3DName', None)
+                if plate is not None:
+                    try:
+                        if hasattr(plate, 'setVisible'):
+                            plate.setVisible(False)
+                        elif hasattr(plate, 'visible'):
+                            plate.visible = False
+                    except Exception:
+                        pass
 
-            epos = _point(entity.position)
             dx = epos[0] - my_pos[0]
             dy = epos[1] - my_pos[1]
             dz = epos[2] - my_pos[2]
@@ -10104,7 +10130,16 @@ def _dh_update_teammate_ui():
             if on_screen:
                 title_str = '[%d] %s%s (%dm)' % (seat_num, status_prefix, name, dist_m)
             else:
-                arrow = '< ' if sx <= 60.0 else (' >' if sx >= win_w - 60.0 else '')
+                if sx <= 60.0:
+                    arrow = '< '
+                elif sx >= win_w - 60.0:
+                    arrow = ' >'
+                elif sy >= win_h - 90.0:
+                    arrow = '^ '
+                elif sy <= 90.0:
+                    arrow = 'v '
+                else:
+                    arrow = '* '
                 title_str = '%s[%d] %s (%dm)' % (arrow, seat_num, name, dist_m)
 
             lbl_title = tag_node.getChildByName('ov_title')
@@ -10121,24 +10156,28 @@ def _dh_update_teammate_ui():
                 bar_w = 84.0
                 bar_h = 5.0
                 left_x = -bar_w * 0.5
-                # Dark pill background behind overhead text + HP bar
-                bg_draw.drawSolidRect(cc.Vec2(left_x - 8.0, -3.0), cc.Vec2(left_x + bar_w + 8.0, 23.0),
-                                      cc.c4f(0.04, 0.07, 0.12, 0.68))
-                # HP bar track
-                bg_draw.drawSolidRect(cc.Vec2(left_x, 0.0), cc.Vec2(left_x + bar_w, bar_h),
-                                      cc.c4f(0.18, 0.18, 0.22, 0.92))
-                ratio = max(0.0, min(1.0, float(hp) / float(max(1, max_hp))))
-                if ratio > 0.0:
-                    if down or ratio < 0.25:
-                        hp_col = cc.c4f(1.0, 0.25, 0.25, 0.98)
-                    elif ratio < 0.55:
-                        hp_col = cc.c4f(1.0, 0.80, 0.20, 0.98)
-                    else:
-                        hp_col = cc.c4f(0.20, 0.95, 0.50, 0.98)
-                    bg_draw.drawSolidRect(cc.Vec2(left_x, 0.0), cc.Vec2(left_x + bar_w * ratio, bar_h), hp_col)
-                # Downward pointer triangle right above teammate's head
                 if on_screen:
+                    # Dark pill background behind overhead text + HP bar
+                    bg_draw.drawSolidRect(cc.Vec2(left_x - 8.0, -3.0), cc.Vec2(left_x + bar_w + 8.0, 23.0),
+                                          cc.c4f(0.04, 0.07, 0.12, 0.68))
+                    # HP bar track
+                    bg_draw.drawSolidRect(cc.Vec2(left_x, 0.0), cc.Vec2(left_x + bar_w, bar_h),
+                                          cc.c4f(0.18, 0.18, 0.22, 0.92))
+                    ratio = max(0.0, min(1.0, float(hp) / float(max(1, max_hp))))
+                    if ratio > 0.0:
+                        if down or ratio < 0.25:
+                            hp_col = cc.c4f(1.0, 0.25, 0.25, 0.98)
+                        elif ratio < 0.55:
+                            hp_col = cc.c4f(1.0, 0.80, 0.20, 0.98)
+                        else:
+                            hp_col = cc.c4f(0.20, 0.95, 0.50, 0.98)
+                        bg_draw.drawSolidRect(cc.Vec2(left_x, 0.0), cc.Vec2(left_x + bar_w * ratio, bar_h), hp_col)
+                    # Downward pointer triangle right above teammate's head
                     bg_draw.drawSolidRect(cc.Vec2(-3.0, -7.0), cc.Vec2(3.0, -3.0), seat_c4f)
+                else:
+                    # Off-screen indicator: compact directional pill
+                    bg_draw.drawSolidRect(cc.Vec2(-55.0, 2.0), cc.Vec2(55.0, 22.0),
+                                          cc.c4f(0.04, 0.07, 0.12, 0.75))
 
         # Hide any stale overhead nodes
         try:
@@ -10149,7 +10188,7 @@ def _dh_update_teammate_ui():
             pass
 
         # ------------------------------------------------------------------
-        # 2. TEAMMATE HP HUD PANEL (Directly Below Player's HP Bar + Top-Left Team Slot)
+        # 2. TEAMMATE HP HUD PANEL (Stacked Directly Above/Below Player's HP Bar)
         # ------------------------------------------------------------------
         anchor = _dh_find_player_hp_bar_anchor(cc, win_w, win_h)
         hp_left, hp_bottom, hp_w, hp_h = anchor
@@ -10160,13 +10199,14 @@ def _dh_update_teammate_ui():
             hud_panel.setName('dh_mate_hud_panel')
             scene.addChild(hud_panel, 9860)
 
-        # Position directly below the player's HP bar (clamped so it never goes off the bottom of the screen)
+        # Position relative to player's HP bar
+        # In ROS PC, the player's HP bar is at the bottom of the screen (hp_bottom < win_h * 0.45).
+        # Stacking downward would push teammate rows below the screen, so stack upward!
         panel_w = max(210.0, min(280.0, hp_w))
         row_h = 26.0
-        base_x = hp_left
-        base_y = hp_bottom - (row_h + 4.0)
-        if base_y < 4.0:
-            base_y = 4.0
+        base_x = max(10.0, min(win_w - panel_w - 10.0, hp_left))
+        stack_upward = (hp_bottom < win_h * 0.45)
+        base_y = (hp_bottom + hp_h + 8.0) if stack_upward else (hp_bottom - 8.0)
 
         active_hud_rows = set()
         for idx, (client_id, entity_id, name, alive, hp, max_hp, down) in enumerate(mates):
@@ -10175,9 +10215,17 @@ def _dh_update_teammate_ui():
             active_hud_rows.add(row_name)
 
             entity = BigWorld.entities.get(client_id) or _resolve_entity(_remote.get(entity_id))
+            epos = None
+            if entity is not None and hasattr(entity, 'position'):
+                try:
+                    epos = _point(entity.position)
+                except Exception:
+                    epos = None
+            if epos is None:
+                epos = _dh_mates.get('positions', {}).get(entity_id)
+
             dist_txt = ''
-            if entity is not None and hasattr(entity, 'position') and alive:
-                epos = _point(entity.position)
+            if epos is not None and alive:
                 d = int(math.sqrt((epos[0] - my_pos[0]) ** 2 + (epos[1] - my_pos[1]) ** 2 + (epos[2] - my_pos[2]) ** 2))
                 dist_txt = '  %dm' % d
 
@@ -10204,7 +10252,8 @@ def _dh_update_teammate_ui():
                 r_hp_lbl.setPosition(panel_w - 8.0, 16.0)
                 row_node.addChild(r_hp_lbl, 2)
 
-            row_y = base_y - idx * (row_h + 3.0)
+            row_y = (base_y + idx * (row_h + 3.0)) if stack_upward else (base_y - (idx + 1) * (row_h + 3.0))
+            row_y = max(4.0, min(win_h - row_h - 4.0, row_y))
             row_node.setVisible(True)
             row_node.setPosition(base_x, row_y)
 
@@ -10285,4 +10334,3 @@ if not _dh_team_ui_state.get('running'):
     call_later(0.5, _dh_teammate_ui_tick)
 
 log('ros-redemption-duo-teammate-and-quit-fix-active', status='ready')
-

@@ -4,7 +4,7 @@ import os
 patch_code = '''
 
 # ==============================================================================
-# ROS REDEMPTION - KILLFEED COLOR ENHANCEMENTS & FALL DAMAGE
+# ROS REDEMPTION - KILLFEED COLOR ENHANCEMENTS & SAFE FALL DAMAGE
 # ==============================================================================
 
 # 1. Killfeed Colors: Cyan/Blue on Self Kill, Dark Red on Self Down/Death, White on Enemy
@@ -137,12 +137,16 @@ except Exception:
     pass
 
 
-# 4. Fall Damage System: realistic height damage when falling from high places
+# 4. Safe Fall Damage: ONLY ACTIVE AFTER LANDING FROM THE PLANE!
+# - Starting island, plane, skydiving, parachuting = COMPLETELY DISABLED (0 damage)
+# - Normal jumps, hops, stairs = 100% IMMUNE (0 damage)
+# - Real cliffs & tall structures (> 10m drop and >= 1.0s free-fall) = realistic damage
 try:
     _dh_fall_ctrl = {
         'in_air': False,
-        'max_y': None,
+        'air_start_y': None,
         'air_start_time': 0.0,
+        'first_ground_time': 0.0,
     }
 
     def _dh_fall_damage_monitor():
@@ -152,14 +156,39 @@ try:
                 call_later(0.1, _dh_fall_damage_monitor)
                 return
 
-            # Skip during parachuting / skydiving from plane
-            phase = int(getattr(player, 'fallPhase', 0) or 0)
-            if phase != 0 or getattr(player, 'inLandVehicle', False):
+            # ONLY ACTIVE AFTER COMING DOWN FROM THE PLANE!
+            flight = globals().get('_flight') or {}
+            if flight.get('stage') != 'landed' or not flight.get('landed_once'):
+                _dh_fall_ctrl['in_air'] = False
+                _dh_fall_ctrl['air_start_y'] = None
+                call_later(0.2, _dh_fall_damage_monitor)
+                return
+
+            try:
+                if callable(globals().get('on_island_stage')) and globals()['on_island_stage']():
+                    _dh_fall_ctrl['in_air'] = False
+                    _dh_fall_ctrl['air_start_y'] = None
+                    call_later(0.2, _dh_fall_damage_monitor)
+                    return
+            except Exception:
+                pass
+
+            now = time.time()
+            if not _dh_fall_ctrl.get('first_ground_time'):
+                _dh_fall_ctrl['first_ground_time'] = now
+            # Grace period of 4 seconds after landing from parachute
+            if now - _dh_fall_ctrl['first_ground_time'] < 4.0:
+                _dh_fall_ctrl['in_air'] = False
+                _dh_fall_ctrl['air_start_y'] = None
+                call_later(0.2, _dh_fall_damage_monitor)
+                return
+
+            # Ignore while in vehicle
+            if getattr(player, 'inLandVehicle', False):
                 _dh_fall_ctrl['in_air'] = False
                 call_later(0.1, _dh_fall_damage_monitor)
                 return
 
-            now = time.time()
             pos = getattr(player, 'position', None)
             if pos is None:
                 call_later(0.1, _dh_fall_damage_monitor)
@@ -171,52 +200,50 @@ try:
             if not on_ground:
                 if not _dh_fall_ctrl['in_air']:
                     _dh_fall_ctrl['in_air'] = True
-                    _dh_fall_ctrl['max_y'] = cur_y
+                    _dh_fall_ctrl['air_start_y'] = cur_y
                     _dh_fall_ctrl['air_start_time'] = now
-                else:
-                    if cur_y > _dh_fall_ctrl['max_y']:
-                        _dh_fall_ctrl['max_y'] = cur_y
             else:
                 if _dh_fall_ctrl['in_air']:
                     _dh_fall_ctrl['in_air'] = False
-                    max_y = _dh_fall_ctrl.get('max_y') or cur_y
-                    drop_height = max_y - cur_y
+                    start_y = _dh_fall_ctrl.get('air_start_y')
                     air_duration = now - (_dh_fall_ctrl.get('air_start_time') or now)
 
-                    # Safe fall: up to 4.5 meters (normal jump/stairs safe)
-                    # Height > 4.5m: 10 HP per meter
-                    if drop_height > 4.5 and air_duration > 0.4:
-                        excess = drop_height - 4.5
-                        damage = int(round(excess * 10.0))
-                        if damage > 0:
-                            try:
-                                old_hp = int(getattr(player, 'hp', 100) or 100)
-                                new_hp = max(0, old_hp - damage)
-                                player.hp = new_hp
+                    if start_y is not None:
+                        drop_height = start_y - cur_y
 
-                                # Update HUD HP bar
-                                changed = getattr(player, 'set_hp', None)
-                                if callable(changed):
-                                    changed(old_hp)
-
-                                # Damage number popup on player
+                        # MUST be real sustained free-fall (>= 1.0s) AND drop > 10.0 meters
+                        # Normal jumps, bunny hops, ledge hops, and slopes are 100% IMMUNE (0 damage)
+                        if drop_height > 10.0 and air_duration >= 1.0:
+                            excess = drop_height - 10.0
+                            damage = int(round(excess * 5.0))
+                            if damage > 0:
                                 try:
-                                    show_damage_text(pos, damage, 1, 2)
-                                except Exception:
-                                    pass
+                                    old_hp = int(getattr(player, 'hp', 100) or 100)
+                                    new_hp = max(0, old_hp - damage)
+                                    player.hp = new_hp
 
-                                # Screen shake / feedback tip
-                                tip_text('#cff4444Took %d fall damage!#n' % damage)
-                                log('local-battle-fall-damage', height=round(drop_height, 2), damage=damage, hp=new_hp)
+                                    # Update HUD HP bar
+                                    changed = getattr(player, 'set_hp', None)
+                                    if callable(changed):
+                                        changed(old_hp)
 
-                                if new_hp <= 0:
-                                    victim_name = avatar_name(player)
-                                    redemption_show_kill_feed('High Fall', 'Falling', victim_name, 0, getattr(player, 'id', 0))
-                                    player_died(player, 'fall', _point(pos))
-                            except Exception as ex:
-                                log_error('local-battle-fall-damage-error', err=str(ex))
+                                    # Damage number popup on player
+                                    try:
+                                        show_damage_text(pos, damage, 1, 2)
+                                    except Exception:
+                                        pass
 
-                    _dh_fall_ctrl['max_y'] = None
+                                    tip_text('#cff4444Took %d fall damage!#n' % damage)
+                                    log('local-battle-fall-damage', drop=round(drop_height, 2), duration=round(air_duration, 2), damage=damage, hp=new_hp)
+
+                                    if new_hp <= 0:
+                                        victim_name = avatar_name(player)
+                                        redemption_show_kill_feed('High Fall', 'Falling', victim_name, 0, getattr(player, 'id', 0))
+                                        player_died(player, 'fall', _point(pos))
+                                except Exception as ex:
+                                    log_error('local-battle-fall-damage-error', err=str(ex))
+
+                    _dh_fall_ctrl['air_start_y'] = None
 
         except Exception:
             pass
@@ -224,7 +251,7 @@ try:
         call_later(0.08, _dh_fall_damage_monitor)
 
     call_later(1.5, _dh_fall_damage_monitor)
-    log('ros-redemption-fix', fix='fall damage monitor active')
+    log('ros-redemption-fix', fix='safe balanced fall damage active (plane landing only)')
 except Exception:
     pass
 
@@ -234,7 +261,7 @@ log('ros-redemption-killfeed-and-fall-damage-active', status='ready')
 with open('clean_remote_battle.py', 'r', encoding='utf-8') as f:
     orig = f.read()
 
-marker = '# ROS REDEMPTION - KILLFEED COLOR ENHANCEMENTS & FALL DAMAGE'
+marker = '# ROS REDEMPTION - KILLFEED COLOR ENHANCEMENTS'
 if marker in orig:
     orig = orig[:orig.find(marker)].rstrip()
 
@@ -247,13 +274,12 @@ with open('clean_remote_battle.py', 'w', encoding='utf-8') as f:
     f.write(new_content)
 print("Updated clean_remote_battle.py (size: %d bytes)" % len(new_content))
 
-# Also copy to dev\clean_remote_battle.py
+# Also copy to dev\\clean_remote_battle.py
 try:
     with open(r'dev\clean_remote_battle.py', 'w', encoding='utf-8') as f:
         f.write(new_content)
-    print("Updated dev\clean_remote_battle.py")
+    print("Updated dev/clean_remote_battle.py")
 except Exception:
     pass
 
 print("=== READY TO REBUILD REMOTE BATTLE PATCH ===")
-

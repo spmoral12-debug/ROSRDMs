@@ -314,7 +314,24 @@ namespace RosRedemptionOnlineLauncher {
             txtPatchNotes.BorderStyle = BorderStyle.None;
             txtPatchNotes.ReadOnly = true;
             txtPatchNotes.Font = new Font("Segoe UI", 10f);
-            txtPatchNotes.Text = "Loading live patch notes from server...";
+            
+            StringBuilder defNotes = new StringBuilder();
+            defNotes.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            defNotes.AppendLine("  🔥 ROS REDEMPTION ONLINE - ACTIVE DEPLOYMENT v1.2.0");
+            defNotes.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+            defNotes.AppendLine("  ✅ [LAUNCHER] Official Standalone Client (No .bat, Real-Time Stats)\n");
+            defNotes.AppendLine("  ✅ [FIXED] Team Leave Instant Unform & Member Sync\n");
+            defNotes.AppendLine("  ✅ [FIXED] 3D Lobby Road & Mountain Sky Elevation (Theme 279008)\n");
+            defNotes.AppendLine("  ✅ [VEHICLE] Car Skin Auto-Equip on Boarding\n");
+            defNotes.AppendLine("  ✅ [VEHICLE] Nitro Turbo Boost (Shift Key & Flames)\n");
+            defNotes.AppendLine("  ✅ [VEHICLE] Fuel Consumption & Smooth Engine Audio\n");
+            defNotes.AppendLine("  ✅ [COMBAT] Safe Fall Damage (High Cliffs only)\n");
+            defNotes.AppendLine("  ✅ [STORE] Pack Buy Again & Universal Guaranteed Pity System\n");
+            defNotes.AppendLine("  ✅ [BALANCE] 125 Spawn Point Spread on Prepare Island\n");
+            defNotes.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            defNotes.AppendLine("  Singapore Dedicated Server: 143.14.88.9:30061 (Tick: 60Hz)");
+            defNotes.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            txtPatchNotes.Text = defNotes.ToString();
             leftCol.Controls.Add(txtPatchNotes);
 
             this.Controls.Add(leftCol);
@@ -604,11 +621,64 @@ namespace RosRedemptionOnlineLauncher {
                             os.Write(bytes, 0, bytes.Length);
                         }
 
-                        using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-                        using (StreamReader sr = new StreamReader(resp.GetResponseStream())) {
-                            string reply = sr.ReadToEnd();
-                            token = ExtractJsonField(reply, "token");
-                            accountId = ExtractJsonLong(reply, "account_id");
+                        try {
+                            using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                            using (StreamReader sr = new StreamReader(resp.GetResponseStream())) {
+                                string reply = sr.ReadToEnd();
+                                token = ExtractJsonField(reply, "token");
+                                accountId = ExtractJsonLong(reply, "account_id");
+                            }
+                        } catch (WebException wex) {
+                            string errMsg = "";
+                            int statusCode = 0;
+                            HttpWebResponse errResp = wex.Response as HttpWebResponse;
+                            if (errResp != null) {
+                                statusCode = (int)errResp.StatusCode;
+                                try {
+                                    using (Stream es = errResp.GetResponseStream())
+                                    using (StreamReader esr = new StreamReader(es)) {
+                                        string errBody = esr.ReadToEnd();
+                                        errMsg = ExtractJsonField(errBody, "message");
+                                        if (string.IsNullOrEmpty(errMsg)) errMsg = ExtractJsonField(errBody, "error");
+                                    }
+                                } catch { }
+                            }
+
+                            if (!isRegisterMode && (statusCode == 401 || statusCode == 404)) {
+                                this.BeginInvoke((MethodInvoker)delegate {
+                                    btnLaunch.Enabled = true;
+                                    lblStatus.Text = "Account not found or invalid password.";
+                                    DialogResult dr = MessageBox.Show(
+                                        "Hindi pa rehistrado ang account na '" + user + "' (o mali ang password)!\n\n" +
+                                        "Gusto mo ba itong i-REGISTER bilang bagong account ngayon para makapaglaro kaagad?",
+                                        "Account Not Found",
+                                        MessageBoxButtons.YesNo,
+                                        MessageBoxIcon.Question);
+
+                                    if (dr == DialogResult.Yes) {
+                                        SwitchAuthTab(true);
+                                    }
+                                });
+                                return;
+                            }
+
+                            if (isRegisterMode) {
+                                this.BeginInvoke((MethodInvoker)delegate {
+                                    btnLaunch.Enabled = true;
+                                    string displayErr = !string.IsNullOrEmpty(errMsg) ? errMsg : "Maaaring may kapangalan na ang account na ito o may invalid input.";
+                                    lblStatus.Text = "Registration failed.";
+                                    MessageBox.Show("Registration failed:\n" + displayErr, "Register Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                });
+                                return;
+                            }
+
+                            this.BeginInvoke((MethodInvoker)delegate {
+                                btnLaunch.Enabled = true;
+                                lblStatus.Text = "Auth error.";
+                                string finalErr = !string.IsNullOrEmpty(errMsg) ? errMsg : wex.Message;
+                                MessageBox.Show("Server Auth Error: " + finalErr, "Authentication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            });
+                            return;
                         }
                     }
 
@@ -771,3 +841,4 @@ namespace RosRedemptionOnlineLauncher {
         }
     }
 }
+

@@ -11,6 +11,8 @@ DESTINATIONS = [
     r'C:\DieHardROS\local_update\hot\remote-lobby.py',
     r'c:\Users\LEGION 7 RTX 3080\Downloads\DieHardROS\local_update\hot\remote-lobby.py',
     r'c:\Users\LEGION 7 RTX 3080\Downloads\DieHardROS\ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py',
+    r'c:\Users\LEGION 7 RTX 3080\Downloads\ROSRDMs-collab\local_update\hot\remote-lobby.py',
+    r'c:\Users\LEGION 7 RTX 3080\Downloads\ROSRDMs-collab\ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py',
     os.path.abspath(r'local_update\hot\remote-lobby.py'),
     os.path.abspath(r'ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py'),
     os.path.join(os.path.expandvars(r'%LOCALAPPDATA%\DieHardROSHook\updates'), 'remote-lobby.py'),

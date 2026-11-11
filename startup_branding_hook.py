@@ -94,102 +94,6 @@ def _redemption_patch_screen_tick(tick=0):
         call_later(0.5, _redemption_continuous_title_guard)
 
 
-def _dh_patch_whitelist_stub():
-    try:
-        import sys
-        dummy = lambda *a, **k: {}
-        for mod in list(sys.modules.values()):
-            if mod is not None and not hasattr(mod, 'getAppearanceWhitelistData'):
-                try:
-                    setattr(mod, 'getAppearanceWhitelistData', dummy)
-                except Exception:
-                    pass
-        for mod_name in ('tables', 'tables.tables', 'dts_appearance_preload', 'dts_hall_prop_utils',
-                         'helpers.character_scene', 'helpers.character_scene.legacyProperties',
-                         'shared.lib.gametoolslib.properties', 'logic.gamedata.tables'):
-            try:
-                m = __import__(mod_name, fromlist=['getAppearanceWhitelistData'])
-                if not hasattr(m, 'getAppearanceWhitelistData'):
-                    setattr(m, 'getAppearanceWhitelistData', dummy)
-            except Exception:
-                pass
-    except Exception:
-        pass
-
-
-def _dh_patch_uimain_visibilities():
-    try:
-        from ui.UIMain import UIMain
-        orig_vis = getattr(UIMain, '_dh_orig_init_vis', getattr(UIMain, '_init_ui_visibilities', None))
-        if callable(orig_vis):
-            UIMain._dh_orig_init_vis = orig_vis
-            def _safe_init_ui_visibilities(self, *a, **k):
-                try:
-                    return orig_vis(self, *a, **k)
-                except TypeError:
-                    pass
-                except Exception:
-                    pass
-            UIMain._init_ui_visibilities = _safe_init_ui_visibilities
-    except Exception:
-        pass
-
-
-_dh_patch_whitelist_stub()
-_dh_patch_uimain_visibilities()
-
-
-def _fix_button_or_node_season(node):
-    if node is None:
-        return
-    import re
-    stack = [node]
-    seen = set()
-    while stack:
-        curr = stack.pop()
-        if curr is None:
-            continue
-        cid = id(curr)
-        if cid in seen:
-            continue
-        seen.add(cid)
-        if hasattr(curr, 'getChildren'):
-            try:
-                for c in list(curr.getChildren() or []):
-                    stack.append(c)
-            except Exception:
-                pass
-        if hasattr(curr, 'getTitleRenderer'):
-            try:
-                tr = curr.getTitleRenderer()
-                if tr:
-                    stack.append(tr)
-            except Exception:
-                pass
-        for g_name, s_name in (('getTitleText', 'setTitleText'),
-                               ('getString', 'setString'),
-                               ('getText', 'setText')):
-            if hasattr(curr, g_name) and hasattr(curr, s_name):
-                try:
-                    val = getattr(curr, g_name)()
-                    if val is not None:
-                        is_uni = isinstance(val, unicode)
-                        s = val if is_uni else str(val).decode('utf-8', 'ignore')
-                        if '17' in s:
-                            s2 = re.sub(r'\bSeason\s*17\b', u'Season 1', s)
-                            s2 = re.sub(r'Season17', u'Season 1', s2)
-                            s2 = re.sub(r'17', u'1', s2)
-                            getattr(curr, s_name)(s2 if is_uni else s2.encode('utf-8'))
-                        elif re.search(r'\bSeason\s*(1[0-6]|[2-9])\b', s):
-                            parent = curr.getParent() if hasattr(curr, 'getParent') else None
-                            if parent and hasattr(parent, 'getChildren') and len(list(parent.getChildren() or [])) <= 4:
-                                parent.setVisible(False)
-                            elif hasattr(curr, 'setVisible'):
-                                curr.setVisible(False)
-                except Exception:
-                    pass
-
-
 def _walk_fix_season(target, max_nodes=5000):
     if target is None:
         return 0
@@ -204,8 +108,90 @@ def _walk_fix_season(target, max_nodes=5000):
             rank_utils.getCurrentSeasonID = lambda *a, **k: 1
     except Exception:
         pass
-    _fix_button_or_node_season(target)
-    return 1
+    import re
+    seen = set()
+    stack = [target]
+    changed = 0
+    while stack and len(seen) < max_nodes:
+        curr = stack.pop()
+        if curr is None:
+            continue
+        cid = id(curr)
+        if cid in seen:
+            continue
+        seen.add(cid)
+
+        # 1. Traverse Cocos2d-x children
+        if hasattr(curr, 'getChildren'):
+            try:
+                ch = curr.getChildren()
+                if ch:
+                    stack.extend(list(ch))
+            except Exception:
+                pass
+
+        # 2. Traverse Python wrapper attributes
+        if hasattr(curr, '__dict__'):
+            try:
+                for k, v in curr.__dict__.items():
+                    if v is not None:
+                        if hasattr(v, 'getChildren') or hasattr(v, '__dict__'):
+                            stack.append(v)
+                        elif isinstance(v, (list, tuple)):
+                            stack.extend(list(v))
+                        elif isinstance(v, dict):
+                            stack.extend(list(v.values()))
+            except Exception:
+                pass
+
+        # 3. Traverse UITabView panels if present
+        if hasattr(curr, 'getTabPanel'):
+            for tab in ('record', 'mainpage', 'peiwan', 'intimate', 'credit', 'vip', 'marriage'):
+                try:
+                    p = curr.getTabPanel(tab)
+                    if p is not None:
+                        stack.append(p)
+                except Exception:
+                    pass
+
+        # 4. Check text modification on current node
+        getter = None
+        setter = None
+        if hasattr(curr, 'getTitleText') and hasattr(curr, 'setTitleText'):
+            getter = getattr(curr, 'getTitleText')
+            setter = getattr(curr, 'setTitleText')
+        elif hasattr(curr, 'getString') and hasattr(curr, 'setString'):
+            getter = getattr(curr, 'getString')
+            setter = getattr(curr, 'setString')
+        elif hasattr(curr, 'getText') and hasattr(curr, 'setText'):
+            getter = getattr(curr, 'getText')
+            setter = getattr(curr, 'setText')
+
+        if callable(getter) and callable(setter):
+            try:
+                text = str(getter() or '')
+            except Exception:
+                text = ''
+            if text:
+                if 'Season 17' in text or 'Season17' in text:
+                    try:
+                        new_text = re.sub(r'\bSeason\s*17\b', 'Season 1', text)
+                        setter(new_text)
+                        changed += 1
+                        continue
+                    except Exception:
+                        pass
+                elif re.search(r'\bSeason\s*(1[0-6]|[2-9])\b', text):
+                    try:
+                        parent = curr.getParent() if hasattr(curr, 'getParent') else None
+                        if parent is not None and hasattr(parent, 'getChildren') and len(list(parent.getChildren())) <= 4:
+                            parent.setVisible(False)
+                        else:
+                            curr.setVisible(False)
+                        changed += 1
+                    except Exception:
+                        pass
+    return changed
 
 
 def _hook_record_panel_class():
@@ -214,7 +200,7 @@ def _hook_record_panel_class():
         mod = sys.modules.get('ui.UIMeetMainPage')
         if not mod:
             try:
-                mod = __import__('ui.UIMeetMainPage', fromlist=['UIBattleGroundRecordPanel', 'UIMeetMainPage'])
+                mod = __import__('ui.UIMeetMainPage', fromlist=['UIBattleGroundRecordPanel'])
             except Exception:
                 return
         cls = getattr(mod, 'UIBattleGroundRecordPanel', None)
@@ -227,11 +213,11 @@ def _hook_record_panel_class():
                     res = orig_get_ui(self, *a, **k)
                     try:
                         btn = getattr(self, 'showModeSecondary', None)
-                        if btn:
-                            _fix_button_or_node_season(btn)
+                        if btn and hasattr(btn, 'setTitleText'):
+                            btn.setTitleText('Season 1')
                         choose = getattr(self, 'modeChooseSecondary', None)
                         if choose:
-                            _fix_button_or_node_season(choose)
+                            _walk_fix_season(choose)
                     except Exception:
                         pass
                     return res
@@ -244,30 +230,11 @@ def _hook_record_panel_class():
                     try:
                         choose = getattr(self, 'modeChooseSecondary', None)
                         if choose:
-                            _fix_button_or_node_season(choose)
-                        btn = getattr(self, 'showModeSecondary', None)
-                        if btn:
-                            _fix_button_or_node_season(btn)
+                            _walk_fix_season(choose)
                     except Exception:
                         pass
                     return res
                 cls.onShowModeSecondaryClick = wrapped_show_sec
-
-            orig_set_choose = getattr(cls, '_setModeSecondaryChoose', None)
-            if orig_set_choose:
-                def wrapped_set_choose(self, *a, **k):
-                    res = orig_set_choose(self, *a, **k)
-                    try:
-                        choose = getattr(self, 'modeChooseSecondary', None)
-                        if choose:
-                            _fix_button_or_node_season(choose)
-                        btn = getattr(self, 'showModeSecondary', None)
-                        if btn:
-                            _fix_button_or_node_season(btn)
-                    except Exception:
-                        pass
-                    return res
-                cls._setModeSecondaryChoose = wrapped_set_choose
 
             orig_game_sec = getattr(cls, 'onGameModeSecondaryClick', None)
             if orig_game_sec:
@@ -275,25 +242,14 @@ def _hook_record_panel_class():
                     res = orig_game_sec(self, *a, **k)
                     try:
                         btn = getattr(self, 'showModeSecondary', None)
-                        if btn:
-                            _fix_button_or_node_season(btn)
+                        if btn and hasattr(btn, 'getTitleText') and hasattr(btn, 'setTitleText'):
+                            t = btn.getTitleText()
+                            if '17' in t:
+                                btn.setTitleText(t.replace('17', '1'))
                     except Exception:
                         pass
                     return res
                 cls.onGameModeSecondaryClick = wrapped_game_sec
-
-            orig_resp = getattr(cls, 'responseToClickGameMode', None)
-            if orig_resp:
-                def wrapped_resp(self, *a, **k):
-                    res = orig_resp(self, *a, **k)
-                    try:
-                        btn = getattr(self, 'showModeSecondary', None)
-                        if btn:
-                            _fix_button_or_node_season(btn)
-                    except Exception:
-                        pass
-                    return res
-                cls.responseToClickGameMode = wrapped_resp
     except Exception:
         pass
 
@@ -393,12 +349,10 @@ def _hook_submodes_class():
 
 
 def _fix_season_labels_guard():
-    _dh_patch_whitelist_stub()
-    _dh_patch_uimain_visibilities()
     _hook_record_panel_class()
     _hook_submodes_class()
     try:
-        import Globals
+        import Globals, re
         ui_mgr = getattr(Globals, 'uiMgr', None)
         if ui_mgr is not None:
             all_ui = getattr(ui_mgr, '____all_ui__', None) or {}
@@ -406,22 +360,21 @@ def _fix_season_labels_guard():
                 if ui is None:
                     continue
                 if name == 'UIMeetMainPage':
-                    mt = getattr(ui, '_mainTab', None) or ui
-                    rec = None
-                    if hasattr(mt, 'getTabPanel'):
-                        try:
-                            rec = mt.getTabPanel('record')
-                        except Exception:
-                            pass
-                    panels = [p for p in (rec, getattr(ui, 'battleGroundRecordPanel', None), getattr(ui, 'recordPanel', None)) if p is not None]
-                    for p in panels:
-                        _fix_button_or_node_season(getattr(p, 'showModeSecondary', None))
-                        _fix_button_or_node_season(getattr(p, 'modeChooseSecondary', None))
-                        _fix_button_or_node_season(p)
+                    for attr in ('battleGroundRecordPanel', 'recordPanel', '_battleGroundRecordPanel'):
+                        p = getattr(ui, attr, None)
+                        if p is not None:
+                            btn = getattr(p, 'showModeSecondary', None)
+                            if btn is not None and hasattr(btn, 'getTitleText') and hasattr(btn, 'setTitleText'):
+                                t = btn.getTitleText()
+                                if '17' in t:
+                                    btn.setTitleText(re.sub(r'\bSeason\s*17\b', 'Season 1', t))
+                            choose = getattr(p, 'modeChooseSecondary', None)
+                            if choose is not None:
+                                _walk_fix_season(choose)
                     w = getattr(ui, 'widget', None) or ui
-                    _fix_button_or_node_season(w)
+                    _walk_fix_season(w)
                 elif hasattr(ui, 'widget'):
-                    _fix_button_or_node_season(ui.widget)
+                    _walk_fix_season(ui.widget)
     except Exception:
         pass
 

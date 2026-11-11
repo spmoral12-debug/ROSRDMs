@@ -3737,3 +3737,9 @@
 {"timestamp":"2026-11-11T01:55:02.079060+00:00","pid":12488,"event":"local-auth-property","key":"LOGIN_STAT","value":"[redacted]"}
 {"timestamp":"2026-11-11T01:55:02.080570+00:00","pid":12488,"event":"local-auth-mpay-finish-event","state":0,"accountInfo":"0x26b5380"}
 {"timestamp":"2026-11-11T01:55:02.080570+00:00","pid":12488,"event":"local-auth-success","hasLogin":1}
+{"timestamp":"2026-11-11T02:41:40.838445+00:00","pid":13792,"event":"local-auth-waiting"}
+{"timestamp":"2026-11-11T02:41:40.887261+00:00","pid":13792,"event":"local-auth-ready","singleton":"0xd82b810","loginTarget":"0x7ffce3de2fa0","loginModule":"NtUniSdkMpayOversea.dll","finishTarget":"0x7ffce3e14da0","accountInfo":"0x35395d0","callbackRegistered":false}
+{"timestamp":"2026-11-11T02:43:25.055858+00:00","pid":8524,"event":"local-auth-waiting"}
+{"timestamp":"2026-11-11T02:43:25.071460+00:00","pid":8524,"event":"local-auth-ready","singleton":"0xc248d80","loginTarget":"0x7ffce4592fa0","loginModule":"NtUniSdkMpayOversea.dll","finishTarget":"0x7ffce45c4da0","accountInfo":"0x2fee260","callbackRegistered":false}
+{"timestamp":"2026-11-11T02:44:45.064904+00:00","pid":1036,"event":"local-auth-waiting"}
+{"timestamp":"2026-11-11T02:44:45.083998+00:00","pid":1036,"event":"local-auth-ready","singleton":"0xd139db0","loginTarget":"0x7ffce4592fa0","loginModule":"NtUniSdkMpayOversea.dll","finishTarget":"0x7ffce45c4da0","accountInfo":"0x37bdd10","callbackRegistered":false}

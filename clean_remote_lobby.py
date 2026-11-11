@@ -9536,45 +9536,38 @@ def _dh_patch_whitelist_stub():
     try:
         import sys
         dummy = lambda *a, **k: {}
-        for mod in list(sys.modules.values()):
-            if mod is not None and not hasattr(mod, 'getAppearanceWhitelistData'):
-                try:
-                    setattr(mod, 'getAppearanceWhitelistData', dummy)
-                except Exception:
-                    pass
         for mod_name in ('tables', 'tables.tables', 'dts_appearance_preload', 'dts_hall_prop_utils',
                          'helpers.character_scene', 'helpers.character_scene.legacyProperties',
                          'shared.lib.gametoolslib.properties', 'logic.gamedata.tables'):
-            try:
-                m = __import__(mod_name, fromlist=['getAppearanceWhitelistData'])
-                if not hasattr(m, 'getAppearanceWhitelistData'):
+            m = sys.modules.get(mod_name)
+            if m is not None and not hasattr(m, 'getAppearanceWhitelistData'):
+                try:
                     setattr(m, 'getAppearanceWhitelistData', dummy)
-            except Exception:
-                pass
+                except Exception:
+                    pass
     except Exception:
         pass
 
 
 def _dh_patch_uimain_visibilities():
     try:
-        from ui.UIMain import UIMain
-        orig_vis = getattr(UIMain, '_dh_orig_init_vis', getattr(UIMain, '_init_ui_visibilities', None))
-        if callable(orig_vis):
-            UIMain._dh_orig_init_vis = orig_vis
-            def _safe_init_ui_visibilities(self, *a, **k):
-                try:
-                    return orig_vis(self, *a, **k)
-                except TypeError:
-                    pass
-                except Exception:
-                    pass
-            UIMain._init_ui_visibilities = _safe_init_ui_visibilities
+        import sys
+        m = sys.modules.get('ui.UIMain')
+        cls = getattr(m, 'UIMain', None) if m is not None else None
+        if cls is not None:
+            orig_vis = getattr(cls, '_dh_orig_init_vis', getattr(cls, '_init_ui_visibilities', None))
+            if callable(orig_vis):
+                cls._dh_orig_init_vis = orig_vis
+                def _safe_init_ui_visibilities(self, *a, **k):
+                    try:
+                        return orig_vis(self, *a, **k)
+                    except TypeError:
+                        pass
+                    except Exception:
+                        pass
+                cls._init_ui_visibilities = _safe_init_ui_visibilities
     except Exception:
         pass
-
-
-_dh_patch_whitelist_stub()
-_dh_patch_uimain_visibilities()
 
 _dh_synthetic_props = globals().get('_dh_synthetic_props') or {}
 _dh_synthetic_building = False

@@ -5081,6 +5081,12 @@ def _dh_clean_depot_duplicates(player=None):
             return 0
         player._dh_last_depot_clean_time = now
 
+        import time as _time
+        now = _time.time()
+        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
+            return 0
+        player._dh_last_depot_clean_time = now
+
         pkg = getattr(player, 'dtsAppearancePackage', None)
         if pkg is None:
             return 0
@@ -9759,67 +9765,62 @@ def _dh_ensure_synthetic_props():
                 _dh_synthetic_props[492082] = bow
 
         # 2. Velociraptor Lv. 2 (142008 & 140237)
-        if 142008 not in _dh_synthetic_props:
+        if 142008 not in _dh_synthetic_props or 140237 not in _dh_synthetic_props:
             raptor_src = None
             try:
-                raptor_src = orig_get(142007)
+                raptor_src = orig_get(140237)
             except Exception:
                 raptor_src = None
             if raptor_src is None:
                 try:
-                    raptor_src = orig_get(140237)
+                    raptor_src = orig_get(142007)
                 except Exception:
                     raptor_src = None
             if raptor_src is not None:
                 raptor_lv2 = copy.copy(raptor_src)
+                for attr, val in (('NAME', 'Velociraptor Lv. 2'),
+                                  ('QUALITY', 5),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png'),
+                                  ('HIDE_IN_UI', False)):
+                    try:
+                        setattr(raptor_lv2, attr, val)
+                    except Exception:
+                        pass
                 ptype = copy.copy(getattr(raptor_src, 'PROP_TYPE', None))
                 if ptype is not None:
                     for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
                                       ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
-                                      ('DISPLAY_USING_VEHICLE_ID', 910059),
+                                      ('DISPLAY_USING_VEHICLE_ID', 131005),
                                       ('LAND_VEHICLE_ID', 910043),
                                       ('VEHICLE_ID', 910043),
-                                      ('SCORE', 300),
-                                      ('TRANSFER_LAND_VEHICLE_ID', 910059),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
+                                      ('TRANSFER_LAND_VEHICLE_ID', 125111),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png'),
+                                      ('HIDE_IN_UI', False)):
                         try:
                             setattr(ptype, attr, val)
                         except Exception:
                             pass
                     try:
-                        dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                        if dim:
-                            new_dim = []
-                            for entry in dim:
-                                ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [142008]
-                                ec.DISPLAY_POS_ID = 1224
-                                ec.SHOULD_SHOW = True
-                                new_dim.append(ec)
-                            ptype.DISPLAY_IN_MODEL = new_dim
-                        else:
+                        base_dim = getattr(orig_get(140237).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
+                    except Exception:
+                        base_dim = None
+                    if not base_dim:
+                        try:
                             base_dim = getattr(orig_get(142007).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
-                            if base_dim:
-                                ec = copy.copy(base_dim[0])
-                                ec.DISPLAY_PROP_LIST = [142008]
-                                ec.DISPLAY_POS_ID = 1224
-                                ec.SHOULD_SHOW = True
-                                ptype.DISPLAY_IN_MODEL = [ec]
-                    except Exception:
-                        pass
+                        except Exception:
+                            base_dim = None
+                    if base_dim:
+                        ec = copy.copy(base_dim[0])
+                        ec.DISPLAY_PROP_LIST = [140237]
+                        ec.DISPLAY_POS_ID = 403
+                        ec.SHOULD_SHOW = True
+                        ptype.DISPLAY_IN_MODEL = [ec]
                     raptor_lv2.PROP_TYPE = ptype
-                for attr, val in (('NAME', 'Velociraptor Lv. 2'),
-                                  ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
-                    try:
-                        setattr(raptor_lv2, attr, val)
-                    except Exception:
-                        pass
                 _dh_synthetic_props[142008] = raptor_lv2
                 _dh_synthetic_props[140237] = raptor_lv2
 
-        # 3. Supernova (140035) Unhide & 3D Showroom Turntable Display
+        # 3. Supernova (140035) Unhide (keep native turntable empty DISPLAY_IN_MODEL)
         try:
             sn = orig_get(140035)
             if sn is not None:
@@ -9828,36 +9829,9 @@ def _dh_ensure_synthetic_props():
                 pt = copy.copy(getattr(sn, 'PROP_TYPE', None))
                 if pt is not None:
                     setattr(pt, 'HIDE_IN_UI', False)
-                    n1 = orig_get(140031)
-                    if n1 is not None and getattr(n1, 'PROP_TYPE', None):
-                        n1_dim = getattr(n1.PROP_TYPE, 'DISPLAY_IN_MODEL', None)
-                        if n1_dim:
-                            ec = copy.copy(n1_dim[0])
-                            ec.DISPLAY_POS_ID = 281
-                            ec.DISPLAY_PROP_LIST = [140035]
-                            ec.SHOULD_SHOW = True
-                            pt.DISPLAY_IN_MODEL = [ec]
+                    setattr(pt, 'DISPLAY_IN_MODEL', [])
                     sn_copy.PROP_TYPE = pt
                 _dh_synthetic_props[140035] = sn_copy
-        except Exception:
-            pass
-
-        # 4. Nova X1 (140031) Showroom Turntable Display
-        try:
-            n1 = orig_get(140031)
-            if n1 is not None:
-                n1_copy = copy.copy(n1)
-                pt = copy.copy(getattr(n1, 'PROP_TYPE', None))
-                if pt is not None:
-                    n1_dim = getattr(pt, 'DISPLAY_IN_MODEL', None)
-                    if n1_dim:
-                        ec = copy.copy(n1_dim[0])
-                        ec.DISPLAY_POS_ID = 281
-                        ec.DISPLAY_PROP_LIST = [140031]
-                        ec.SHOULD_SHOW = True
-                        pt.DISPLAY_IN_MODEL = [ec]
-                    n1_copy.PROP_TYPE = pt
-                _dh_synthetic_props[140031] = n1_copy
         except Exception:
             pass
 
@@ -9871,7 +9845,6 @@ def _dh_ensure_synthetic_props():
                     for attr, val in (('FP_MTG_PATH', 'vehicle/guaiwupika/cheshen.mtg'),
                                       ('TP_MTG_PATH', 'vehicle/guaiwupika/geton_vehicle.mtg'),
                                       ('DISPLAY_USING_VEHICLE_ID', 31007),
-                                      ('SCORE', 300),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png')):
                         try:
                             setattr(ptype, attr, val)
@@ -9950,7 +9923,6 @@ def _dh_ensure_synthetic_props():
                                       ('DISPLAY_USING_VEHICLE_ID', 30004),
                                       ('LAND_VEHICLE_ID', 910043),
                                       ('VEHICLE_ID', 910043),
-                                      ('SCORE', 300),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png')):
                         try:
                             setattr(ptype, attr, val)
@@ -9996,7 +9968,6 @@ def _dh_ensure_synthetic_props():
                         ptype = copy.copy(getattr(gf1, 'PROP_TYPE', None))
                         if ptype is not None:
                             try:
-                                setattr(ptype, 'SCORE', 300)
                                 dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
                                 if dim:
                                     new_dim = []
@@ -67316,8 +67287,8 @@ _VEHICLE_ICON_MAP = {
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
     142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    140237: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
+    142008: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
+    140237: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',
@@ -67456,100 +67427,93 @@ def _dh_install_vehicle_appearance_preload_hook():
 
                 _dh_ensure_synthetic_props()
 
-                # Full vehicle evolution chains: (cat_id, land_vid, chain_list_highest_to_lowest)
-                chains = [
-                    # Category 0: Sports Cars (25000)
-                    (0, 25000, [140035, 140031]),                       # Nova / Supernova
-                    (0, 25000, [140013, 140010]),                       # Spark / Thunderbird
-                    (0, 25000, [140024, 140021]),                       # Twister / Storm
-                    (0, 25000, [142030, 142029, 142028]),               # Burst Sedan
-                    (0, 25000, [140051, 140048]),                       # Hunting Off-road
-                    # Category 0: SUVs & Trucks (31002)
-                    (0, 31002, [140406, 140404, 140403]),               # Monster Truck
-                    (0, 31002, [140046, 140041]),                       # Frosty Frills
-                    (0, 31002, [140914, 140911]),                       # Warjeep
-                    # Category 0: Jeeps (25001)
-                    (0, 25001, [140224, 140223, 140221]),               # Subjugator
-                    (0, 25001, [140061, 140056]),                       # Hovering Car
-                    # Category 0: Battle Jeeps (31004)
-                    (0, 31004, [142003, 140241]),                       # Burst Buggy / Deathmobile
-                    # Category 1: Motorcycles (25010)
-                    (1, 25010, [140077, 140076]),                       # Darksteel Bike
-                    (1, 25010, [140214, 140211]),                       # Pegasus
-                    (1, 25010, [140205, 140202]),                       # Blazing Flash
-                    # Category 1: Special Cars in Category 1 (25000)
-                    (1, 25000, [142006, 142005, 142004]),               # Golden Flash
-                    (1, 25000, [142013, 142012, 142011]),               # Shadowfax
-                    # Category 2: Three-wheelers / Tuk-tuks (25003)
-                    (2, 25003, [140905, 140902]),                       # Reign of Fire / 5 Star Ride
-                    # Category 11: Skateboards (125101)
-                    (11, 125101, [140065, 140064, 140062]),             # Dynamic Streamer Skateboard
-                    # Category 11: Bicycles & Raptors (910043)
-                    (11, 910043, [142008, 140237, 142007]),             # Velociraptor
-                    (11, 910043, [140074, 140073]),                     # Summer Bicycle
-                ]
+                # Full vehicle evolution chains mapped by land_vid
+                chains_by_vid = {}
+                for land_vid, chain in (
+                    (25000, [140035, 140031]),                       # Nova / Supernova
+                    (25000, [140013, 140010]),                       # Spark / Thunderbird
+                    (25000, [140024, 140021]),                       # Twister / Storm
+                    (25000, [142030, 142029, 142028]),               # Burst Sedan
+                    (25000, [140051, 140048]),                       # Hunting Off-road
+                    (25000, [142006, 142005, 142004]),               # Golden Flash
+                    (25000, [142013, 142012, 142011]),               # Shadowfax
+                    (31002, [140406, 140404, 140403]),               # Monster Truck
+                    (31002, [140046, 140041]),                       # Frosty Frills
+                    (31002, [140914, 140911]),                       # Warjeep
+                    (25001, [140224, 140223, 140221]),               # Subjugator
+                    (25001, [140061, 140056]),                       # Hovering Car
+                    (31004, [142003, 140241]),                       # Burst Buggy / Deathmobile
+                    (25010, [140077, 140076]),                       # Darksteel Bike
+                    (25010, [140214, 140211]),                       # Pegasus
+                    (25010, [140205, 140202]),                       # Blazing Flash
+                    (25003, [140905, 140902]),                       # Reign of Fire / 5 Star Ride
+                    (125101, [140065, 140064, 140062]),             # Dynamic Streamer Skateboard
+                    (910043, [140237, 142008, 142007]),             # Velociraptor
+                    (910043, [140074, 140073]),                     # Summer Bicycle
+                    (910061, [140237, 142008, 142007]),             # Velociraptor Lv 2 native
+                ):
+                    chains_by_vid.setdefault(land_vid, []).append(chain)
 
                 if isinstance(ret, dict):
-                    grouped_chains = {}
-                    for cat_id, land_vid, chain in chains:
-                        grouped_chains.setdefault((cat_id, land_vid), []).append(chain)
-
-                    for (cat_id, land_vid), family_chains in grouped_chains.items():
-                        cat_dict = ret.get(cat_id) or ret.get(str(cat_id))
+                    for cat_key, cat_dict in ret.items():
                         if not isinstance(cat_dict, dict):
                             continue
+                        for land_vid, family_chains in chains_by_vid.items():
+                            vid_key = land_vid if land_vid in cat_dict else (str(land_vid) if str(land_vid) in cat_dict else None)
+                            if vid_key is None:
+                                continue
 
-                        vid_key = land_vid if land_vid in cat_dict else (str(land_vid) if str(land_vid) in cat_dict else None)
-                        if vid_key is None:
-                            vid_key = land_vid
-                            cat_dict[vid_key] = []
+                            current_list = list(cat_dict.get(vid_key) or [])
 
-                        current_list = list(cat_dict.get(vid_key) or [])
+                            all_chain_tiers = set()
+                            for chain in family_chains:
+                                all_chain_tiers.update(chain)
 
-                        all_chain_tiers = set()
-                        for chain in family_chains:
-                            all_chain_tiers.update(chain)
+                            new_list = []
+                            seen = set()
 
-                        new_list = []
-                        seen = set()
+                            # Keep non-family items already in category
+                            for item in current_list:
+                                if item not in all_chain_tiers and item not in seen:
+                                    seen.add(item)
+                                    new_list.append(item)
 
-                        # Keep non-family items already in category
-                        for item in current_list:
-                            if item not in all_chain_tiers and item not in seen:
-                                seen.add(item)
-                                new_list.append(item)
-
-                        # Show EVERY tier owned in each family (e.g. Level 1 AND Level 2)
-                        for chain in family_chains:
-                            owned_in_chain = [tier for tier in chain if _has(tier)]
-                            if owned_in_chain:
-                                # Show higher tiers first down to base tier
+                            # Show EVERY tier owned in each family (e.g. Level 1 AND Level 2)
+                            for chain in family_chains:
+                                owned_in_chain = []
                                 for tier in chain:
-                                    if tier in owned_in_chain and tier not in seen:
-                                        seen.add(tier)
-                                        new_list.append(tier)
-                                        # Ensure owned tier is in player's package
-                                        if not (tier in ilist or str(tier) in ilist):
-                                            push = globals().get('_push_one_item')
-                                            if callable(push):
-                                                try:
-                                                    push(player, tier, 1, 0, package='appearance')
-                                                except Exception:
-                                                    pass
-                                            ask = globals().get('ask_backend')
-                                            if callable(ask):
-                                                try:
-                                                    ask('appearanceCultivateCompound', [0, tier, 0], {}, lambda reply: None)
-                                                except Exception:
-                                                    pass
-                            else:
-                                # Not owned yet: show base tier so player can view it in catalog
-                                base_tier = chain[-1]
-                                if base_tier not in seen:
-                                    seen.add(base_tier)
-                                    new_list.append(base_tier)
+                                    if _has(tier):
+                                        owned_in_chain.append(tier)
+                                    elif tier == 140237 and _has(142008):
+                                        owned_in_chain.append(tier)
+                                    elif tier == 142008 and _has(140237):
+                                        owned_in_chain.append(tier)
 
-                        cat_dict[vid_key] = new_list
+                                if owned_in_chain:
+                                    # Show higher tiers first down to base tier
+                                    for tier in chain:
+                                        # Deduplicate Lv2 raptor IDs (prefer authentic native 140237)
+                                        if tier == 142008 and 140237 in owned_in_chain:
+                                            continue
+                                        if tier in owned_in_chain and tier not in seen:
+                                            seen.add(tier)
+                                            new_list.append(tier)
+                                            # Ensure owned tier is in player's package
+                                            if not (tier in ilist or str(tier) in ilist):
+                                                push = globals().get('_push_one_item')
+                                                if callable(push):
+                                                    try:
+                                                        push(player, tier, 1, 0, package='appearance')
+                                                    except Exception:
+                                                        pass
+                                else:
+                                    # Not owned yet: show base tier so player can view it in catalog
+                                    base_tier = chain[-1]
+                                    if base_tier not in seen:
+                                        seen.add(base_tier)
+                                        new_list.append(base_tier)
+
+                            cat_dict[vid_key] = new_list
 
             except Exception as e:
                 pass

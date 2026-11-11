@@ -5799,6 +5799,8 @@ open_hall_prop = _dh_open_hall_prop_with_pity
 
 
 _dh_orig_mall_buy_details = globals().get('mall_buy_details')
+while getattr(_dh_orig_mall_buy_details, '_dh_pack_buy_inner', None) is not None:
+    _dh_orig_mall_buy_details = _dh_orig_mall_buy_details._dh_pack_buy_inner
 
 
 def _dh_mall_buy_details_with_pack_state(player, args):
@@ -5849,7 +5851,9 @@ def _dh_mall_buy_details_with_pack_state(player, args):
     }
 
 
+_dh_mall_buy_details_with_pack_state._dh_pack_buy_inner = _dh_orig_mall_buy_details
 mall_buy_details = _dh_mall_buy_details_with_pack_state
+globals()['mall_buy_details'] = _dh_mall_buy_details_with_pack_state
 try:
     if 'WELFARE_DETAILS' in globals() and isinstance(WELFARE_DETAILS, dict):
         for _m_rpc in ('buyMallGood', 'buyMallGoodInAppearanceMall'):
@@ -66148,6 +66152,9 @@ try:
         except Exception:
             pass
 
+    _dh_orig_rlParty = LOCAL_CALLBACKS.get('rlParty')
+    while getattr(_dh_orig_rlParty, '_dh_party_fixed_inner', None) is not None:
+        _dh_orig_rlParty = _dh_orig_rlParty._dh_party_fixed_inner
     def _dh_rlParty_fixed(player, kind, *args):
         kind_str = str(kind)
         if kind_str == 'left':
@@ -66157,11 +66164,13 @@ try:
         if callable(_dh_orig_rlParty):
             return _dh_orig_rlParty(player, kind, *args)
         return None
-
+    _dh_rlParty_fixed._dh_party_fixed_inner = _dh_orig_rlParty
     LOCAL_CALLBACKS['rlParty'] = _dh_rlParty_fixed
 
     # Wrap handle_rpc for immediate leave response when player clicks Leave button
     _dh_orig_handle_rpc = globals().get('handle_rpc')
+    while getattr(_dh_orig_handle_rpc, '_dh_team_leave_inner', None) is not None:
+        _dh_orig_handle_rpc = _dh_orig_handle_rpc._dh_team_leave_inner
     def _dh_handle_rpc_team_leave(mailbox, name, args, kwargs):
         if name in ('leaveHallTeam', 'unformHallTeam', 'dismissHallTeam', 'leaveTeam'):
             try:
@@ -66173,8 +66182,9 @@ try:
         if callable(_dh_orig_handle_rpc):
             return _dh_orig_handle_rpc(mailbox, name, args, kwargs)
         return None
-
+    _dh_handle_rpc_team_leave._dh_team_leave_inner = _dh_orig_handle_rpc
     handle_rpc = _dh_handle_rpc_team_leave
+    globals()['handle_rpc'] = _dh_handle_rpc_team_leave
 except Exception:
     log_error('local-team-leave-install-error')
 
@@ -66245,6 +66255,8 @@ try:
     # Neutralize ensure_self_model for existing players:
     # The male creation dummy (SHOW_MODEL_PATH) must only ever appear on UISelectCharacter for brand new accounts!
     _dh_orig_ensure_self_model = globals().get('ensure_self_model')
+    while getattr(_dh_orig_ensure_self_model, '_dh_ensure_inner', None) is not None:
+        _dh_orig_ensure_self_model = _dh_orig_ensure_self_model._dh_ensure_inner
     def _dh_safe_ensure_self_model(main_ui):
         try:
             saved = saved_character() if callable(globals().get('saved_character')) else None
@@ -66258,6 +66270,7 @@ try:
             pass
         if callable(_dh_orig_ensure_self_model):
             return _dh_orig_ensure_self_model(main_ui)
+    _dh_safe_ensure_self_model._dh_ensure_inner = _dh_orig_ensure_self_model
     ensure_self_model = _dh_safe_ensure_self_model
     globals()['ensure_self_model'] = _dh_safe_ensure_self_model
 

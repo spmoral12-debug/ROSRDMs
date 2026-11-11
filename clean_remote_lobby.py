@@ -5975,6 +5975,91 @@ def _dh_patch_season_id():
         pass
 
 
+def _dh_fix_record_panel(rec):
+    if rec is None:
+        return
+    try:
+        btn = getattr(rec, 'showModeSecondary', None)
+        if btn is not None:
+            for s_name in ('setTitleText', 'setString', 'setText'):
+                if hasattr(btn, s_name):
+                    try: getattr(btn, s_name)('Season 1')
+                    except Exception: pass
+            if hasattr(btn, 'getTitleRenderer'):
+                try:
+                    tr = btn.getTitleRenderer()
+                    if tr is not None and hasattr(tr, 'setString'):
+                        tr.setString('Season 1')
+                except Exception:
+                    pass
+            if hasattr(btn, 'getChildren'):
+                try:
+                    for ch in list(btn.getChildren() or []):
+                        for s_name in ('setTitleText', 'setString', 'setText'):
+                            if hasattr(ch, s_name):
+                                try: getattr(ch, s_name)('Season 1')
+                                except Exception: pass
+                except Exception:
+                    pass
+
+        choose = getattr(rec, 'modeChooseSecondary', None)
+        if choose is not None:
+            if hasattr(choose, 'getChildren'):
+                try:
+                    items = list(choose.getChildren() or [])
+                    for idx, item in enumerate(items):
+                        if idx == 0:
+                            for s_name in ('setTitleText', 'setString', 'setText'):
+                                if hasattr(item, s_name):
+                                    try: getattr(item, s_name)('Season 1')
+                                    except Exception: pass
+                            if hasattr(item, 'getTitleRenderer'):
+                                try:
+                                    tr = item.getTitleRenderer()
+                                    if tr is not None and hasattr(tr, 'setString'):
+                                        tr.setString('Season 1')
+                                except Exception:
+                                    pass
+                        for g in ('getTitleText', 'getString', 'getText', 'getStringValue'):
+                            if hasattr(item, g):
+                                try:
+                                    t = getattr(item, g)()
+                                    if t and '17' in str(t):
+                                        for s_name in ('setTitleText', 'setString', 'setText'):
+                                            if hasattr(item, s_name):
+                                                try: getattr(item, s_name)('Season 1')
+                                                except Exception: pass
+                                        if hasattr(item, 'getTitleRenderer'):
+                                            try:
+                                                tr = item.getTitleRenderer()
+                                                if tr is not None and hasattr(tr, 'setString'):
+                                                    tr.setString('Season 1')
+                                            except Exception:
+                                                pass
+                                except Exception:
+                                    pass
+                        if hasattr(item, 'getChildren'):
+                            try:
+                                for ch in list(item.getChildren() or []):
+                                    for g in ('getTitleText', 'getString', 'getText'):
+                                        if hasattr(ch, g):
+                                            try:
+                                                t = getattr(ch, g)()
+                                                if t and '17' in str(t):
+                                                    for s_name in ('setTitleText', 'setString', 'setText'):
+                                                        if hasattr(ch, s_name):
+                                                            try: getattr(ch, s_name)('Season 1')
+                                                            except Exception: pass
+                                            except Exception:
+                                                pass
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
 def _dh_relabel_seasons(ui):
     """'Season 17' -> 'Season 1' on ladder, stats, and profile screens; older official seasons are hidden."""
     if ui is None:
@@ -5983,20 +6068,38 @@ def _dh_relabel_seasons(ui):
     import re
 
     def _fix_node_text_safe(curr):
-        getter, setter = None, None
+        if curr is None:
+            return False
+        changed = False
+        targets = []
         for g_name, s_name in (('getTitleText', 'setTitleText'),
                                ('getString', 'setString'),
-                               ('getText', 'setText')):
+                               ('getText', 'setText'),
+                               ('getStringValue', 'setStringValue')):
             if hasattr(curr, g_name) and hasattr(curr, s_name):
                 try:
                     val = getattr(curr, g_name)()
-                    if val is not None:
-                        getter = getattr(curr, g_name)
-                        setter = getattr(curr, s_name)
-                        break
+                    if val:
+                        targets.append((getattr(curr, g_name), getattr(curr, s_name)))
                 except Exception:
                     pass
-        if callable(getter) and callable(setter):
+
+        if hasattr(curr, 'getTitleRenderer'):
+            try:
+                tr = curr.getTitleRenderer()
+                if tr is not None:
+                    for g_name, s_name in (('getString', 'setString'), ('getText', 'setText')):
+                        if hasattr(tr, g_name) and hasattr(tr, s_name):
+                            try:
+                                val = getattr(tr, g_name)()
+                                if val:
+                                    targets.append((getattr(tr, g_name), getattr(tr, s_name)))
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+
+        for getter, setter in targets:
             try:
                 raw = getter()
                 if raw is not None:
@@ -6005,19 +6108,28 @@ def _dh_relabel_seasons(ui):
                     if '17' in s:
                         s2 = re.sub(r'\bSeason\s*17\b', u'Season 1', s)
                         s2 = re.sub(r'Season17', u'Season 1', s2)
-                        s2 = re.sub(r'17', u'1', s2)
-                        setter(s2 if is_uni else s2.encode('utf-8'))
-                        return True
+                        s2 = re.sub(r'\bS17\b', u'S1', s2)
+                        if u'17' in s2 and (u'Season' in s2 or u'S' in s2):
+                            s2 = s2.replace(u'17', u'1')
+                        val_str = s2.encode('utf-8')
+                        try:
+                            setter(val_str)
+                        except Exception:
+                            try:
+                                setter(s2)
+                            except Exception:
+                                pass
+                        changed = True
                     elif re.search(r'\bSeason\s*(1[0-6]|[2-9])\b', s):
                         parent = curr.getParent() if hasattr(curr, 'getParent') else None
                         if parent is not None and hasattr(parent, 'getChildren') and len(list(parent.getChildren())) <= 4:
                             parent.setVisible(False)
                         elif hasattr(curr, 'setVisible'):
                             curr.setVisible(False)
-                        return True
+                        changed = True
             except Exception:
                 pass
-        return False
+        return changed
 
     def _sweep_node(root_node):
         if root_node is None:
@@ -6050,27 +6162,23 @@ def _dh_relabel_seasons(ui):
     # Fast-path for UIMeetMainPage
     try:
         mt = getattr(ui, '_mainTab', None) or ui
+        rec = None
         if hasattr(mt, 'getTabPanel'):
             rec = mt.getTabPanel('record')
-            if rec is not None:
-                btn = getattr(rec, 'showModeSecondary', None)
-                if btn:
-                    _sweep_node(btn)
-                    try:
-                        if hasattr(btn, 'setTitleText'):
-                            btn.setTitleText('Season 1')
-                    except Exception:
-                        pass
-                choose = getattr(rec, 'modeChooseSecondary', None)
-                if choose:
-                    _sweep_node(choose)
+        if rec is None:
+            for attr in ('battleGroundRecordPanel', 'recordPanel', '_battleGroundRecordPanel'):
+                rec = getattr(ui, attr, None)
+                if rec is not None:
+                    break
+        if rec is not None:
+            _dh_fix_record_panel(rec)
     except Exception:
         pass
 
     changed = 0
     seen = set()
     stack = [ui]
-    limit = 400
+    limit = 500
     while stack and len(seen) < limit:
         curr = stack.pop()
         if curr is None:
@@ -6089,7 +6197,16 @@ def _dh_relabel_seasons(ui):
             except Exception:
                 pass
 
-        # 2. Traverse Python wrapper attributes
+        # 2. Check title renderer
+        if hasattr(curr, 'getTitleRenderer'):
+            try:
+                tr = curr.getTitleRenderer()
+                if tr:
+                    stack.append(tr)
+            except Exception:
+                pass
+
+        # 3. Traverse Python wrapper attributes
         if hasattr(curr, '__dict__'):
             try:
                 for k, v in curr.__dict__.items():
@@ -6103,7 +6220,7 @@ def _dh_relabel_seasons(ui):
             except Exception:
                 pass
 
-        # 3. Traverse UITabView panels if present
+        # 4. Traverse UITabView panels if present
         if hasattr(curr, 'getTabPanel'):
             for tab in ('record', 'mainpage', 'peiwan', 'intimate', 'credit', 'vip', 'marriage'):
                 try:
@@ -6113,11 +6230,10 @@ def _dh_relabel_seasons(ui):
                 except Exception:
                     pass
 
-        # 4. Check text modification on current node
+        # 5. Check text modification on current node
         if _fix_node_text_safe(curr):
             changed += 1
 
-    return changed
     return changed
 
 
@@ -6168,43 +6284,23 @@ def _dh_install_season_screens():
             bgrp = getattr(meet_mod, 'UIBattleGroundRecordPanel', None)
             if bgrp is not None and not getattr(bgrp, '_dh_season_hooked', False):
                 bgrp._dh_season_hooked = True
-                orig_get_ui = getattr(bgrp, '_get_ui', None)
-                if orig_get_ui:
-                    def _wrapped_get_ui(self, *args, **kwargs):
-                        res = orig_get_ui(self, *args, **kwargs)
-                        try:
-                            _dh_relabel_seasons(self)
-                            btn = getattr(self, 'showModeSecondary', None)
-                            if btn and hasattr(btn, 'setTitleText'):
-                                btn.setTitleText('Season 1')
-                        except Exception:
-                            pass
-                        return res
-                    bgrp._get_ui = _wrapped_get_ui
 
-                orig_show_sec = getattr(bgrp, 'onShowModeSecondaryClick', None)
-                if orig_show_sec:
-                    def _wrapped_show_sec(self, *args, **kwargs):
-                        res = orig_show_sec(self, *args, **kwargs)
-                        try:
-                            choose = getattr(self, 'modeChooseSecondary', None)
-                            if choose:
-                                _dh_relabel_seasons(choose)
-                        except Exception:
-                            pass
-                        return res
-                    bgrp.onShowModeSecondaryClick = _wrapped_show_sec
-
-                orig_game_sec = getattr(bgrp, 'onGameModeSecondaryClick', None)
-                if orig_game_sec:
-                    def _wrapped_game_sec(self, *args, **kwargs):
-                        res = orig_game_sec(self, *args, **kwargs)
-                        try:
-                            _dh_relabel_seasons(self)
-                        except Exception:
-                            pass
-                        return res
-                    bgrp.onGameModeSecondaryClick = _wrapped_game_sec
+                for method_name in ('on_enter', '_get_ui', 'onShowModeSecondaryClick',
+                                    '_setModeSecondaryChoose', 'onGameModeSecondaryClick',
+                                    'onGetRecordData', 'onGetBaseInfo', 'responseToClickGameMode'):
+                    orig_fn = getattr(bgrp, method_name, None)
+                    if orig_fn:
+                        def make_bgrp_wrapper(inner, m_name):
+                            def _wrapped_bgrp(self, *args, **kwargs):
+                                res = inner(self, *args, **kwargs)
+                                try:
+                                    _dh_fix_record_panel(self)
+                                    _dh_relabel_seasons(self)
+                                except Exception:
+                                    pass
+                                return res
+                            return _wrapped_bgrp
+                        setattr(bgrp, method_name, make_bgrp_wrapper(orig_fn, method_name))
                 done.append('UIBattleGroundRecordPanel')
     except Exception:
         pass
@@ -66206,6 +66302,26 @@ def _dh_window_title_loop():
                     except Exception:
                         pass
                     _dh_relabel_seasons(_uio)
+                    if _uin == 'UIMeetMainPage':
+                        try:
+                            _meet_rec = None
+                            _mt = getattr(_uio, '_mainTab', None)
+                            if _mt is not None and hasattr(_mt, 'getTabPanel'):
+                                _meet_rec = _mt.getTabPanel('record')
+                            if _meet_rec is None:
+                                for _attr in ('battleGroundRecordPanel', 'recordPanel', '_battleGroundRecordPanel'):
+                                    _meet_rec = getattr(_uio, _attr, None)
+                                    if _meet_rec is not None:
+                                        break
+                            if _meet_rec is not None:
+                                _dh_fix_record_panel(_meet_rec)
+                        except Exception:
+                            pass
+            if 'UISubModesEnter' in all_ui:
+                try:
+                    _dh_patch_submodes_enter()
+                except Exception:
+                    pass
     except Exception:
         pass
     try:

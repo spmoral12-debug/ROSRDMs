@@ -9560,6 +9560,15 @@ def _dh_conditional_settle_unfinished_match(player=None, *args, **kwargs):
 
 globals()['settle_unfinished_match'] = _dh_conditional_settle_unfinished_match
 
+_orig_leave_battle = globals().get('leave_battle')
+if _orig_leave_battle is not None:
+    def _dh_safe_leave_battle(player=None, *args, **kwargs):
+        if on_island_stage() or not _flight.get('landed_once') or _flight.get('stage') in ('island', 'plane'):
+            _round['settled'] = True
+            log('local-battle-leave-ignored-starting', stage=_flight.get('stage'), landed=_flight.get('landed_once'))
+        return _orig_leave_battle(player, *args, **kwargs)
+    globals()['leave_battle'] = _dh_safe_leave_battle
+
 
 # 6B. Fix Battle Quit Crashes (RemoveBehaviour, initTeleportPanel, PhysicsAdapter, iPerspective)
 def _dh_install_battle_quit_guards():

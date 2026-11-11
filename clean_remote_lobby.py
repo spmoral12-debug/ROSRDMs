@@ -9773,6 +9773,7 @@ def _dh_ensure_synthetic_props():
                                       ('DISPLAY_USING_VEHICLE_ID', 131005),
                                       ('LAND_VEHICLE_ID', 910043),
                                       ('VEHICLE_ID', 910043),
+                                      ('SCORE', 300),
                                       ('TRANSFER_LAND_VEHICLE_ID', 125111),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
                         try:
@@ -9803,7 +9804,6 @@ def _dh_ensure_synthetic_props():
                     raptor_lv2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Velociraptor Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('SCORE', 300),
                                   ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
                                   ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
                     try:
@@ -9935,7 +9935,6 @@ def _dh_ensure_synthetic_props():
                     b2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Darksteel Bike Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('SCORE', 300),
                                   ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png'),
                                   ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png')):
                     try:
@@ -9956,6 +9955,7 @@ def _dh_ensure_synthetic_props():
                                       ('DISPLAY_USING_VEHICLE_ID', 30004),
                                       ('LAND_VEHICLE_ID', 910043),
                                       ('VEHICLE_ID', 910043),
+                                      ('SCORE', 300),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png')):
                         try:
                             setattr(ptype, attr, val)
@@ -9975,7 +9975,6 @@ def _dh_ensure_synthetic_props():
                     sb2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Summer Bicycle Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('SCORE', 300),
                                   ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png'),
                                   ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png')):
                     try:
@@ -9989,31 +9988,34 @@ def _dh_ensure_synthetic_props():
         if gf1 is not None:
             for gfid, gfname in ((142005, 'Golden Flash Lv. 2'), (142006, 'Golden Flash Lv. 3')):
                 if gfid not in _dh_synthetic_props:
-                    gfc = copy.copy(gf1)
-                    gfc.NAME = gfname
-                    gfc.QUALITY = 5
-                    gfc.SCORE = 300
-                    for attr, val in (('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png'),
-                                      ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png')):
-                        try:
-                            setattr(gfc, attr, val)
-                        except Exception:
-                            pass
-                    ptype = copy.copy(getattr(gf1, 'PROP_TYPE', None))
-                    if ptype is not None:
-                        try:
-                            dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                            if dim:
-                                new_dim = []
-                                for entry in dim:
-                                    ec = copy.copy(entry)
-                                    ec.DISPLAY_PROP_LIST = [142004]
-                                    new_dim.append(ec)
-                                ptype.DISPLAY_IN_MODEL = new_dim
-                        except Exception:
-                            pass
-                        gfc.PROP_TYPE = ptype
-                    _dh_synthetic_props[gfid] = gfc
+                    try:
+                        gfc = copy.copy(gf1)
+                        for attr, val in (('NAME', gfname),
+                                          ('QUALITY', 5),
+                                          ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png'),
+                                          ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png')):
+                            try:
+                                setattr(gfc, attr, val)
+                            except Exception:
+                                pass
+                        ptype = copy.copy(getattr(gf1, 'PROP_TYPE', None))
+                        if ptype is not None:
+                            try:
+                                setattr(ptype, 'SCORE', 300)
+                                dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
+                                if dim:
+                                    new_dim = []
+                                    for entry in dim:
+                                        ec = copy.copy(entry)
+                                        ec.DISPLAY_PROP_LIST = [142004]
+                                        new_dim.append(ec)
+                                    ptype.DISPLAY_IN_MODEL = new_dim
+                            except Exception:
+                                pass
+                            gfc.PROP_TYPE = ptype
+                        _dh_synthetic_props[gfid] = gfc
+                    except Exception:
+                        pass
 
         # 9. Brain Freeze (140046) & Hovering Car Max (140061) Unhide
         for hid_id in (140046, 140061):
@@ -10031,7 +10033,9 @@ def _dh_ensure_synthetic_props():
                 pass
 
     except Exception as e:
-        log_error('local-synthetic-props-error', err=str(e))
+        if not globals().get('_dh_synthetic_error_logged'):
+            globals()['_dh_synthetic_error_logged'] = True
+            log_error('local-synthetic-props-error', err=str(e))
     finally:
         _dh_synthetic_building = False
     return _dh_synthetic_props

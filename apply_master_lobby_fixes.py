@@ -631,6 +631,17 @@ except Exception:
         content = content.replace(old_depot_clean_call, new_depot_clean_call, 1)
         print('[lobby] Removed full refresh/refreshView from _dh_clean_depot_duplicates (preventing background blinking)')
 
+
+    # =========================================================================
+    # PART 5: Purge Stray Male Dummy Model & Restore Post-Battle Sky/Backdrop
+    # =========================================================================
+    stray_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'patch_stray_and_clay.py')
+    if os.path.exists(stray_script):
+        exec(open(stray_script, 'r', encoding='utf-8').read(), globals())
+        run_patch()
+        print('[lobby] Applied Part 5: Purged stray male model and restored post-battle sky/backdrop')
+        return
+
     with open('clean_remote_lobby.py', 'w', encoding='utf-8') as f:
         f.write(content)
     print('clean_remote_lobby.py updated successfully!')

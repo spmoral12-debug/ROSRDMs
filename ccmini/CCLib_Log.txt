@@ -682,3 +682,15 @@
 [2026/11/11 09:34:17:697][11628][13464] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
 [2026/11/11 09:34:17:697][11628][13464] [CCLib] load library success
 [2026/11/11 09:34:17:697][11628][13464] [CCLib] start ccmini ret: 0
+[2026/11/11 09:55:02:570][12488][13396] [CCLib] start ccmini path: C:\Users\seanj\Documents\ROSRDMs\ccmini\CCMini.exe
+[2026/11/11 09:55:02:570][12488][13396] [CCLib] load ccipc C:\Users\seanj\Documents\ROSRDMs\ccmini\
+[2026/11/11 09:55:02:651][12488][13396] [CCLib] copy ccipc from --C:\Users\seanj\Documents\ROSRDMs\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/11 09:55:03:380][12488][13396] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/11 09:55:03:380][12488][13396] [CCLib] load library success
+[2026/11/11 09:55:03:380][12488][13396] [CCLib] start ccmini ret: 0
+[2026/11/11 10:56:21:694][8548][10416] [CCLib] start ccmini path: C:\Users\seanj\Documents\ROSRDMs\ccmini\CCMini.exe
+[2026/11/11 10:56:21:694][8548][10416] [CCLib] load ccipc C:\Users\seanj\Documents\ROSRDMs\ccmini\
+[2026/11/11 10:56:21:711][8548][10416] [CCLib] copy ccipc from --C:\Users\seanj\Documents\ROSRDMs\ccmini\x64\ccipc.dll-- to --C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll-- ret: 0
+[2026/11/11 10:56:21:765][8548][10416] [CCLib] load library path C:\Users\seanj\AppData\Roaming\CC\x64\ccipc.dll, ret: 0
+[2026/11/11 10:56:21:765][8548][10416] [CCLib] load library success
+[2026/11/11 10:56:21:765][8548][10416] [CCLib] start ccmini ret: 0

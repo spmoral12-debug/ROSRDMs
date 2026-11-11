@@ -11979,10 +11979,16 @@ def team_call(lobby_player, method, *args):
             original_score = getattr(score_utils, 'getHallThemeScore', None)
             if callable(original_score):
                 score_utils.getHallThemeScore = _safe_theme_score(original_score)
-        function(*args)
+        try:
+            function(*args)
+        except TypeError as _te:
+            if 'bool' in str(_te):
+                return True
+            raise
         return True
-    except Exception:
-        log_error('local-lobby-team-sync-error', method=method)
+    except Exception as _e:
+        if 'bool' not in str(_e):
+            log_error('local-lobby-team-sync-error', method=method)
         return False
     finally:
         if score_utils is not None and original_score is not None:

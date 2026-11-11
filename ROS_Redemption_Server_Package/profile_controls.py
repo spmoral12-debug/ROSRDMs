@@ -126,13 +126,18 @@ def cultivate_compound(server, args, kwargs):
         with account.db.transaction() as conn:
             with account.edit_in(conn) as data:
                 depot = data.setdefault("depot", {})
-                # Completely remove source item copies from depot
-                if effective_src:
-                    depot.pop(str(effective_src), None)
-                if src_id and src_id != target_id:
-                    depot.pop(str(src_id), None)
-                if target_id in _tune_src_map:
-                    depot.pop(str(_tune_src_map[target_id]), None)
+                # Consume extra copy only: ensure 1x source item remains in depot
+                for s_check in (effective_src, src_id):
+                    if s_check and str(s_check) in depot:
+                        src_entry = depot[str(s_check)]
+                        if isinstance(src_entry, dict):
+                            cnt = int(src_entry.get("count", 1) or 1)
+                            if cnt > 1:
+                                src_entry["count"] = cnt - 1
+                            else:
+                                src_entry["count"] = 1
+                    elif s_check:
+                        depot[str(s_check)] = {"count": 1, "expires": 0}
                 
                 try:
                     account.spend(data, 1001, 1000, f"cultivate:{target_id}")
@@ -201,12 +206,8 @@ try:
                             ("140065", ("140064", "140062")),
                             ("140064", ("140062",)),
                         ]
-                        for higher_id, lower_ids in evo_prune_pairs:
-                            if higher_id in depot:
-                                for low_id in lower_ids:
-                                    if low_id in depot:
-                                        del depot[low_id]
-                                        changed = True
+                        # Preserved: players own both base and evolved tiers (Lv1 + Lv2)
+                        pass
                         # 2. Clamp duplicate permanent cosmetics:
                         for k, v in list(depot.items()):
                             if isinstance(v, dict) and not int(v.get("expires") or 0):

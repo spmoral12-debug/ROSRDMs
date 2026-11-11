@@ -4327,7 +4327,153 @@ _DH_CRASH_GUARDS = [
     ('ui.UIDtsAppearanceCustomizedSuit', 'UIDtsAppearanceCustomizedSuit', 'itemPanelSubWidgetInitFunc'),
     ('ui.UISubModesEnter', 'UISubModesEnter', 'onSelectPanel'),
     ('ui.UISubModesEnter', 'UISubModesEnter', '_initGoldBattlePanel'),
+    ('ui.UISubModesEnter', 'UIModesList', '_initGoldBattlePanel'),
+    ('ui.UISubModesEnter', 'UIModesList', '__reorderTypePanels'),
+    ('ui.UISubModesEnter', 'UISubModesEnter', 'onConfirmEvent'),
+    ('ui.UISubModesEnter', 'UISubModesEnter', 'onCancelEvent'),
 ]
+
+
+def _dh_patch_submodes_enter():
+    for mod_name, mod in list(_dh_sys.modules.items()):
+        if mod is not None:
+            try:
+                if not hasattr(mod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME'):
+                    setattr(mod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME', 0)
+            except Exception:
+                pass
+    try:
+        mod = _dh_sys.modules.get('ui.UISubModesEnter')
+        if mod is None:
+            try:
+                mod = __import__('ui.UISubModesEnter', fromlist=['UISubModesEnter', 'UIModesList'])
+            except Exception:
+                mod = None
+        if mod is not None:
+            if not hasattr(mod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME'):
+                setattr(mod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME', 0)
+            for attr_name, val in list(vars(mod).items()):
+                if type(val).__name__ == 'module':
+                    try:
+                        if not hasattr(val, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME'):
+                            setattr(val, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME', 0)
+                    except Exception:
+                        pass
+                if isinstance(val, dict):
+                    if 'RosTopia' not in val:
+                        val['RosTopia'] = lambda *a, **k: None
+                    if 'rostopia' not in val:
+                        val['rostopia'] = lambda *a, **k: None
+
+            for cls_name, cls in list(vars(mod).items()):
+                if isinstance(cls, (type, type(object))) or type(cls).__name__ == 'classobj':
+                    if hasattr(cls, '_initGoldBattlePanel'):
+                        orig_g = getattr(cls, '_initGoldBattlePanel')
+                        if orig_g and not getattr(orig_g, '_dh_guarded', False):
+                            def _safe_gold(self, *a, **k):
+                                try:
+                                    return orig_g(self, *a, **k)
+                                except Exception as err:
+                                    try:
+                                        log('local-gold-battle-error', err=str(err))
+                                    except Exception:
+                                        pass
+                                    return None
+                            _safe_gold._dh_guarded = True
+                            setattr(cls, '_initGoldBattlePanel', _safe_gold)
+
+                    for r_name in ('_UIModesList__reorderTypePanels', '__reorderTypePanels', 'onLimitGameTypeUpdate'):
+                        if hasattr(cls, r_name):
+                            orig_r = getattr(cls, r_name)
+                            if orig_r and not getattr(orig_r, '_dh_guarded', False):
+                                def _make_safe_r(orig_fn, fn_name):
+                                    def _safe_r(self, *a, **k):
+                                        try:
+                                            return orig_fn(self, *a, **k)
+                                        except Exception as err:
+                                            try:
+                                                log('local-submode-reorder-error', fn=fn_name, err=str(err))
+                                            except Exception:
+                                                pass
+                                            return None
+                                    _safe_r._dh_guarded = True
+                                    return _safe_r
+                                setattr(cls, r_name, _make_safe_r(orig_r, r_name))
+
+                    if hasattr(cls, 'onConfirmEvent'):
+                        orig_c = getattr(cls, 'onConfirmEvent')
+                        if orig_c and not getattr(orig_c, '_dh_guarded', False):
+                            def _safe_confirm(self, *a, **k):
+                                try:
+                                    for dname in dir(self):
+                                        try:
+                                            dval = getattr(self, dname, None)
+                                            if isinstance(dval, dict):
+                                                if 'RosTopia' not in dval:
+                                                    dval['RosTopia'] = lambda *x, **y: None
+                                                if 'rostopia' not in dval:
+                                                    dval['rostopia'] = lambda *x, **y: None
+                                        except Exception:
+                                            pass
+                                    return orig_c(self, *a, **k)
+                                except KeyError as ke:
+                                    try:
+                                        log('local-submode-confirm-keyerror', key=str(ke))
+                                    except Exception:
+                                        pass
+                                    try:
+                                        import Globals
+                                        Globals.uiMgr.leave_ui('UISubModesEnter')
+                                    except Exception:
+                                        pass
+                                    try:
+                                        if hasattr(self, 'close'):
+                                            self.close()
+                                    except Exception:
+                                        pass
+                                    return None
+                                except Exception as err:
+                                    try:
+                                        log('local-submode-confirm-error', err=str(err))
+                                    except Exception:
+                                        pass
+                                    try:
+                                        import Globals
+                                        Globals.uiMgr.leave_ui('UISubModesEnter')
+                                    except Exception:
+                                        pass
+                                    return None
+                            _safe_confirm._dh_guarded = True
+                            setattr(cls, 'onConfirmEvent', _safe_confirm)
+
+                    if hasattr(cls, 'onCancelEvent'):
+                        orig_cancel = getattr(cls, 'onCancelEvent')
+                        if orig_cancel and not getattr(orig_cancel, '_dh_guarded', False):
+                            def _safe_cancel(self, *a, **k):
+                                try:
+                                    orig_cancel(self, *a, **k)
+                                except Exception:
+                                    pass
+                                try:
+                                    import Globals
+                                    Globals.uiMgr.leave_ui('UISubModesEnter')
+                                except Exception:
+                                    pass
+                                try:
+                                    if hasattr(self, 'close'):
+                                        self.close()
+                                except Exception:
+                                    pass
+                            _safe_cancel._dh_guarded = True
+                            setattr(cls, 'onCancelEvent', _safe_cancel)
+    except Exception:
+        pass
+
+
+try:
+    _dh_patch_submodes_enter()
+except Exception:
+    pass
 
 
 def _dh_crash_guard_factory(base, tag):
@@ -5828,11 +5974,33 @@ def _dh_relabel_seasons(ui):
     if ui is None:
         return 0
     _dh_patch_season_id()
-    changed = 0
     import re
+
+    # Fast-path for UIMeetMainPage
+    try:
+        mt = getattr(ui, '_mainTab', None) or ui
+        if hasattr(mt, 'getTabPanel'):
+            rec = mt.getTabPanel('record')
+            if rec is not None:
+                btn = getattr(rec, 'showModeSecondary', None)
+                if btn and hasattr(btn, 'setTitleText'):
+                    btn.setTitleText('Season 1')
+                choose = getattr(rec, 'modeChooseSecondary', None)
+                if choose and hasattr(choose, 'getChildren'):
+                    for c in list(choose.getChildren()):
+                        if hasattr(c, 'getTitleText') and hasattr(c, 'setTitleText'):
+                            t = c.getTitleText() or ''
+                            if '17' in t:
+                                c.setTitleText(re.sub(r'\bSeason\s*17\b', 'Season 1', t))
+                            elif re.search(r'\bSeason\s*(1[0-6]|[2-9])\b', t):
+                                c.setVisible(False)
+    except Exception:
+        pass
+
+    changed = 0
     seen = set()
     stack = [ui]
-    limit = 5000
+    limit = 300
     while stack and len(seen) < limit:
         curr = stack.pop()
         if curr is None:
@@ -65898,7 +66066,8 @@ def _dh_window_title_loop():
         ui_mgr = getattr(Globals, 'uiMgr', None)
         if ui_mgr is not None:
             all_ui = getattr(ui_mgr, '____all_ui__', None) or {}
-            for _uin, _uio in all_ui.items():
+            for _uin in ('UIMeetMainPage', 'UILadder', 'UIRankLadder'):
+                _uio = all_ui.get(_uin)
                 if _uio is not None:
                     try:
                         if hasattr(_uio, 'isVisible') and not _uio.isVisible():
@@ -65906,31 +66075,6 @@ def _dh_window_title_loop():
                     except Exception:
                         pass
                     _dh_relabel_seasons(_uio)
-        cc = _dh_cc()
-        if cc is not None:
-            sc = cc.Director.getInstance().getRunningScene()
-            if sc is not None:
-                _dh_relabel_seasons(sc)
-    except Exception:
-        pass
-    try:
-        import Globals
-        ui_mgr = getattr(Globals, 'uiMgr', None)
-        if ui_mgr is not None:
-            all_ui = getattr(ui_mgr, '____all_ui__', None) or {}
-            for _uin, _uio in all_ui.items():
-                if _uio is not None:
-                    try:
-                        if hasattr(_uio, 'isVisible') and not _uio.isVisible():
-                            continue
-                    except Exception:
-                        pass
-                    _dh_relabel_seasons(_uio)
-        cc = _dh_cc()
-        if cc is not None:
-            sc = cc.Director.getInstance().getRunningScene()
-            if sc is not None:
-                _dh_relabel_seasons(sc)
     except Exception:
         pass
     try:

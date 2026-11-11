@@ -254,8 +254,103 @@ def _hook_record_panel_class():
         pass
 
 
+def _hook_submodes_class():
+    try:
+        import sys
+        for mod_name, mod in list(sys.modules.items()):
+            if mod is not None:
+                try:
+                    if not hasattr(mod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME'):
+                        setattr(mod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME', 0)
+                except Exception:
+                    pass
+        smod = sys.modules.get('ui.UISubModesEnter')
+        if not smod:
+            try:
+                smod = __import__('ui.UISubModesEnter', fromlist=['UISubModesEnter', 'UIModesList'])
+            except Exception:
+                return
+        if smod:
+            if not hasattr(smod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME'):
+                setattr(smod, 'I_GOLD_BATTLE_NEW_YEAR_BASE_TIME', 0)
+            for attr_name, val in list(vars(smod).items()):
+                if isinstance(val, dict):
+                    if 'RosTopia' not in val:
+                        val['RosTopia'] = lambda *a, **k: None
+                    if 'rostopia' not in val:
+                        val['rostopia'] = lambda *a, **k: None
+
+            for cls_name, cls in list(vars(smod).items()):
+                if isinstance(cls, (type, type(object))) or type(cls).__name__ == 'classobj':
+                    if hasattr(cls, '_initGoldBattlePanel'):
+                        orig_g = getattr(cls, '_initGoldBattlePanel')
+                        if orig_g and not getattr(orig_g, '_dh_guarded', False):
+                            def _safe_g(self, *a, **k):
+                                try:
+                                    return orig_g(self, *a, **k)
+                                except Exception:
+                                    return None
+                            _safe_g._dh_guarded = True
+                            setattr(cls, '_initGoldBattlePanel', _safe_g)
+
+                    if hasattr(cls, 'onConfirmEvent'):
+                        orig_c = getattr(cls, 'onConfirmEvent')
+                        if orig_c and not getattr(orig_c, '_dh_guarded', False):
+                            def _safe_c(self, *a, **k):
+                                try:
+                                    for dname in dir(self):
+                                        try:
+                                            dval = getattr(self, dname, None)
+                                            if isinstance(dval, dict):
+                                                if 'RosTopia' not in dval:
+                                                    dval['RosTopia'] = lambda *x, **y: None
+                                                if 'rostopia' not in dval:
+                                                    dval['rostopia'] = lambda *x, **y: None
+                                        except Exception:
+                                            pass
+                                    return orig_c(self, *a, **k)
+                                except Exception:
+                                    try:
+                                        import Globals
+                                        Globals.uiMgr.leave_ui('UISubModesEnter')
+                                    except Exception:
+                                        pass
+                                    try:
+                                        if hasattr(self, 'close'):
+                                            self.close()
+                                    except Exception:
+                                        pass
+                                    return None
+                            _safe_c._dh_guarded = True
+                            setattr(cls, 'onConfirmEvent', _safe_c)
+
+                    if hasattr(cls, 'onCancelEvent'):
+                        orig_cancel = getattr(cls, 'onCancelEvent')
+                        if orig_cancel and not getattr(orig_cancel, '_dh_guarded', False):
+                            def _safe_cancel(self, *a, **k):
+                                try:
+                                    orig_cancel(self, *a, **k)
+                                except Exception:
+                                    pass
+                                try:
+                                    import Globals
+                                    Globals.uiMgr.leave_ui('UISubModesEnter')
+                                except Exception:
+                                    pass
+                                try:
+                                    if hasattr(self, 'close'):
+                                        self.close()
+                                except Exception:
+                                    pass
+                            _safe_cancel._dh_guarded = True
+                            setattr(cls, 'onCancelEvent', _safe_cancel)
+    except Exception:
+        pass
+
+
 def _fix_season_labels_guard():
     _hook_record_panel_class()
+    _hook_submodes_class()
     try:
         import Globals, re
         ui_mgr = getattr(Globals, 'uiMgr', None)

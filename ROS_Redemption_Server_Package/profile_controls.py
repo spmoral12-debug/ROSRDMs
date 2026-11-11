@@ -206,8 +206,14 @@ try:
                             ("140065", ("140064", "140062")),
                             ("140064", ("140062",)),
                         ]
-                        # Preserved: players own both base and evolved tiers (Lv1 + Lv2)
-                        pass
+                        # Preserved: players own both base and evolved tiers (Lv1 + Lv2).
+                        # If upgraded tier is owned but base tier was lost during earlier buggy upgrades, restore base tier:
+                        for higher_tier, base_tiers in evo_pairs:
+                            if str(higher_tier) in depot or (higher_tier.isdigit() and int(higher_tier) in depot):
+                                for base in base_tiers:
+                                    if str(base) not in depot and (base.isdigit() and int(base) not in depot):
+                                        depot[str(base)] = {"count": 1, "expires": 0}
+                                        changed = True
                         # 2. Clamp duplicate permanent cosmetics:
                         for k, v in list(depot.items()):
                             if isinstance(v, dict) and not int(v.get("expires") or 0):

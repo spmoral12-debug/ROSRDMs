@@ -5087,6 +5087,12 @@ def _dh_clean_depot_duplicates(player=None):
             return 0
         player._dh_last_depot_clean_time = now
 
+        import time as _time
+        now = _time.time()
+        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
+            return 0
+        player._dh_last_depot_clean_time = now
+
         pkg = getattr(player, 'dtsAppearancePackage', None)
         if pkg is None:
             return 0
@@ -9768,20 +9774,20 @@ def _dh_ensure_synthetic_props():
         if 142008 not in _dh_synthetic_props or 140237 not in _dh_synthetic_props:
             raptor_src = None
             try:
-                raptor_src = orig_get(140237)
+                raptor_src = orig_get(142007)
             except Exception:
                 raptor_src = None
             if raptor_src is None:
                 try:
-                    raptor_src = orig_get(142007)
+                    raptor_src = orig_get(140237)
                 except Exception:
                     raptor_src = None
             if raptor_src is not None:
                 raptor_lv2 = copy.copy(raptor_src)
                 for attr, val in (('NAME', 'Velociraptor Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png'),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
                                   ('HIDE_IN_UI', False)):
                     try:
                         setattr(raptor_lv2, attr, val)
@@ -9791,29 +9797,29 @@ def _dh_ensure_synthetic_props():
                 if ptype is not None:
                     for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
                                       ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
-                                      ('DISPLAY_USING_VEHICLE_ID', 131005),
+                                      ('DISPLAY_USING_VEHICLE_ID', 910059),
                                       ('LAND_VEHICLE_ID', 910043),
                                       ('VEHICLE_ID', 910043),
-                                      ('TRANSFER_LAND_VEHICLE_ID', 125111),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png'),
+                                      ('TRANSFER_LAND_VEHICLE_ID', 910059),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
                                       ('HIDE_IN_UI', False)):
                         try:
                             setattr(ptype, attr, val)
                         except Exception:
                             pass
                     try:
-                        base_dim = getattr(orig_get(140237).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
+                        base_dim = getattr(orig_get(142007).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
                     except Exception:
                         base_dim = None
                     if not base_dim:
                         try:
-                            base_dim = getattr(orig_get(142007).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
+                            base_dim = getattr(orig_get(140237).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
                         except Exception:
                             base_dim = None
                     if base_dim:
                         ec = copy.copy(base_dim[0])
                         ec.DISPLAY_PROP_LIST = [140237]
-                        ec.DISPLAY_POS_ID = 403
+                        ec.DISPLAY_POS_ID = 1224
                         ec.SHOULD_SHOW = True
                         ptype.DISPLAY_IN_MODEL = [ec]
                     raptor_lv2.PROP_TYPE = ptype
@@ -67287,8 +67293,8 @@ _VEHICLE_ICON_MAP = {
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
     142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
-    140237: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
+    142008: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
+    140237: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',
@@ -67448,9 +67454,8 @@ def _dh_install_vehicle_appearance_preload_hook():
                     (25010, [140205, 140202]),                       # Blazing Flash
                     (25003, [140905, 140902]),                       # Reign of Fire / 5 Star Ride
                     (125101, [140065, 140064, 140062]),             # Dynamic Streamer Skateboard
-                    (910043, [140237, 142008, 142007]),             # Velociraptor
+                    (910043, [142008, 142007]),                     # Velociraptor
                     (910043, [140074, 140073]),                     # Summer Bicycle
-                    (910061, [140237, 142008, 142007]),             # Velociraptor Lv 2 native
                 ):
                     chains_by_vid.setdefault(land_vid, []).append(chain)
 
@@ -67484,17 +67489,45 @@ def _dh_install_vehicle_appearance_preload_hook():
                                 for tier in chain:
                                     if _has(tier):
                                         owned_in_chain.append(tier)
-                                    elif tier == 140237 and _has(142008):
-                                        owned_in_chain.append(tier)
                                     elif tier == 142008 and _has(140237):
                                         owned_in_chain.append(tier)
+                                    elif tier == 140237 and _has(142008):
+                                        owned_in_chain.append(tier)
+
+                                # If upgraded tier is owned, automatically grant and display base tier as well (Lv 1 + Lv 2 rule)
+                                for higher_id, base_ids in (
+                                    (142008, (142007,)),
+                                    (140237, (142007,)),
+                                    (140035, (140031,)),
+                                    (140905, (140902,)),
+                                    (140404, (140403,)),
+                                    (140406, (140404, 140403)),
+                                    (140013, (140010,)),
+                                    (140024, (140021,)),
+                                    (142029, (142028,)),
+                                    (142030, (142029, 142028)),
+                                    (140051, (140048,)),
+                                    (140046, (140041,)),
+                                    (140914, (140911,)),
+                                    (140077, (140076,)),
+                                    (140214, (140211,)),
+                                    (140205, (140202,)),
+                                    (142005, (142004,)),
+                                    (142006, (142005, 142004)),
+                                    (142012, (142011,)),
+                                    (142013, (142012, 142011)),
+                                    (140074, (140073,)),
+                                    (140064, (140062,)),
+                                    (140065, (140064, 140062)),
+                                ):
+                                    if higher_id in owned_in_chain:
+                                        for bid in base_ids:
+                                            if bid in chain and bid not in owned_in_chain:
+                                                owned_in_chain.append(bid)
 
                                 if owned_in_chain:
                                     # Show higher tiers first down to base tier
                                     for tier in chain:
-                                        # Deduplicate Lv2 raptor IDs (prefer authentic native 140237)
-                                        if tier == 142008 and 140237 in owned_in_chain:
-                                            continue
                                         if tier in owned_in_chain and tier not in seen:
                                             seen.add(tier)
                                             new_list.append(tier)

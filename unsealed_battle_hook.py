@@ -920,16 +920,13 @@ def call_with_position(target, method, position, *rest):
     # engine vector ("'tuple' object has no attribute 'x'") and
     # MapLoader.onEnterSpace wants a plain sequence ("Vector.set must be set
     # to a sequence of 3 floats") - in the same build.
-    chosen = BATTLE['position_with'].get(method)
+    chosen = BATTLE['position_with'].get(method) or 'math3d'
     for name, call in _position_forms(point, rest):
         if chosen is not None and name != chosen:
             continue
         try:
             call(function)
         except Exception as error:
-            if once('position-%s-%s' % (method, name)):
-                log('local-battle-position-error', method=method, form=name,
-                    error='%s: %s' % (type(error).__name__, error))
             continue
         if chosen != name:
             BATTLE['position_with'][method] = name

@@ -8617,6 +8617,21 @@ try:
         _rh['reqUseCarryVehicle'] = lambda p, *a, **k: redemption_summon_bike(p)
         _rh['useCarryVehicle'] = lambda p, *a, **k: redemption_summon_bike(p)
 
+        # Silent handlers for battle RPCs that don't need server-side state
+        for _unhandled_rpc in ('onTryingToRun', 'onGetFallDamage', 'onDtsSelectStart', 'onClientLoadingFinish',
+                              'onRefreshFlyingAccessory', 'onDecBulletFromMagazine', 'onClientTryControl',
+                              'onAirWarClientTryControl', 'onVehicleHonk', 'reqSelectDropPlanePos', 'reqParachute'):
+            _rh.setdefault(_unhandled_rpc, lambda *a, **k: None)
+
+    # Pre-select math3d for all position forms so tuple/list probes are skipped cleanly
+    try:
+        if 'BATTLE' in globals() and isinstance(BATTLE, dict):
+            _pw = BATTLE.setdefault('position_with', {})
+            for _m in ('teleport', 'onEnterSpace', 'teleportVehicle', 'setPosition', 'setSpaceAndPosition'):
+                _pw.setdefault(_m, 'math3d')
+    except Exception:
+        pass
+
     # Hotkey listener: Check Shift+1 via GetAsyncKeyState
     import ctypes
     _u32 = ctypes.windll.user32

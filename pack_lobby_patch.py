@@ -9,10 +9,11 @@ import os, zlib, hashlib, base64, glob
 UNPACKED = os.path.abspath('clean_remote_lobby.py')
 DESTINATIONS = [
     r'C:\DieHardROS\local_update\hot\remote-lobby.py',
-    r'C:\DieHardROS\ROS-REDEMPTION\DieHardROS\local_update\hot\remote-lobby.py',
-    r'C:\DieHardROS\ROS-REDEMPTION\DieHardROS\ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py',
+    r'c:\Users\LEGION 7 RTX 3080\Downloads\DieHardROS\local_update\hot\remote-lobby.py',
+    r'c:\Users\LEGION 7 RTX 3080\Downloads\DieHardROS\ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py',
     os.path.abspath(r'local_update\hot\remote-lobby.py'),
-    os.path.abspath(r'ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py')
+    os.path.abspath(r'ROS_Redemption_Server_Package\local_update\hot\remote-lobby.py'),
+    os.path.join(os.path.expandvars(r'%LOCALAPPDATA%\DieHardROSHook\updates'), 'remote-lobby.py'),
 ]
 HOT_DIRS = [
     r'C:\Users\seanj\AppData\Local\DieHardROSHook\updates',
@@ -124,6 +125,12 @@ for hd in HOT_DIRS:
         with open(hf, 'wb') as f:
             f.write(packed_bytes)
         print("Written:", hf)
+        try:
+            with open(hf + '.sha256', 'w') as f:
+                f.write(sha256_hash)
+            print("Updated SHA256:", hf + '.sha256')
+        except Exception:
+            pass
 
 print("PACKING COMPLETED SUCCESSFULLY!")
 

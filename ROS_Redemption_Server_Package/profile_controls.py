@@ -92,11 +92,33 @@ def cultivate_compound(server, args, kwargs):
         raise AccountError("bad_item", "Invalid target item.")
     
     _tune_src_map = {
+        140035: 140031,  # Supernova -> Nova X1
+        140905: 140902,  # Reign of Fire -> 5 Star Ride
         140404: 140403,  # Monster - M2 -> Monster - M1
         140406: 140404,  # Wild Beast (M3) -> Monster - M2
-        142008: 142007,  # Velociraptor Lv. 2 -> Velociraptor Lv. 1
-        140077: 140076,  # Darksteel Bike Lv. 2 -> Darksteel Bike Lv. 1
-        140074: 140073,  # Summer Bicycle Lv. 2 -> Summer Bicycle Lv. 1
+        140013: 140010,  # Thunderbird -> Spark V3
+        140024: 140021,  # Storm -> Twister - T1
+        142029: 142028,  # Burst Sedan Lv. 2 -> Lv. 1
+        142030: 142029,  # Burst Sedan Lv. 3 -> Lv. 2
+        140051: 140048,  # Fiery Hunting -> Hunting Path - I
+        140046: 140041,  # Brain Freeze -> Frosty Frills - I
+        140914: 140911,  # Warjeep lv 4 -> lv 1
+        140223: 140221,  # Subjugator T2 -> Subjugator
+        140224: 140223,  # Discovery -> Subjugator T2
+        140061: 140056,  # Hovering Car Max -> Lv. 1
+        142003: 140241,  # Deathmobile -> Burst Buggy - I
+        140077: 140076,  # Darksteel Bike Lv. 2 -> Lv. 1
+        140214: 140211,  # Pegasus Turbo -> Pegasus - I
+        140205: 140202,  # Phoenix -> Blazing Flash A1
+        142005: 142004,  # Golden Flash Lv. 2 -> Lv. 1
+        142006: 142005,  # Golden Flash Lv. 3 -> Lv. 2
+        142012: 142011,  # Shadowfax Kingly -> Noble
+        142013: 142012,  # Shadowfax Furious -> Kingly
+        142008: 142007,  # Velociraptor Lv. 2 -> Lv. 1
+        140237: 142007,  # Velociraptor Lv. 2 (native) -> Lv. 1
+        140074: 140073,  # Summer Bicycle Lv. 2 -> Lv. 1
+        140064: 140062,  # Dynamic Streamer Lv. 1 -> Base
+        140065: 140064,  # Dynamic Streamer MAX -> Lv. 1
     }
     effective_src = _tune_src_map.get(target_id, src_id)
     account = server.account
@@ -104,13 +126,18 @@ def cultivate_compound(server, args, kwargs):
         with account.db.transaction() as conn:
             with account.edit_in(conn) as data:
                 depot = data.setdefault("depot", {})
-                # Completely remove source item copies from depot
-                if effective_src:
-                    depot.pop(str(effective_src), None)
-                if src_id and src_id != target_id:
-                    depot.pop(str(src_id), None)
-                if target_id in _tune_src_map:
-                    depot.pop(str(_tune_src_map[target_id]), None)
+                # Consume extra copy only: ensure 1x source item remains in depot
+                for s_check in (effective_src, src_id):
+                    if s_check and str(s_check) in depot:
+                        src_entry = depot[str(s_check)]
+                        if isinstance(src_entry, dict):
+                            cnt = int(src_entry.get("count", 1) or 1)
+                            if cnt > 1:
+                                src_entry["count"] = cnt - 1
+                            else:
+                                src_entry["count"] = 1
+                    elif s_check:
+                        depot[str(s_check)] = {"count": 1, "expires": 0}
                 
                 try:
                     account.spend(data, 1001, 1000, f"cultivate:{target_id}")
@@ -149,28 +176,44 @@ try:
                     depot = data.get("depot")
                     if isinstance(depot, dict):
                         changed = False
-                        # 1. Evolution pairs cleanup:
-                        # Monster M2 -> delete M1
-                        if "140404" in depot and "140403" in depot:
-                            del depot["140403"]
-                            changed = True
-                        if "140406" in depot:
-                            for old_m in ("140404", "140403"):
-                                if old_m in depot:
-                                    del depot[old_m]
-                                    changed = True
-                        # Velociraptor Lv. 2 -> delete Lv. 1
-                        if "142008" in depot and "142007" in depot:
-                            del depot["142007"]
-                            changed = True
-                        # Darksteel Bike Lv. 2 -> delete Lv. 1
-                        if "140077" in depot and "140076" in depot:
-                            del depot["140076"]
-                            changed = True
-                        # Summer Bicycle Lv. 2 -> delete Lv. 1
-                        if "140074" in depot and "140073" in depot:
-                            del depot["140073"]
-                            changed = True
+                        # 1. Evolution pairs cleanup: prune source items if upgraded tier is owned
+                        evo_prune_pairs = [
+                            ("140035", ("140031",)),
+                            ("140905", ("140902",)),
+                            ("140406", ("140404", "140403")),
+                            ("140404", ("140403",)),
+                            ("140013", ("140010",)),
+                            ("140024", ("140021",)),
+                            ("142030", ("142029", "142028")),
+                            ("142029", ("142028",)),
+                            ("140051", ("140048",)),
+                            ("140046", ("140041",)),
+                            ("140914", ("140911",)),
+                            ("140224", ("140223", "140221")),
+                            ("140223", ("140221",)),
+                            ("140061", ("140056",)),
+                            ("142003", ("140241",)),
+                            ("140077", ("140076",)),
+                            ("140214", ("140211",)),
+                            ("140205", ("140202",)),
+                            ("142006", ("142005", "142004")),
+                            ("142005", ("142004",)),
+                            ("142013", ("142012", "142011")),
+                            ("142012", ("142011",)),
+                            ("142008", ("142007",)),
+                            ("140237", ("142007",)),
+                            ("140074", ("140073",)),
+                            ("140065", ("140064", "140062")),
+                            ("140064", ("140062",)),
+                        ]
+                        # Preserved: players own both base and evolved tiers (Lv1 + Lv2).
+                        # If upgraded tier is owned but base tier was lost during earlier buggy upgrades, restore base tier:
+                        for higher_tier, base_tiers in evo_pairs:
+                            if str(higher_tier) in depot or (higher_tier.isdigit() and int(higher_tier) in depot):
+                                for base in base_tiers:
+                                    if str(base) not in depot and (base.isdigit() and int(base) not in depot):
+                                        depot[str(base)] = {"count": 1, "expires": 0}
+                                        changed = True
                         # 2. Clamp duplicate permanent cosmetics:
                         for k, v in list(depot.items()):
                             if isinstance(v, dict) and not int(v.get("expires") or 0):

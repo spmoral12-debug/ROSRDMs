@@ -5069,6 +5069,30 @@ def _dh_clean_depot_duplicates(player=None):
             player = BigWorld.player()
         if player is None:
             return 0
+        import time as _time
+        now = _time.time()
+        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
+            return 0
+        player._dh_last_depot_clean_time = now
+
+        import time as _time
+        now = _time.time()
+        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
+            return 0
+        player._dh_last_depot_clean_time = now
+
+        import time as _time
+        now = _time.time()
+        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
+            return 0
+        player._dh_last_depot_clean_time = now
+
+        import time as _time
+        now = _time.time()
+        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
+            return 0
+        player._dh_last_depot_clean_time = now
+
         pkg = getattr(player, 'dtsAppearancePackage', None)
         if pkg is None:
             return 0
@@ -5079,12 +5103,7 @@ def _dh_clean_depot_duplicates(player=None):
         cleaned = 0
 
         def _is_owned(iid):
-            if iid in item_list or str(iid) in item_list:
-                return True
-            cnt_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
-            if callable(cnt_fn) and cnt_fn(int(iid)) > 0:
-                return True
-            return False
+            return (iid in item_list or str(iid) in item_list)
 
         def _wipe_id(iid):
             wiped = 0
@@ -5169,11 +5188,33 @@ def _dh_clean_depot_duplicates(player=None):
         # 2. Evolution consumption cleanup
         eq_vehicles = list(getattr(player, 'dtsVehicleAppearanceList', []) or [])
         evo_rules = [
+            (140035, (140031,)),
+            (140905, (140902,)),
             (140406, (140404, 140403)),
             (140404, (140403,)),
-            (142008, (142007,)),
+            (140013, (140010,)),
+            (140024, (140021,)),
+            (142030, (142029, 142028)),
+            (142029, (142028,)),
+            (140051, (140048,)),
+            (140046, (140041,)),
+            (140914, (140911,)),
+            (140224, (140223, 140221)),
+            (140223, (140221,)),
+            (140061, (140056,)),
+            (142003, (140241,)),
             (140077, (140076,)),
+            (140214, (140211,)),
+            (140205, (140202,)),
+            (142006, (142005, 142004)),
+            (142005, (142004,)),
+            (142013, (142012, 142011)),
+            (142012, (142011,)),
+            (142008, (142007,)),
+            (140237, (142007,)),
             (140074, (140073,)),
+            (140065, (140064, 140062)),
+            (140064, (140062,)),
         ]
         for target_id, src_ids in evo_rules:
             is_target_owned = _is_owned(target_id) or (target_id in eq_vehicles)
@@ -5185,27 +5226,25 @@ def _dh_clean_depot_duplicates(player=None):
                             push_fn(player, target_id, 1, 0, package='appearance')
                         except Exception:
                             pass
-                for s_id in src_ids:
-                    if _is_owned(s_id):
-                        cleaned += _wipe_id(s_id)
 
         # 3. Refresh appearance UIs if open
-        try:
-            import Globals
-            ui_mgr = getattr(Globals, 'uiMgr', None)
-            if ui_mgr:
-                for ui_name in ('UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2'):
-                    scr = getattr(ui_mgr, ui_name, None)
-                    if scr and getattr(scr, 'is_enter', False):
-                        for mname in ('refreshAppearanceList',):
-                            fn = getattr(scr, mname, None)
-                            if callable(fn):
-                                try:
-                                    fn()
-                                except Exception:
-                                    pass
-        except Exception:
-            pass
+        if cleaned > 0:
+            try:
+                import Globals
+                ui_mgr = getattr(Globals, 'uiMgr', None)
+                if ui_mgr:
+                    for ui_name in ('UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2'):
+                        scr = getattr(ui_mgr, ui_name, None)
+                        if scr and getattr(scr, 'is_enter', False):
+                            for mname in ('refreshAppearanceList',):
+                                fn = getattr(scr, mname, None)
+                                if callable(fn):
+                                    try:
+                                        fn()
+                                    except Exception:
+                                        pass
+            except Exception:
+                pass
 
         if cleaned:
             log('local-depot-cleaned', cleaned=cleaned)
@@ -5242,27 +5281,50 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
 
     # Evolution mappings (target_id -> src_id)
     _tune_src_map = {
-        140404: 140403,  # Monster - M2 comes from Monster - M1
-        140406: 140404,  # Wild Beast (M3) comes from Monster - M2
-        142008: 142007,  # Velociraptor Lv. 2 comes from Velociraptor Lv. 1
-        140077: 140076,  # Darksteel Bike Lv. 2 comes from Darksteel Bike Lv. 1
-        140074: 140073,  # Summer Bicycle Lv. 2 comes from Summer Bicycle Lv. 1
+        140035: 140031,  # Supernova -> Nova X1
+        140905: 140902,  # Reign of Fire -> 5 Star Ride
+        140404: 140403,  # Monster - M2 -> Monster - M1
+        140406: 140404,  # Wild Beast (M3) -> Monster - M2
+        140013: 140010,  # Thunderbird -> Spark V3
+        140024: 140021,  # Storm -> Twister - T1
+        142029: 142028,  # Burst Sedan Lv. 2 -> Lv. 1
+        142030: 142029,  # Burst Sedan Lv. 3 -> Lv. 2
+        140051: 140048,  # Fiery Hunting -> Hunting Path - I
+        140046: 140041,  # Brain Freeze -> Frosty Frills - I
+        140914: 140911,  # Warjeep lv 4 -> lv 1
+        140223: 140221,  # Subjugator T2 -> Subjugator
+        140224: 140223,  # Discovery -> Subjugator T2
+        140061: 140056,  # Hovering Car Max -> Lv. 1
+        142003: 140241,  # Deathmobile -> Burst Buggy - I
+        140077: 140076,  # Darksteel Bike Lv. 2 -> Lv. 1
+        140214: 140211,  # Pegasus Turbo -> Pegasus - I
+        140205: 140202,  # Phoenix -> Blazing Flash A1
+        142005: 142004,  # Golden Flash Lv. 2 -> Lv. 1
+        142006: 142005,  # Golden Flash Lv. 3 -> Lv. 2
+        142012: 142011,  # Shadowfax Kingly -> Noble
+        142013: 142012,  # Shadowfax Furious -> Kingly
+        142008: 142007,  # Velociraptor Lv. 2 -> Lv. 1
+        140237: 142007,  # Velociraptor Lv. 2 (native) -> Lv. 1
+        140074: 140073,  # Summer Bicycle Lv. 2 -> Lv. 1
+        140064: 140062,  # Dynamic Streamer Lv. 1 -> Base
+        140065: 140064,  # Dynamic Streamer MAX -> Lv. 1
     }
     effective_src = _tune_src_map.get(target_id, src_id)
 
-    # 1. Deduct cost / source appearance item (ALL copies)
-    if effective_src:
-        try:
-            _dh_remove_all_appearance_copies(player, effective_src)
-        except Exception:
-            log_error('local-cultivate-remove-src-error', src_id=effective_src)
-    if src_id and src_id != target_id and src_id != effective_src:
-        try:
-            _dh_remove_all_appearance_copies(player, src_id)
-        except Exception:
-            pass
-    if target_id in _tune_src_map:
-        _dh_remove_all_appearance_copies(player, _tune_src_map[target_id])
+    # 1. Deduct cost: consume extra copy only, preserve 1x source item
+    try:
+        pkg = getattr(player, 'dtsAppearancePackage', None)
+        ilist = getattr(pkg, 'itemList', {}) if pkg else {}
+        for s_check in (effective_src, src_id):
+            if not s_check:
+                continue
+            entries = ilist.get(s_check) or ilist.get(str(s_check))
+            if isinstance(entries, dict) and len(entries) > 1:
+                uuids = list(entries.keys())
+                player.onDelDtsAppearanceItem(int(s_check), uuids[-1])
+                entries.pop(uuids[-1], None)
+    except Exception:
+        pass
 
     # 2. Deduct Gold (1000 GP)
     cost = 1000
@@ -5277,9 +5339,7 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
 
     # 3. Add target appearance item to player's package (1 copy only)
     try:
-        own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
-        if not callable(own_fn) or own_fn(target_id) == 0:
-            _push_one_item(player, target_id, 1, 0, package='appearance')
+        _push_one_item(player, target_id, 1, 0, package='appearance')
     except Exception:
         log_error('local-cultivate-push-target-error', target_id=target_id)
 
@@ -5326,7 +5386,9 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
 
     # 6. Notify backend server if reachable to persist in database
     try:
-        call_pyserver('appearanceCultivateCompound', (src_id, target_id, flag), kwargs)
+        ask = globals().get('ask_backend')
+        if callable(ask):
+            ask('appearanceCultivateCompound', [src_id, target_id, flag], kwargs, lambda reply: None)
     except Exception:
         pass
 
@@ -9671,28 +9733,19 @@ _dh_synthetic_building = False
 
 def _dh_ensure_synthetic_props():
     global _dh_synthetic_building
-    if 121363 in _dh_synthetic_props and 142008 in _dh_synthetic_props and 140404 in _dh_synthetic_props:
+    if 121363 in _dh_synthetic_props and 142008 in _dh_synthetic_props and 140404 in _dh_synthetic_props and 140035 in _dh_synthetic_props:
         return _dh_synthetic_props
     if _dh_synthetic_building:
         return _dh_synthetic_props
     _dh_synthetic_building = True
     try:
-        _dh_patch_whitelist_stub()
         import copy
         legacy = __import__('helpers.character_scene', fromlist=['legacyProperties']).legacyProperties
         orig_get = getattr(legacy, '_dh_orig_get_dts_prop', legacy.getDtsHallPropData)
 
         # 1. Compound Bow-Pink Lady (121363)
         if 121363 not in _dh_synthetic_props:
-            medusa = None
-            try:
-                medusa = orig_get(121248)
-            except Exception:
-                _dh_patch_whitelist_stub()
-                try:
-                    medusa = orig_get(121248)
-                except Exception:
-                    medusa = None
+            medusa = orig_get(121248)
             if medusa is not None:
                 bow = copy.copy(medusa)
                 ptype = copy.copy(getattr(medusa, 'PROP_TYPE', None))
@@ -9717,63 +9770,80 @@ def _dh_ensure_synthetic_props():
                 _dh_synthetic_props[492081] = bow
                 _dh_synthetic_props[492082] = bow
 
-        # 2. Velociraptor Lv. 2 (142008)
-        if 142008 not in _dh_synthetic_props:
-            raptor_lv1 = None
+        # 2. Velociraptor Lv. 2 (142008 & 140237)
+        if 142008 not in _dh_synthetic_props or 140237 not in _dh_synthetic_props:
+            raptor_src = None
             try:
-                raptor_lv1 = orig_get(142007)
+                raptor_src = orig_get(142007)
             except Exception:
-                _dh_patch_whitelist_stub()
+                raptor_src = None
+            if raptor_src is None:
                 try:
-                    raptor_lv1 = orig_get(142007)
+                    raptor_src = orig_get(140237)
                 except Exception:
-                    raptor_lv1 = None
-            if raptor_lv1 is not None:
-                raptor_lv2 = copy.copy(raptor_lv1)
-                ptype = copy.copy(getattr(raptor_lv1, 'PROP_TYPE', None))
+                    raptor_src = None
+            if raptor_src is not None:
+                raptor_lv2 = copy.copy(raptor_src)
+                for attr, val in (('NAME', 'Velociraptor Lv. 2'),
+                                  ('QUALITY', 5),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                  ('HIDE_IN_UI', False)):
+                    try:
+                        setattr(raptor_lv2, attr, val)
+                    except Exception:
+                        pass
+                ptype = copy.copy(getattr(raptor_src, 'PROP_TYPE', None))
                 if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.mtg'),
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
                                       ('DISPLAY_USING_VEHICLE_ID', 910059),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
+                                      ('LAND_VEHICLE_ID', 910043),
+                                      ('VEHICLE_ID', 910043),
+                                      ('TRANSFER_LAND_VEHICLE_ID', 910059),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                      ('HIDE_IN_UI', False)):
                         try:
                             setattr(ptype, attr, val)
                         except Exception:
                             pass
                     try:
-                        dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                        if dim:
-                            new_dim = []
-                            for entry in dim:
-                                ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [142007]
-                                new_dim.append(ec)
-                            ptype.DISPLAY_IN_MODEL = new_dim
+                        base_dim = getattr(orig_get(142007).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
                     except Exception:
-                        pass
+                        base_dim = None
+                    if not base_dim:
+                        try:
+                            base_dim = getattr(orig_get(140237).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
+                        except Exception:
+                            base_dim = None
+                    if base_dim:
+                        ec = copy.copy(base_dim[0])
+                        ec.DISPLAY_PROP_LIST = [140237]
+                        ec.DISPLAY_POS_ID = 1224
+                        ec.SHOULD_SHOW = True
+                        ptype.DISPLAY_IN_MODEL = [ec]
                     raptor_lv2.PROP_TYPE = ptype
-                for attr, val in (('NAME', 'Velociraptor Lv. 2'),
-                                  ('QUALITY', 5),
-                                  ('SCORE', 300),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
-                    try:
-                        setattr(raptor_lv2, attr, val)
-                    except Exception:
-                        pass
                 _dh_synthetic_props[142008] = raptor_lv2
+                _dh_synthetic_props[140237] = raptor_lv2
 
-        # 3. Monster - M2 (140404)
+        # 3. Supernova (140035) Unhide (keep native turntable empty DISPLAY_IN_MODEL)
+        try:
+            sn = orig_get(140035)
+            if sn is not None:
+                sn_copy = copy.copy(sn)
+                setattr(sn_copy, 'HIDE_IN_UI', False)
+                pt = copy.copy(getattr(sn, 'PROP_TYPE', None))
+                if pt is not None:
+                    setattr(pt, 'HIDE_IN_UI', False)
+                    setattr(pt, 'DISPLAY_IN_MODEL', [])
+                    sn_copy.PROP_TYPE = pt
+                _dh_synthetic_props[140035] = sn_copy
+        except Exception:
+            pass
+
+        # 5. Monster - M2 (140404)
         if 140404 not in _dh_synthetic_props:
-            m1 = None
-            try:
-                m1 = orig_get(140403)
-            except Exception:
-                _dh_patch_whitelist_stub()
-                try:
-                    m1 = orig_get(140403)
-                except Exception:
-                    m1 = None
+            m1 = orig_get(140403)
             if m1 is not None:
                 m2 = copy.copy(m1)
                 ptype = copy.copy(getattr(m1, 'PROP_TYPE', None))
@@ -9781,7 +9851,6 @@ def _dh_ensure_synthetic_props():
                     for attr, val in (('FP_MTG_PATH', 'vehicle/guaiwupika/cheshen.mtg'),
                                       ('TP_MTG_PATH', 'vehicle/guaiwupika/geton_vehicle.mtg'),
                                       ('DISPLAY_USING_VEHICLE_ID', 31007),
-                                      ('SCORE', 300),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png')):
                         try:
                             setattr(ptype, attr, val)
@@ -9801,7 +9870,6 @@ def _dh_ensure_synthetic_props():
                     m2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Monster - M2'),
                                   ('QUALITY', 5),
-                                  ('SCORE', 300),
                                   ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png'),
                                   ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png')):
                     try:
@@ -9810,25 +9878,18 @@ def _dh_ensure_synthetic_props():
                         pass
                 _dh_synthetic_props[140404] = m2
 
-        # 4. Darksteel Bike Lv. 2 (140077)
+        # 6. Darksteel Bike Lv. 2 (140077)
         if 140077 not in _dh_synthetic_props:
-            b1 = None
-            try:
-                b1 = orig_get(140076)
-            except Exception:
-                _dh_patch_whitelist_stub()
-                try:
-                    b1 = orig_get(140076)
-                except Exception:
-                    b1 = None
+            b1 = orig_get(140076)
             if b1 is not None:
                 b2 = copy.copy(b1)
                 ptype = copy.copy(getattr(b1, 'PROP_TYPE', None))
                 if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/gthaigumotuo/gthaigumotuo1.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/gthaigumotuo/gthaigumotuo1.mtg'),
-                                      ('DISPLAY_USING_VEHICLE_ID', 130002),
-                                      ('SCORE', 300),
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/xuantiemotuo/cheshen.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/xuantiemotuo/geton_vehicle.mtg'),
+                                      ('DISPLAY_USING_VEHICLE_ID', 31032),
+                                      ('LAND_VEHICLE_ID', 25010),
+                                      ('VEHICLE_ID', 25010),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png')):
                         try:
                             setattr(ptype, attr, val)
@@ -9848,7 +9909,6 @@ def _dh_ensure_synthetic_props():
                     b2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Darksteel Bike Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('SCORE', 300),
                                   ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png'),
                                   ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png')):
                     try:
@@ -9857,25 +9917,18 @@ def _dh_ensure_synthetic_props():
                         pass
                 _dh_synthetic_props[140077] = b2
 
-        # 5. Summer Bicycle Lv. 2 (140074)
+        # 7. Summer Bicycle Lv. 2 (140074)
         if 140074 not in _dh_synthetic_props:
-            sb1 = None
-            try:
-                sb1 = orig_get(140073)
-            except Exception:
-                _dh_patch_whitelist_stub()
-                try:
-                    sb1 = orig_get(140073)
-                except Exception:
-                    sb1 = None
+            sb1 = orig_get(140073)
             if sb1 is not None:
                 sb2 = copy.copy(sb1)
                 ptype = copy.copy(getattr(sb1, 'PROP_TYPE', None))
                 if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/summer_bike_lv1/summer_bike_lv1.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/summer_bike_lv1/summer_bike_lv1.mtg'),
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/summerbike/cheshen.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/summerbike/geton_vehicle.mtg'),
                                       ('DISPLAY_USING_VEHICLE_ID', 30004),
-                                      ('SCORE', 300),
+                                      ('LAND_VEHICLE_ID', 910043),
+                                      ('VEHICLE_ID', 910043),
                                       ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png')):
                         try:
                             setattr(ptype, attr, val)
@@ -9895,7 +9948,6 @@ def _dh_ensure_synthetic_props():
                     sb2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Summer Bicycle Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('SCORE', 300),
                                   ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png'),
                                   ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png')):
                     try:
@@ -9904,47 +9956,58 @@ def _dh_ensure_synthetic_props():
                         pass
                 _dh_synthetic_props[140074] = sb2
 
-        # 6. Golden Flash Lv. 2 (142005) & Lv. 3 (142006)
-        gf1 = None
-        try:
-            gf1 = orig_get(142004)
-        except Exception:
-            _dh_patch_whitelist_stub()
-            try:
-                gf1 = orig_get(142004)
-            except Exception:
-                gf1 = None
+        # 8. Golden Flash Lv. 2 (142005) & Lv. 3 (142006)
+        gf1 = orig_get(142004)
         if gf1 is not None:
             for gfid, gfname in ((142005, 'Golden Flash Lv. 2'), (142006, 'Golden Flash Lv. 3')):
                 if gfid not in _dh_synthetic_props:
-                    gfc = copy.copy(gf1)
-                    for attr, val in (('NAME', gfname),
-                                      ('QUALITY', 5),
-                                      ('SCORE', 300),
-                                      ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png'),
-                                      ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png')):
-                        try:
-                            setattr(gfc, attr, val)
-                        except Exception:
-                            pass
-                    ptype = copy.copy(getattr(gf1, 'PROP_TYPE', None))
-                    if ptype is not None:
-                        try:
-                            dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                            if dim:
-                                new_dim = []
-                                for entry in dim:
-                                    ec = copy.copy(entry)
-                                    ec.DISPLAY_PROP_LIST = [142004]
-                                    new_dim.append(ec)
-                                ptype.DISPLAY_IN_MODEL = new_dim
-                        except Exception:
-                            pass
-                        gfc.PROP_TYPE = ptype
-                    _dh_synthetic_props[gfid] = gfc
+                    try:
+                        gfc = copy.copy(gf1)
+                        for attr, val in (('NAME', gfname),
+                                          ('QUALITY', 5),
+                                          ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png'),
+                                          ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png')):
+                            try:
+                                setattr(gfc, attr, val)
+                            except Exception:
+                                pass
+                        ptype = copy.copy(getattr(gf1, 'PROP_TYPE', None))
+                        if ptype is not None:
+                            try:
+                                dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
+                                if dim:
+                                    new_dim = []
+                                    for entry in dim:
+                                        ec = copy.copy(entry)
+                                        ec.DISPLAY_PROP_LIST = [142004]
+                                        new_dim.append(ec)
+                                    ptype.DISPLAY_IN_MODEL = new_dim
+                            except Exception:
+                                pass
+                            gfc.PROP_TYPE = ptype
+                        _dh_synthetic_props[gfid] = gfc
+                    except Exception:
+                        pass
+
+        # 9. Brain Freeze (140046) & Hovering Car Max (140061) Unhide
+        for hid_id in (140046, 140061):
+            try:
+                h_item = orig_get(hid_id)
+                if h_item is not None:
+                    hc = copy.copy(h_item)
+                    setattr(hc, 'HIDE_IN_UI', False)
+                    pt = copy.copy(getattr(h_item, 'PROP_TYPE', None))
+                    if pt is not None:
+                        setattr(pt, 'HIDE_IN_UI', False)
+                        hc.PROP_TYPE = pt
+                    _dh_synthetic_props[hid_id] = hc
+            except Exception:
+                pass
 
     except Exception as e:
-        log_error('local-synthetic-props-error', err=str(e))
+        if not globals().get('_dh_synthetic_error_logged'):
+            globals()['_dh_synthetic_error_logged'] = True
+            log_error('local-synthetic-props-error', err=str(e))
     finally:
         _dh_synthetic_building = False
     return _dh_synthetic_props
@@ -10027,7 +10090,8 @@ def _dh_install_prop_table_hooks():
 
                 def _dh_should_appear(prop_id):
                     try:
-                        if int(prop_id) in (121363, 140404, 140074, 140077, 142008, 142005, 142006, 492081, 492082):
+                        iid = int(prop_id)
+                        if iid in _VEHICLE_FAMILY_MAP or iid in _dh_ensure_synthetic_props():
                             return True
                     except Exception:
                         pass
@@ -10069,7 +10133,7 @@ def _dh_install_prop_table_hooks():
 def _dh_client_knows_item(item_id):
     try:
         iid = int(item_id)
-        if iid in (121363, 140404, 140074, 140077, 142008, 142005, 142006, 492081, 492082):
+        if iid in _VEHICLE_FAMILY_MAP:
             return True
         syn = _dh_ensure_synthetic_props()
         if iid in syn:
@@ -67055,66 +67119,197 @@ if callable(_dh_orig_start_local_lobby):
 # --- Master Vehicle Preload, Family Fallback & Catalog Architecture ---
 _VEHICLE_FAMILY_MAP = {
     # target_tier -> (base_tier, [all_tiers_from_highest_to_lowest])
+    # Nova / Lamborghini
+    140035: (140031, [140035, 140031]),
+    140031: (140031, [140035, 140031]),
+
+    # Three-wheeler / Tuk-tuk
+    140905: (140902, [140905, 140902]),
+    140902: (140902, [140905, 140902]),
+
+    # Monster Truck
     140406: (140403, [140406, 140404, 140403]),
     140404: (140403, [140406, 140404, 140403]),
     140403: (140403, [140406, 140404, 140403]),
 
-    142008: (142007, [142008, 142007]),
-    142007: (142007, [142008, 142007]),
+    # Bugatti / Spark
+    140013: (140010, [140013, 140010]),
+    140010: (140010, [140013, 140010]),
 
+    # Pagani / Twister
+    140024: (140021, [140024, 140021]),
+    140021: (140021, [140024, 140021]),
+
+    # Dodge / Burst Sedan
+    142030: (142028, [142030, 142029, 142028]),
+    142029: (142028, [142030, 142029, 142028]),
+    142028: (142028, [142030, 142029, 142028]),
+
+    # Hunting Off-road
+    140051: (140048, [140051, 140048]),
+    140048: (140048, [140051, 140048]),
+
+    # Frosty Frills
+    140046: (140041, [140046, 140041]),
+    140041: (140041, [140046, 140041]),
+
+    # Warjeep
+    140914: (140911, [140914, 140911]),
+    140911: (140911, [140914, 140911]),
+
+    # Subjugator
+    140224: (140221, [140224, 140223, 140221]),
+    140223: (140221, [140224, 140223, 140221]),
+    140221: (140221, [140224, 140223, 140221]),
+
+    # Hovering Car
+    140061: (140056, [140061, 140056]),
+    140056: (140056, [140061, 140056]),
+
+    # Burst Buggy / Deathmobile
+    142003: (140241, [142003, 140241]),
+    140241: (140241, [142003, 140241]),
+
+    # Darksteel Bike
     140077: (140076, [140077, 140076]),
     140076: (140076, [140077, 140076]),
 
-    140074: (140073, [140074, 140073]),
-    140073: (140073, [140074, 140073]),
+    # Pegasus
+    140214: (140211, [140214, 140211]),
+    140211: (140211, [140214, 140211]),
 
+    # Blazing Flash
+    140205: (140202, [140205, 140202]),
+    140202: (140202, [140205, 140202]),
+
+    # Golden Flash
     142006: (142004, [142006, 142005, 142004]),
     142005: (142004, [142006, 142005, 142004]),
     142004: (142004, [142006, 142005, 142004]),
 
+    # Shadowfax
     142013: (142011, [142013, 142012, 142011]),
     142012: (142011, [142013, 142012, 142011]),
     142011: (142011, [142013, 142012, 142011]),
+
+    # Velociraptor
+    142008: (142007, [142008, 140237, 142007]),
+    140237: (142007, [142008, 140237, 142007]),
+    142007: (142007, [142008, 140237, 142007]),
+
+    # Summer Bicycle
+    140074: (140073, [140074, 140073]),
+    140073: (140073, [140074, 140073]),
+
+    # Dynamic Streamer Skateboard
+    140065: (140062, [140065, 140064, 140062]),
+    140064: (140062, [140065, 140064, 140062]),
+    140062: (140062, [140065, 140064, 140062]),
 }
 
 _VEHICLE_NAME_MAP = {
+    140031: 'Nova X1',
+    140035: 'Supernova',
+    140902: '5 Star Ride',
+    140905: 'Reign of Fire',
     140403: 'Monster - M1',
     140404: 'Monster - M2',
     140406: 'Wild Beast',
-    142007: 'Velociraptor Lv. 1',
-    142008: 'Velociraptor Lv. 2',
+    140010: 'Spark V3',
+    140013: 'Thunderbird',
+    140021: 'Twister - T1',
+    140024: 'Storm',
+    142028: 'Burst Sedan Lv. 1',
+    142029: 'Burst Sedan Lv. 2',
+    142030: 'Burst Sedan Lv. 3',
+    140048: 'Hunting Path - I',
+    140051: 'Fiery Hunting',
+    140041: 'Frosty Frills - I',
+    140046: 'Brain Freeze',
+    140911: 'Warjeep Lv. 1',
+    140914: 'Warjeep Lv. 4',
+    140221: 'Subjugator',
+    140223: 'Subjugator - T2',
+    140224: 'Discovery',
+    140056: 'Hovering Car - Lv. 1',
+    140061: 'Hovering Car - Max',
+    140241: 'Burst Buggy - I',
+    142003: 'Battle Jeep - Deathmobile',
     140076: 'Darksteel Bike Lv. 1',
     140077: 'Darksteel Bike Lv. 2',
-    140073: 'Summer Bicycle',
-    140074: 'Summer Bicycle Lv. 2',
+    140211: 'Pegasus - I',
+    140214: 'Pegasus Turbo',
+    140202: 'Blazing Flash A1',
+    140205: 'Phoenix',
     142004: 'Golden Flash Lv. 1',
     142005: 'Golden Flash Lv. 2',
     142006: 'Golden Flash Lv. 3',
     142011: 'Shadowfax - Noble',
     142012: 'Shadowfax - Kingly',
     142013: 'Shadowfax - Furious',
+    142007: 'Velociraptor Lv. 1',
+    142008: 'Velociraptor Lv. 2',
+    140237: 'Velociraptor Lv. 2',
+    140073: 'Summer Bicycle',
+    140074: 'Summer Bicycle Lv. 2',
+    140062: 'Dynamic Streamer Base',
+    140064: 'Dynamic Streamer Lv. 1',
+    140065: 'Dynamic Streamer MAX',
 }
 
 _VEHICLE_ICON_MAP = {
+    140031: 'ui/images/dts_appearance/vehiclefull/img_zj_yingsuo_01.png',
+    140035: 'ui/images/dts_appearance/vehiclefull/img_zj_yingsuo_04.png',
+    140902: 'ui/images/dts_appearance/vehiclefull/img_tz_zj_tuktuk2.png',
+    140905: 'ui/images/dts_appearance/vehiclefull/img_tz_zj_tuktuk5.png',
     140403: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png',
     140404: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png',
     140406: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_03.png',
-    142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
+    140010: 'ui/images/dts_appearance/vehiclefull/img_zj_bjdwl_01.png',
+    140013: 'ui/images/dts_appearance/vehiclefull/img_zj_bjdwl_04.png',
+    140021: 'ui/images/dts_appearance/vehiclefull/img_zj_pajiani_01.png',
+    140024: 'ui/images/dts_appearance/vehiclefull/img_zj_pajiani_04.png',
+    142028: 'ui/images/dts_appearance/vehiclefull/daoqi1.png',
+    142029: 'ui/images/dts_appearance/vehiclefull/daoqi2.png',
+    142030: 'ui/images/dts_appearance/vehiclefull/daoqi3.png',
+    140048: 'ui/images/dts_appearance/vehiclefull/img_lietu3.png',
+    140051: 'ui/images/dts_appearance/vehiclefull/img_lietu4.png',
+    140041: 'ui/images/dts_appearance/vehiclefull/img_bingqilin_03.png',
+    140046: 'ui/images/dts_appearance/vehiclefull/img_bingqilin_01.png',
+    140911: 'ui/images/dts_appearance/vehiclefull/img_zj_zhandizhiwang1.png',
+    140914: 'ui/images/dts_appearance/vehiclefull/img_zj_zhandizhiwang4.png',
+    140221: 'ui/images/dts_appearance/vehiclefull/img_zj_jeep6_02.png',
+    140223: 'ui/images/dts_appearance/vehiclefull/img_zj_jeep6_03.png',
+    140224: 'ui/images/dts_appearance/vehiclefull/img_zj_jeep6_04.png',
+    140056: 'ui/images/dts_appearance/vehiclefull/img_zj_xuanfu_01.png',
+    140061: 'ui/images/dts_appearance/vehiclefull/img_zj_xuanfu_04.png',
+    140241: 'ui/images/dts_appearance/vehiclefull/img_baoliezhanche01.png',
+    142003: 'ui/images/dts_appearance/vehiclefull/img_zhongjiezhejipu.png',
     140076: 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png',
     140077: 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png',
-    140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
-    140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
+    140211: 'ui/images/dts_appearance/vehiclefull/img_zj_halei_xingchen01.png',
+    140214: 'ui/images/dts_appearance/vehiclefull/img_zj_halei_xingchen02.png',
+    140202: 'ui/images/dts_appearance/vehiclefull/img_zj_saimo_pbr04.png',
+    140205: 'ui/images/dts_appearance/vehiclefull/img_zj_saimo_pbr02.png',
     142004: 'ui/images/dts_appearance/vehiclefull/img_weilai1.png',
     142005: 'ui/images/dts_appearance/vehiclefull/img_weilai1.png',
     142006: 'ui/images/dts_appearance/vehiclefull/img_weilai1.png',
     142011: 'ui/images/dts_appearance/vehiclefull/laosi1.png',
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
+    142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
+    142008: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
+    140237: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
+    140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
+    140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
+    140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',
+    140064: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_03.png',
+    140065: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_mibao.png',
 }
 
 def _dh_install_vehicle_master_hooks():
     try:
+        import sys
         import BigWorld
         import dts_appearance_utils
         _dh_ensure_synthetic_props()
@@ -67152,8 +67347,16 @@ def _dh_install_vehicle_master_hooks():
             def _dh_hooked_get_cnt(iid):
                 try:
                     ciid = int(iid)
-                    if ciid in _VEHICLE_FAMILY_MAP:
-                        return 1
+                    import BigWorld
+                    p = BigWorld.player()
+                    if p is not None:
+                        pkg = getattr(p, 'dtsAppearancePackage', None)
+                        ilist = getattr(pkg, 'itemList', {}) if pkg else {}
+                        if ciid in ilist or str(ciid) in ilist:
+                            return 1
+                        eq = getattr(p, 'dtsVehicleAppearanceList', None)
+                        if eq and (ciid in eq or str(ciid) in eq):
+                            return 1
                 except Exception:
                     pass
                 return orig_cnt_fn(iid)
@@ -67185,12 +67388,11 @@ def _dh_install_vehicle_master_hooks():
                             ciid = int(iid)
                             pkg = getattr(self, 'dtsAppearancePackage', None)
                             ilist = getattr(pkg, 'itemList', {}) if pkg else {}
-                            eq = set(getattr(self, 'dtsVehicleAppearanceList', []) or [])
-                            if ciid in _VEHICLE_FAMILY_MAP:
-                                base_id, chain = _VEHICLE_FAMILY_MAP[ciid]
-                                for tier in chain:
-                                    if tier in ilist or str(tier) in ilist or tier in eq:
-                                        return 1
+                            if ciid in ilist or str(ciid) in ilist:
+                                return 1
+                            eq = getattr(self, 'dtsVehicleAppearanceList', None)
+                            if eq and (ciid in eq or str(ciid) in eq):
+                                return 1
                         except Exception:
                             pass
                         return orig_perm(self, iid)
@@ -67236,68 +67438,120 @@ def _dh_install_vehicle_appearance_preload_hook():
 
                 _dh_ensure_synthetic_props()
 
-                # Family definitions: (cat_id, land_vid, chain_list)
-                # Category 0: Car, Category 1: Motorcycle, Category 11: Bike/Skateboard
-                chains = [
-                    (0, 31002, [140406, 140404, 140403]),       # Monster Truck
-                    (1, 25010, [140077, 140076]),              # Darksteel Bike
-                    (1, 25000, [142006, 142005, 142004]),      # Golden Flash
-                    (1, 25000, [142013, 142012, 142011]),      # Shadowfax
-                    (11, 910043, [142008, 142007]),             # Velociraptor
-                    (11, 910043, [140074, 140073]),             # Summer Bicycle
-                ]
+                # Full vehicle evolution chains mapped by land_vid
+                chains_by_vid = {}
+                for land_vid, chain in (
+                    (25000, [140035, 140031]),                       # Nova / Supernova
+                    (25000, [140013, 140010]),                       # Spark / Thunderbird
+                    (25000, [140024, 140021]),                       # Twister / Storm
+                    (25000, [142030, 142029, 142028]),               # Burst Sedan
+                    (25000, [140051, 140048]),                       # Hunting Off-road
+                    (25000, [142006, 142005, 142004]),               # Golden Flash
+                    (25000, [142013, 142012, 142011]),               # Shadowfax
+                    (31002, [140406, 140404, 140403]),               # Monster Truck
+                    (31002, [140046, 140041]),                       # Frosty Frills
+                    (31002, [140914, 140911]),                       # Warjeep
+                    (25001, [140224, 140223, 140221]),               # Subjugator
+                    (25001, [140061, 140056]),                       # Hovering Car
+                    (31004, [142003, 140241]),                       # Burst Buggy / Deathmobile
+                    (25010, [140077, 140076]),                       # Darksteel Bike
+                    (25010, [140214, 140211]),                       # Pegasus
+                    (25010, [140205, 140202]),                       # Blazing Flash
+                    (25003, [140905, 140902]),                       # Reign of Fire / 5 Star Ride
+                    (125101, [140065, 140064, 140062]),             # Dynamic Streamer Skateboard
+                    (910043, [142008, 142007]),                     # Velociraptor
+                    (910043, [140074, 140073]),                     # Summer Bicycle
+                ):
+                    chains_by_vid.setdefault(land_vid, []).append(chain)
 
                 if isinstance(ret, dict):
-                    # Group chains by (cat_id, land_vid) to properly handle shared land_vid like 910043
-                    grouped_chains = {}
-                    for cat_id, land_vid, chain in chains:
-                        grouped_chains.setdefault((cat_id, land_vid), []).append(chain)
-
-                    for (cat_id, land_vid), family_chains in grouped_chains.items():
-                        cat_dict = ret.get(cat_id) or ret.get(str(cat_id))
+                    for cat_key, cat_dict in ret.items():
                         if not isinstance(cat_dict, dict):
                             continue
+                        for land_vid, family_chains in chains_by_vid.items():
+                            vid_key = land_vid if land_vid in cat_dict else (str(land_vid) if str(land_vid) in cat_dict else None)
+                            if vid_key is None:
+                                continue
 
-                        vid_key = land_vid if land_vid in cat_dict else (str(land_vid) if str(land_vid) in cat_dict else None)
-                        if vid_key is None:
-                            vid_key = land_vid
-                            cat_dict[vid_key] = []
+                            current_list = list(cat_dict.get(vid_key) or [])
 
-                        current_list = list(cat_dict.get(vid_key) or [])
-                        
-                        # Collect all lower tiers to remove and highest owned tiers to keep
-                        to_remove = set()
-                        to_keep = []
+                            all_chain_tiers = set()
+                            for chain in family_chains:
+                                all_chain_tiers.update(chain)
 
-                        for chain in family_chains:
-                            highest_owned = None
-                            for tier in chain:
-                                if _has(tier):
-                                    highest_owned = tier
-                                    break
-                            
-                            if highest_owned is not None:
-                                to_keep.append(highest_owned)
-                                to_remove.update(set(chain) - {highest_owned})
-                                # Ensure highest_owned is present in package
-                                if not (highest_owned in ilist or str(highest_owned) in ilist):
-                                    push = globals().get('_push_one_item')
-                                    if callable(push):
-                                        try:
-                                            push(player, highest_owned, 1, 0, package='appearance')
-                                        except Exception:
-                                            pass
-                            else:
-                                # Not owned: keep base model if in original list, remove synthetic higher tiers
-                                to_remove.update(chain[:-1])
+                            new_list = []
+                            seen = set()
 
-                        # Filter current_list
-                        filtered = [x for x in current_list if x not in to_remove]
-                        for keeper in to_keep:
-                            if keeper not in filtered:
-                                filtered.append(keeper)
+                            # Keep non-family items already in category
+                            for item in current_list:
+                                if item not in all_chain_tiers and item not in seen:
+                                    seen.add(item)
+                                    new_list.append(item)
 
-                        cat_dict[vid_key] = filtered
+                            # Show EVERY tier owned in each family (e.g. Level 1 AND Level 2)
+                            for chain in family_chains:
+                                owned_in_chain = []
+                                for tier in chain:
+                                    if _has(tier):
+                                        owned_in_chain.append(tier)
+                                    elif tier == 142008 and _has(140237):
+                                        owned_in_chain.append(tier)
+                                    elif tier == 140237 and _has(142008):
+                                        owned_in_chain.append(tier)
+
+                                # If upgraded tier is owned, automatically grant and display base tier as well (Lv 1 + Lv 2 rule)
+                                for higher_id, base_ids in (
+                                    (142008, (142007,)),
+                                    (140237, (142007,)),
+                                    (140035, (140031,)),
+                                    (140905, (140902,)),
+                                    (140404, (140403,)),
+                                    (140406, (140404, 140403)),
+                                    (140013, (140010,)),
+                                    (140024, (140021,)),
+                                    (142029, (142028,)),
+                                    (142030, (142029, 142028)),
+                                    (140051, (140048,)),
+                                    (140046, (140041,)),
+                                    (140914, (140911,)),
+                                    (140077, (140076,)),
+                                    (140214, (140211,)),
+                                    (140205, (140202,)),
+                                    (142005, (142004,)),
+                                    (142006, (142005, 142004)),
+                                    (142012, (142011,)),
+                                    (142013, (142012, 142011)),
+                                    (140074, (140073,)),
+                                    (140064, (140062,)),
+                                    (140065, (140064, 140062)),
+                                ):
+                                    if higher_id in owned_in_chain:
+                                        for bid in base_ids:
+                                            if bid in chain and bid not in owned_in_chain:
+                                                owned_in_chain.append(bid)
+
+                                if owned_in_chain:
+                                    # Show higher tiers first down to base tier
+                                    for tier in chain:
+                                        if tier in owned_in_chain and tier not in seen:
+                                            seen.add(tier)
+                                            new_list.append(tier)
+                                            # Ensure owned tier is in player's package
+                                            if not (tier in ilist or str(tier) in ilist):
+                                                push = globals().get('_push_one_item')
+                                                if callable(push):
+                                                    try:
+                                                        push(player, tier, 1, 0, package='appearance')
+                                                    except Exception:
+                                                        pass
+                                else:
+                                    # Not owned yet: show base tier so player can view it in catalog
+                                    base_tier = chain[-1]
+                                    if base_tier not in seen:
+                                        seen.add(base_tier)
+                                        new_list.append(base_tier)
+
+                            cat_dict[vid_key] = new_list
 
             except Exception as e:
                 pass
@@ -67383,5 +67637,21 @@ def _dh_install_theme_and_workshop_hooks():
 try:
     call_later(2.0, _dh_install_theme_and_workshop_hooks)
     call_later(5.0, _dh_install_theme_and_workshop_hooks)
+except Exception:
+    pass
+
+
+def _dh_rpc_share_addition(player, *args, **kwargs):
+    for cb_name in ('onQueryShareAddtionShow', 'onShareAddtionShow', 'onQueryShareAdditionShow'):
+        cb = getattr(player, cb_name, None)
+        if callable(cb):
+            try:
+                cb({})
+            except Exception:
+                pass
+    return True
+
+try:
+    RPC_HANDLERS['requestShareAddtionShow'] = _dh_rpc_share_addition
 except Exception:
     pass

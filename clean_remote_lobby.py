@@ -8243,7 +8243,7 @@ except Exception:
 # The /adm Seasons tab sends theme_mode (auto / off / <season>) and seasons {key: {window, enabled, lobby_theme}} in
 # rlLobby; the active season's lobby_theme goes on, the default comes back when no season is on.  Only the default
 # and the season themes are managed, so a lobby theme a player equipped of their own is left alone.
-_DH_DEFAULT_LOBBY_THEME = 279008
+_DH_DEFAULT_LOBBY_THEME = 270000
 _DH_SEASON_LOBBY = {          # built-in calendar, used until the console sends one
     'halloween': {'window': ('10-15', '11-02'), 'lobby_theme': 279009},   # Haunted Cabin
     'christmas': {'window': ('12-10', '01-05'), 'lobby_theme': 279007},   # Town Square
@@ -8335,7 +8335,7 @@ def _dh_lobbytheme_pass():
         current = int(getattr(player, 'dtsHallThemeID', 0) or 0)
         if current == target:
             return
-        managed = set([0, _DH_DEFAULT_LOBBY_THEME])
+        managed = set([0, _DH_DEFAULT_LOBBY_THEME, 270000, 279008])
         for key in set(list(_DH_SEASON_LOBBY) + list(_dh_season_rows())):
             managed.add(_dh_season_theme_of(key))
         if current not in managed:
@@ -9402,7 +9402,7 @@ def _dh_theme_remember(theme_id):
         import BigWorld
         player = BigWorld.player()
         if player is not None:
-            active_theme = theme_id if theme_id else 279008
+            active_theme = theme_id if theme_id else 270000
             player.dtsHallThemeID = active_theme
             if hasattr(player, 'onUpdateDtsHallThemeID'):
                 player.onUpdateDtsHallThemeID(active_theme)
@@ -66437,11 +66437,11 @@ try:
     _dh_orig_hall_theme_id = globals().get('hall_theme_id')
     def _dh_safe_hall_theme_id():
         own = _dh_theme_own()
-        if own:
+        if own and own != 279008:
             return own
         tid = _dh_orig_hall_theme_id() if callable(_dh_orig_hall_theme_id) else 0
-        if not tid or tid == 270000:
-            return 279008
+        if not tid or tid == 279008:
+            return 270000
         return tid
     hall_theme_id = _dh_safe_hall_theme_id
 
@@ -66616,7 +66616,7 @@ try:
 
                     if player is not None and not _dh_theme_switching[0]:
                         own = _dh_theme_own()
-                        target_theme = own if own else 279008
+                        target_theme = own if (own and own != 279008) else 270000
                         cur_theme = int(getattr(player, 'dtsHallThemeID', 0) or 0)
                         if cur_theme != target_theme:
                             _dh_theme_switching[0] = True
@@ -66944,11 +66944,16 @@ def _dh_party_main_ready(*args, **kwargs):
         BigWorld._dh_theme_suspended = False
         p = BigWorld.player()
         own = _dh_theme_own()
-        target_th = own if own else 279008
+        target_th = own if (own and own != 279008) else 270000
         if p is not None:
             cur_th = getattr(p, 'dtsHallThemeID', 0) or 0
-            if not cur_th or cur_th == 270000:
+            if not cur_th or cur_th == 279008:
                 p.dtsHallThemeID = target_th
+                if hasattr(p, 'onUpdateDtsHallThemeID'):
+                    try:
+                        p.onUpdateDtsHallThemeID(target_th)
+                    except Exception:
+                        pass
 
         # Unhide all sky and backdrop models when UIMain becomes ready
         hall = getattr(p, 'hallScene', None) if p else None

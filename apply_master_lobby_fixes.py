@@ -101,7 +101,7 @@ def _dh_ensure_synthetic_props():
                             new_dim = []
                             for entry in dim:
                                 ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [142007]
+                                ec.DISPLAY_PROP_LIST = [142008]
                                 ec.DISPLAY_POS_ID = 1224
                                 ec.SHOULD_SHOW = True
                                 new_dim.append(ec)
@@ -110,7 +110,7 @@ def _dh_ensure_synthetic_props():
                             base_dim = getattr(orig_get(142007).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
                             if base_dim:
                                 ec = copy.copy(base_dim[0])
-                                ec.DISPLAY_PROP_LIST = [142007]
+                                ec.DISPLAY_PROP_LIST = [142008]
                                 ec.DISPLAY_POS_ID = 1224
                                 ec.SHOULD_SHOW = True
                                 ptype.DISPLAY_IN_MODEL = [ec]
@@ -729,49 +729,48 @@ def _dh_install_vehicle_appearance_preload_hook():
 
                         current_list = list(cat_dict.get(vid_key) or [])
 
-                        tier_substitution = {}
-                        to_keep = []
+                        all_chain_tiers = set()
                         for chain in family_chains:
-                            highest_owned = None
-                            for tier in chain:
-                                if _has(tier):
-                                    highest_owned = tier
-                                    break
-                            
-                            if highest_owned is not None:
-                                to_keep.append(highest_owned)
-                                for tier in chain:
-                                    tier_substitution[tier] = highest_owned
-                                if not (highest_owned in ilist or str(highest_owned) in ilist):
-                                    push = globals().get('_push_one_item')
-                                    if callable(push):
-                                        try:
-                                            push(player, highest_owned, 1, 0, package='appearance')
-                                        except Exception:
-                                            pass
-                                    ask = globals().get('ask_backend')
-                                    if callable(ask):
-                                        try:
-                                            ask('appearanceCultivateCompound', [0, highest_owned, 0], {}, lambda reply: None)
-                                        except Exception:
-                                            pass
-                            else:
-                                base_tier = chain[-1]
-                                for tier in chain:
-                                    tier_substitution[tier] = base_tier
+                            all_chain_tiers.update(chain)
 
                         new_list = []
                         seen = set()
-                        for item in current_list:
-                            replaced = tier_substitution.get(item, item)
-                            if replaced not in seen:
-                                seen.add(replaced)
-                                new_list.append(replaced)
 
-                        for keeper in to_keep:
-                            if keeper not in seen:
-                                seen.add(keeper)
-                                new_list.append(keeper)
+                        # Keep non-family items already in category
+                        for item in current_list:
+                            if item not in all_chain_tiers and item not in seen:
+                                seen.add(item)
+                                new_list.append(item)
+
+                        # Show EVERY tier owned in each family (e.g. Level 1 AND Level 2)
+                        for chain in family_chains:
+                            owned_in_chain = [tier for tier in chain if _has(tier)]
+                            if owned_in_chain:
+                                # Show higher tiers first down to base tier
+                                for tier in chain:
+                                    if tier in owned_in_chain and tier not in seen:
+                                        seen.add(tier)
+                                        new_list.append(tier)
+                                        # Ensure owned tier is in player's package
+                                        if not (tier in ilist or str(tier) in ilist):
+                                            push = globals().get('_push_one_item')
+                                            if callable(push):
+                                                try:
+                                                    push(player, tier, 1, 0, package='appearance')
+                                                except Exception:
+                                                    pass
+                                            ask = globals().get('ask_backend')
+                                            if callable(ask):
+                                                try:
+                                                    ask('appearanceCultivateCompound', [0, tier, 0], {}, lambda reply: None)
+                                                except Exception:
+                                                    pass
+                            else:
+                                # Not owned yet: show base tier so player can view it in catalog
+                                base_tier = chain[-1]
+                                if base_tier not in seen:
+                                    seen.add(base_tier)
+                                    new_list.append(base_tier)
 
                         cat_dict[vid_key] = new_list
 
@@ -1049,6 +1048,93 @@ except Exception:
     if old_push_cult in content:
         content = content.replace(old_push_cult, new_push_cult)
         print('[lobby] Guaranteed item push in _dh_rpc_appearance_cultivate_compound')
+
+    
+    # Fast handler for requestShareAddtionShow: stops 23.3-second socket timeout on opening Depot
+    share_handler_str = '''
+def _dh_rpc_share_addition(player, *args, **kwargs):
+    for cb_name in ('onQueryShareAddtionShow', 'onShareAddtionShow', 'onQueryShareAdditionShow'):
+        cb = getattr(player, cb_name, None)
+        if callable(cb):
+            try:
+                cb({})
+            except Exception:
+                pass
+    return True
+
+try:
+    RPC_HANDLERS['requestShareAddtionShow'] = _dh_rpc_share_addition
+except Exception:
+    pass
+'''
+    if 'requestShareAddtionShow' not in content:
+        content = content + "\n" + share_handler_str
+        print('[lobby] Added requestShareAddtionShow fast RPC handler (Depot freeze eliminated)')
+
+        # 5f. Remove lower tier vehicle wipe in _dh_clean_depot_duplicates
+    old_wipe_block = '''        for target_id, src_ids in evo_rules:
+            is_target_owned = _is_owned(target_id) or (target_id in eq_vehicles)
+            if is_target_owned:
+                if not _is_owned(target_id):
+                    push_fn = globals().get('_push_one_item')
+                    if callable(push_fn):
+                        try:
+                            push_fn(player, target_id, 1, 0, package='appearance')
+                        except Exception:
+                            pass
+                for s_id in src_ids:
+                    if _is_owned(s_id):
+                        cleaned += _wipe_id(s_id)'''
+
+    new_wipe_block = '''        for target_id, src_ids in evo_rules:
+            is_target_owned = _is_owned(target_id) or (target_id in eq_vehicles)
+            if is_target_owned:
+                if not _is_owned(target_id):
+                    push_fn = globals().get('_push_one_item')
+                    if callable(push_fn):
+                        try:
+                            push_fn(player, target_id, 1, 0, package='appearance')
+                        except Exception:
+                            pass'''
+
+    if old_wipe_block in content:
+        content = content.replace(old_wipe_block, new_wipe_block)
+        print('[lobby] Preserved lower-tier vehicles in _dh_clean_depot_duplicates (both Lv1 and Lv2 kept)')
+
+    
+    # 5g. Consume only extra duplicate in _dh_rpc_appearance_cultivate_compound (retain 1x Lv1)
+    old_cult_remove = '''    # 1. Deduct cost / source appearance item (ALL copies)
+    if effective_src:
+        try:
+            _dh_remove_all_appearance_copies(player, effective_src)
+        except Exception:
+            log_error('local-cultivate-remove-src-error', src_id=effective_src)
+    if src_id and src_id != target_id and src_id != effective_src:
+        try:
+            _dh_remove_all_appearance_copies(player, src_id)
+        except Exception:
+            pass
+    if target_id in _tune_src_map:
+        _dh_remove_all_appearance_copies(player, _tune_src_map[target_id])'''
+
+    new_cult_remove = '''    # 1. Deduct cost: consume extra copy only, preserve 1x source item
+    try:
+        pkg = getattr(player, 'dtsAppearancePackage', None)
+        ilist = getattr(pkg, 'itemList', {}) if pkg else {}
+        for s_check in (effective_src, src_id):
+            if not s_check:
+                continue
+            entries = ilist.get(s_check) or ilist.get(str(s_check))
+            if isinstance(entries, dict) and len(entries) > 1:
+                uuids = list(entries.keys())
+                player.onDelDtsAppearanceItem(int(s_check), uuids[-1])
+                entries.pop(uuids[-1], None)
+    except Exception:
+        pass'''
+
+    if old_cult_remove in content:
+        content = content.replace(old_cult_remove, new_cult_remove)
+        print('[lobby] Preserved 1x source vehicle on cultivate compound')
 
     with open('clean_remote_lobby.py', 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)

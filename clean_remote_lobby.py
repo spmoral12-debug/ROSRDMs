@@ -9721,21 +9721,29 @@ def _dh_ensure_synthetic_props():
         if 142008 not in _dh_synthetic_props:
             raptor_lv1 = None
             try:
-                raptor_lv1 = orig_get(142007)
+                raptor_lv1 = orig_get(140237)
             except Exception:
-                _dh_patch_whitelist_stub()
+                pass
+            if raptor_lv1 is None:
                 try:
                     raptor_lv1 = orig_get(142007)
                 except Exception:
-                    raptor_lv1 = None
+                    _dh_patch_whitelist_stub()
+                    try:
+                        raptor_lv1 = orig_get(142007)
+                    except Exception:
+                        raptor_lv1 = None
             if raptor_lv1 is not None:
                 raptor_lv2 = copy.copy(raptor_lv1)
                 ptype = copy.copy(getattr(raptor_lv1, 'PROP_TYPE', None))
                 if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.mtg'),
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
+                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
                                       ('DISPLAY_USING_VEHICLE_ID', 910059),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
+                                      ('LAND_VEHICLE_ID', 910043),
+                                      ('VEHICLE_ID', 910043),
+                                      ('TRANSFER_LAND_VEHICLE_ID', 910059),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
                         try:
                             setattr(ptype, attr, val)
                         except Exception:
@@ -9746,7 +9754,7 @@ def _dh_ensure_synthetic_props():
                             new_dim = []
                             for entry in dim:
                                 ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [142007]
+                                ec.DISPLAY_PROP_LIST = [142008, 140237]
                                 new_dim.append(ec)
                             ptype.DISPLAY_IN_MODEL = new_dim
                     except Exception:
@@ -9755,8 +9763,8 @@ def _dh_ensure_synthetic_props():
                 for attr, val in (('NAME', 'Velociraptor Lv. 2'),
                                   ('QUALITY', 5),
                                   ('SCORE', 300),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
                     try:
                         setattr(raptor_lv2, attr, val)
                     except Exception:
@@ -67095,7 +67103,8 @@ _VEHICLE_ICON_MAP = {
     140404: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png',
     140406: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_03.png',
     142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
+    142008: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
+    140237: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
     140076: 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png',
     140077: 'ui/images/dts_appearance/vehiclefull/img_xuantiemotuo_01.png',
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',

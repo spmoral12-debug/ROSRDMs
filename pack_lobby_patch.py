@@ -99,7 +99,8 @@ runner = '''def _dh_run():
 _dh_run()
 '''
 
-packed_text = '\r\n'.join(header) + '\r\n' + runner
+runner_lf = runner.replace('\r\n', '\n')
+packed_text = '\n'.join(header) + '\n' + runner_lf
 packed_bytes = packed_text.encode('utf-8')
 
 print("Writing remote-lobby.py (%d bytes)..." % len(packed_bytes))

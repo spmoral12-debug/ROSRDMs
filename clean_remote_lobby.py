@@ -66192,31 +66192,101 @@ try:
         return tid
     hall_theme_id = _dh_safe_hall_theme_id
 
-    # Clean native backdrop passthroughs: respects the game's hiding of backdrops
-    # when inspecting Firearms, Vehicles, or Clothes in Depot (preserving dark smoke/embers)
-    _dh_orig_hide_native = globals().get('hide_native_hall_models')
-    def _dh_hide_native_safe(scene):
-        if callable(_dh_orig_hide_native):
-            return _dh_orig_hide_native(scene)
-        return 0
-    hide_native_hall_models = _dh_hide_native_safe
-
-    _dh_orig_show_backdrop = globals().get('show_lobby_backdrop')
+    # Clean native backdrop passthroughs:
+    # When inspecting Firearms, Vehicles, or Clothes in Depot: hides backdrops so dark smoke showroom renders cleanly.
+    # When in UIMain (main lobby): ALWAYS ensure sky and backdrop planes are visible, preventing pitch black sky and clay floor!
     def _dh_show_lobby_backdrop_safe(show):
-        if callable(_dh_orig_show_backdrop):
-            try:
-                return _dh_orig_show_backdrop(show)
-            except Exception:
+        try:
+            import BigWorld
+            player = BigWorld.player()
+            hall = getattr(player, 'hallScene', None) if player else None
+            scene = getattr(hall, '_native_scene', None) if hall else None
+            if scene is None:
                 return 0
-        return 0
+            
+            # Reset retirement tracking when showing lobby
+            if show:
+                _lobby['native_hall_models'] = []
+                _lobby['retired_hall_models'] = []
+                _lobby['backdrop_hidden'] = False
+            else:
+                _lobby['backdrop_hidden'] = True
+
+            changed = 0
+            for model, name in scene_models(scene):
+                name_lower = str(name).lower()
+                is_bg = is_backdrop_name(name) or any(k in name_lower for k in ('plane_bg', 'sky', 'mountain', 'road', 'city', 'building', 'terrain'))
+                if not is_bg:
+                    continue
+
+                # The offline motor vehicle should always stay hidden in lobby
+                if 'motor' in name_lower or 'plane_motor' in name_lower:
+                    try:
+                        if getattr(model, 'visible', False):
+                            model.visible = False
+                            changed += 1
+                    except Exception:
+                        pass
+                    continue
+
+                try:
+                    vis = bool(show)
+                    if bool(getattr(model, 'visible', False)) != vis:
+                        model.visible = vis
+                        changed += 1
+                except Exception:
+                    continue
+            return changed
+        except Exception:
+            return 0
     show_lobby_backdrop = _dh_show_lobby_backdrop_safe
+    globals()['show_lobby_backdrop'] = _dh_show_lobby_backdrop_safe
+
+    # Neutralize ensure_self_model for existing players:
+    # The male creation dummy (SHOW_MODEL_PATH) must only ever appear on UISelectCharacter for brand new accounts!
+    _dh_orig_ensure_self_model = globals().get('ensure_self_model')
+    def _dh_safe_ensure_self_model(main_ui):
+        try:
+            saved = saved_character() if callable(globals().get('saved_character')) else None
+            if saved is not None:
+                return
+            import BigWorld
+            p = BigWorld.player()
+            if p is not None and (getattr(p, 'nickname', None) or getattr(p, 'baseNickname', None)):
+                return
+        except Exception:
+            pass
+        if callable(_dh_orig_ensure_self_model):
+            return _dh_orig_ensure_self_model(main_ui)
+    ensure_self_model = _dh_safe_ensure_self_model
+    globals()['ensure_self_model'] = _dh_safe_ensure_self_model
+
+    # Wrap HallTheme._clearOldTheme so a destroyed space object from battle never aborts theme creation
+    try:
+        import sys
+        for mod_name in ('ui.main.HallTheme', 'HallTheme'):
+            mod = sys.modules.get(mod_name)
+            cls = getattr(mod, 'HallTheme', None) if mod is not None else None
+            if cls is not None:
+                orig_c = getattr(cls, '_clearOldTheme', None)
+                if callable(orig_c) and not getattr(orig_c, '_dh_safe_clear', False):
+                    def _dh_safe_clear_old(self, *a, **k):
+                        try:
+                            return orig_c(self, *a, **k)
+                        except Exception:
+                            return None
+                    _dh_safe_clear_old._dh_safe_clear = True
+                    cls._clearOldTheme = _dh_safe_clear_old
+    except Exception:
+        pass
 
     # Periodic Lobby 3D Scene loop: maintains equipped lobby theme on UIMain,
-    # but strictly suspends while inspecting firearms, vehicles, clothes, workshop, or mall
+    # unhides sky and environment planes, and purges stray male creation dummy models
+    _dh_theme_switching = [False]
     def _dh_lobby_scene_watchdog():
         try:
             if _dh_in_lobby():
-                import Globals
+                import Globals, BigWorld
                 ui_mgr = getattr(Globals, 'uiMgr', None)
                 _inspecting = False
                 if ui_mgr is not None:
@@ -66242,15 +66312,58 @@ try:
                                 _inspecting = True
                                 break
 
+                player = BigWorld.player() if 'BigWorld' in globals() or BigWorld is not None else None
+                hall = getattr(player, 'hallScene', None) if player else None
+                scene = getattr(hall, '_native_scene', None) if hall else None
+                main_ui = getattr(ui_mgr, 'UIMain', None) if ui_mgr else None
+
+                # Purge stray male creation model from UIMain and scene
+                if main_ui and player:
+                    is_female = False
+                    try:
+                        c_type = player.getCharacterType() if hasattr(player, 'getCharacterType') else getattr(player, 'characterType', 0)
+                        data = character_data(c_type) if callable(globals().get('character_data')) else None
+                        if int(getattr(data, 'GENDER', 1) or 1) == 2 or 'female' in str(getattr(player, 'nickname', '')).lower():
+                            is_female = True
+                    except Exception:
+                        pass
+                    
+                    m_dict = getattr(main_ui, 'models', None)
+                    if isinstance(m_dict, dict):
+                        for gk, entry in list(m_dict.items()):
+                            m = entry.get('model') if isinstance(entry, dict) else entry
+                            if m is not None and m is not getattr(hall, 'model', None):
+                                m_fn = str(getattr(m, 'filename', '')).lower()
+                                if 'dataosha_male' in m_fn or 'male.gim' in m_fn or 'male_show_new' in m_fn:
+                                    if is_female or gk not in _team_gids(player):
+                                        try:
+                                            m.visible = False
+                                        except Exception:
+                                            pass
+                                        try:
+                                            destroy_model(m)
+                                        except Exception:
+                                            pass
+                                        m_dict.pop(gk, None)
+
                 # Only manage theme and scene backdrop when player is in the main lobby, NOT inspecting!
-                if not _inspecting:
-                    import BigWorld
-                    player = BigWorld.player()
-                    if player is not None:
+                if not _inspecting and scene is not None:
+                    # Unhide sky and backdrop planes in UIMain
+                    for model, name in scene_models(scene):
+                        name_lower = str(name).lower()
+                        if any(k in name_lower for k in ('plane_bg', 'sky', 'mountain', 'road', 'city', 'building', 'terrain')):
+                            if 'motor' not in name_lower and not getattr(model, 'visible', False):
+                                try:
+                                    model.visible = True
+                                except Exception:
+                                    pass
+
+                    if player is not None and not _dh_theme_switching[0]:
                         own = _dh_theme_own()
                         target_theme = own if own else 279008
-                        cur_theme = getattr(player, 'dtsHallThemeID', 0) or 0
+                        cur_theme = int(getattr(player, 'dtsHallThemeID', 0) or 0)
                         if cur_theme != target_theme:
+                            _dh_theme_switching[0] = True
                             BigWorld._dh_theme_suspended = False
                             player.dtsHallThemeID = target_theme
                             if hasattr(player, 'onUpdateDtsHallThemeID'):
@@ -66258,6 +66371,7 @@ try:
                                     player.onUpdateDtsHallThemeID(target_theme)
                                 except Exception:
                                     pass
+                            call_later(5.0, lambda: _dh_theme_switching.__setitem__(0, False))
         except Exception:
             pass
         call_later(2.0, _dh_lobby_scene_watchdog)
@@ -66283,19 +66397,31 @@ def _dh_ui_main_models():
     """Return all 3D character models currently managed by UIMain (self + teammates)."""
     kept = []
     try:
-        import Globals
+        import Globals, BigWorld
+        player = BigWorld.player()
+        is_female = False
+        try:
+            c_type = player.getCharacterType() if hasattr(player, 'getCharacterType') else getattr(player, 'characterType', 0)
+            data = character_data(c_type) if callable(globals().get('character_data')) else None
+            if int(getattr(data, 'GENDER', 1) or 1) == 2 or 'female' in str(getattr(player, 'nickname', '')).lower():
+                is_female = True
+        except Exception:
+            pass
+
         main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
         if main_ui is None:
             return kept
         models_dict = getattr(main_ui, 'models', None)
         if isinstance(models_dict, dict):
-            for entry in models_dict.values():
-                if isinstance(entry, dict):
-                    m = entry.get('model')
-                    if m is not None:
-                        kept.append(m)
-                elif entry is not None:
-                    kept.append(entry)
+            for gid_k, entry in models_dict.items():
+                m = entry.get('model') if isinstance(entry, dict) else entry
+                if m is not None:
+                    # Never keep stray male creation model for female player
+                    if is_female:
+                        m_fn = str(getattr(m, 'filename', '')).lower()
+                        if 'dataosha_male' in m_fn or 'male.gim' in m_fn or 'male_show_new' in m_fn:
+                            continue
+                    kept.append(m)
     except Exception:
         pass
     return kept
@@ -66303,31 +66429,79 @@ def _dh_ui_main_models():
 
 def _dh_safe_clear_stray_characters(player=None):
     """Same as clear_stray_characters, but keeps all teammate 3D models in UIMain.models
-    so returning from a match in a party never destroys the teammate's lobby character."""
+    and purges stray male creation dummy models."""
     try:
-        import BigWorld
+        import BigWorld, Globals
         player = player or BigWorld.player()
         hall = getattr(player, 'hallScene', None)
         if not isinstance(hall, LocalHallScene):
             return 0
+
+        is_female = False
+        try:
+            c_type = player.getCharacterType() if hasattr(player, 'getCharacterType') else getattr(player, 'characterType', 0)
+            data = character_data(c_type) if callable(globals().get('character_data')) else None
+            if int(getattr(data, 'GENDER', 1) or 1) == 2 or 'female' in str(getattr(player, 'nickname', '')).lower():
+                is_female = True
+        except Exception:
+            pass
+
+        # Purge stray male creation model from UIMain
+        main_ui = getattr(getattr(Globals, 'uiMgr', None), 'UIMain', None)
+        models_dict = getattr(main_ui, 'models', None) if main_ui else None
+        if isinstance(models_dict, dict):
+            for gk, entry in list(models_dict.items()):
+                m = entry.get('model') if isinstance(entry, dict) else entry
+                if m is not None and m is not hall.__dict__.get('model'):
+                    m_fn = str(getattr(m, 'filename', '')).lower()
+                    if 'dataosha_male' in m_fn or 'male.gim' in m_fn or 'male_show_new' in m_fn:
+                        if is_female or gk not in _team_gids(player):
+                            try:
+                                m.visible = False
+                            except Exception:
+                                pass
+                            try:
+                                destroy_model(m)
+                            except Exception:
+                                pass
+                            models_dict.pop(gk, None)
+
         keep = ([hall.__dict__.get('model')] +
                 [entry[0] for entry in (hall.__dict__.get('_rl_model_cache') or {}).values()] +
                 _dh_ui_main_models())
         stray = []
         for model, name in scene_models(hall._native_scene):
-            if 'dataosha' not in name or any(model is kept for kept in keep if kept is not None):
+            name_lower = str(name).lower()
+            if 'dataosha' not in name_lower:
                 continue
-            if name.endswith(CHARACTER_MODEL_ENDINGS) or at_spot(model, SELECT_SCREEN_SPOT):
+
+            # Stray male model standing in center:
+            if 'dataosha_male' in name_lower:
+                if is_female and model is not hall.__dict__.get('model'):
+                    if not any(model is kept for kept in _dh_ui_main_models() if kept is not None):
+                        stray.append(model)
+                        continue
+                elif model is not hall.__dict__.get('model') and at_spot(model, (0.0, 0.0, 0.0), 3.0):
+                    if not any(model is kept for kept in _dh_ui_main_models() if kept is not None):
+                        stray.append(model)
+                        continue
+
+            if any(model is kept for kept in keep if kept is not None):
+                continue
+            if name_lower.endswith(CHARACTER_MODEL_ENDINGS) or at_spot(model, SELECT_SCREEN_SPOT):
                 stray.append(model)
-        kept = game_preloaded_models()
+
+        kept = game_preloaded_models() if callable(globals().get('game_preloaded_models')) else []
         for model in stray:
-            if any(model is other for other in kept):
+            try:
+                model.visible = False
+            except Exception:
+                pass
+            if not any(model is other for other in kept):
                 try:
-                    model.visible = False
+                    destroy_model(model)
                 except Exception:
                     pass
-            else:
-                destroy_model(model)
         if stray:
             log('local-lobby-stray-characters-cleared', count=len(stray))
         return len(stray)
@@ -66517,24 +66691,34 @@ def _dh_party_main_ready(*args, **kwargs):
         target_th = own if own else 279008
         if p is not None:
             cur_th = getattr(p, 'dtsHallThemeID', 0) or 0
-            if not cur_th or (not own and cur_th == 270000):
+            if not cur_th or cur_th == 270000:
                 p.dtsHallThemeID = target_th
-                if hasattr(p, 'onUpdateDtsHallThemeID'):
-                    try:
-                        p.onUpdateDtsHallThemeID(target_th)
-                    except Exception:
-                        pass
-        if target_th == 279008:
-            hall = getattr(p, 'hallScene', None) if p else None
-            scene = getattr(hall, '_native_scene', None) if hall else None
-            if scene is not None:
-                for model, name in scene_models(scene):
-                    name_lower = str(name).lower()
-                    if any(k in name_lower for k in ('plane_bg', 'motor', 'background', 'road', 'mountain', 'sky')):
+
+        # Unhide all sky and backdrop models when UIMain becomes ready
+        hall = getattr(p, 'hallScene', None) if p else None
+        scene = getattr(hall, '_native_scene', None) if hall else None
+        if scene is not None:
+            for model, name in scene_models(scene):
+                name_lower = str(name).lower()
+                if any(k in name_lower for k in ('plane_bg', 'sky', 'mountain', 'road', 'city', 'building', 'terrain')):
+                    if 'motor' not in name_lower:
                         try:
                             model.visible = True
                         except Exception:
                             pass
+        _lobby['retired_hall_models'] = []
+        _lobby['native_hall_models'] = []
+        _lobby['backdrop_hidden'] = False
+
+        # Clear select character preloaded model so it cannot leak
+        try:
+            import ui.UISelectCharacter as select_module
+            select_module._rl_preloaded_model = None
+        except Exception:
+            pass
+
+        # Also purge any stray characters right now
+        _dh_safe_clear_stray_characters(p)
     except Exception:
         pass
     res = _dh_orig_main_ready(*args, **kwargs) if callable(_dh_orig_main_ready) else None
@@ -66579,6 +66763,15 @@ def _dh_guarded_start_local_lobby(*args, **kwargs):
                         BigWorld.destroyEntity(ent.id)
                     except Exception:
                         pass
+    except Exception:
+        pass
+    try:
+        # Reset backdrop retirement on return to lobby
+        _lobby['retired_hall_models'] = []
+        _lobby['native_hall_models'] = []
+        _lobby['backdrop_hidden'] = False
+        import ui.UISelectCharacter as select_module
+        select_module._rl_preloaded_model = None
     except Exception:
         pass
     if callable(_dh_orig_start_local_lobby):

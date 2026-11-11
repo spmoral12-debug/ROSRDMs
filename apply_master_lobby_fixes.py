@@ -71,12 +71,12 @@ def _dh_ensure_synthetic_props():
         if 142008 not in _dh_synthetic_props:
             raptor_src = None
             try:
-                raptor_src = orig_get(140237)
+                raptor_src = orig_get(142007)
             except Exception:
-                pass
+                raptor_src = None
             if raptor_src is None:
                 try:
-                    raptor_src = orig_get(142007)
+                    raptor_src = orig_get(140237)
                 except Exception:
                     raptor_src = None
             if raptor_src is not None:
@@ -85,12 +85,12 @@ def _dh_ensure_synthetic_props():
                 if ptype is not None:
                     for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
                                       ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
-                                      ('DISPLAY_USING_VEHICLE_ID', 131005),
+                                      ('DISPLAY_USING_VEHICLE_ID', 910059),
                                       ('LAND_VEHICLE_ID', 910043),
                                       ('VEHICLE_ID', 910043),
                                       ('SCORE', 300),
-                                      ('TRANSFER_LAND_VEHICLE_ID', 125111),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
+                                      ('TRANSFER_LAND_VEHICLE_ID', 910059),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
                         try:
                             setattr(ptype, attr, val)
                         except Exception:
@@ -101,8 +101,8 @@ def _dh_ensure_synthetic_props():
                             new_dim = []
                             for entry in dim:
                                 ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [140237]
-                                ec.DISPLAY_POS_ID = 403
+                                ec.DISPLAY_PROP_LIST = [142007]
+                                ec.DISPLAY_POS_ID = 1224
                                 ec.SHOULD_SHOW = True
                                 new_dim.append(ec)
                             ptype.DISPLAY_IN_MODEL = new_dim
@@ -110,8 +110,8 @@ def _dh_ensure_synthetic_props():
                             base_dim = getattr(orig_get(142007).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
                             if base_dim:
                                 ec = copy.copy(base_dim[0])
-                                ec.DISPLAY_PROP_LIST = [140237]
-                                ec.DISPLAY_POS_ID = 403
+                                ec.DISPLAY_PROP_LIST = [142007]
+                                ec.DISPLAY_POS_ID = 1224
                                 ec.SHOULD_SHOW = True
                                 ptype.DISPLAY_IN_MODEL = [ec]
                     except Exception:
@@ -119,25 +119,14 @@ def _dh_ensure_synthetic_props():
                     raptor_lv2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Velociraptor Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')):
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png')):
                     try:
                         setattr(raptor_lv2, attr, val)
                     except Exception:
                         pass
                 _dh_synthetic_props[142008] = raptor_lv2
-
-        # Ensure native 140237 has English name & display icon
-        try:
-            r2_nat = orig_get(140237)
-            if r2_nat is not None:
-                r2_copy = copy.copy(r2_nat)
-                setattr(r2_copy, 'NAME', 'Velociraptor Lv. 2')
-                setattr(r2_copy, 'ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png')
-                setattr(r2_copy, 'HIDE_IN_UI', False)
-                _dh_synthetic_props[140237] = r2_copy
-        except Exception:
-            pass
+                _dh_synthetic_props[140237] = raptor_lv2
 
         # 3. Supernova (140035) Unhide & 3D Showroom Turntable Display
         try:
@@ -550,8 +539,8 @@ _VEHICLE_ICON_MAP = {
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
     142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
-    140237: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
+    142008: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
+    140237: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',
@@ -599,8 +588,16 @@ def _dh_install_vehicle_master_hooks():
             def _dh_hooked_get_cnt(iid):
                 try:
                     ciid = int(iid)
-                    if ciid in _VEHICLE_FAMILY_MAP:
-                        return 1
+                    import BigWorld
+                    p = BigWorld.player()
+                    if p is not None:
+                        pkg = getattr(p, 'dtsAppearancePackage', None)
+                        ilist = getattr(pkg, 'itemList', {}) if pkg else {}
+                        if ciid in ilist or str(ciid) in ilist:
+                            return 1
+                        eq = getattr(p, 'dtsVehicleAppearanceList', None)
+                        if eq and (ciid in eq or str(ciid) in eq):
+                            return 1
                 except Exception:
                     pass
                 return orig_cnt_fn(iid)
@@ -632,12 +629,11 @@ def _dh_install_vehicle_master_hooks():
                             ciid = int(iid)
                             pkg = getattr(self, 'dtsAppearancePackage', None)
                             ilist = getattr(pkg, 'itemList', {}) if pkg else {}
-                            eq = set(getattr(self, 'dtsVehicleAppearanceList', []) or [])
-                            if ciid in _VEHICLE_FAMILY_MAP:
-                                base_id, chain = _VEHICLE_FAMILY_MAP[ciid]
-                                for tier in chain:
-                                    if tier in ilist or str(tier) in ilist or tier in eq:
-                                        return 1
+                            if ciid in ilist or str(ciid) in ilist:
+                                return 1
+                            eq = getattr(self, 'dtsVehicleAppearanceList', None)
+                            if eq and (ciid in eq or str(ciid) in eq):
+                                return 1
                         except Exception:
                             pass
                         return orig_perm(self, iid)
@@ -751,6 +747,12 @@ def _dh_install_vehicle_appearance_preload_hook():
                                     if callable(push):
                                         try:
                                             push(player, highest_owned, 1, 0, package='appearance')
+                                        except Exception:
+                                            pass
+                                    ask = globals().get('ask_backend')
+                                    if callable(ask):
+                                        try:
+                                            ask('appearanceCultivateCompound', [0, highest_owned, 0], {}, lambda reply: None)
                                         except Exception:
                                             pass
                             else:
@@ -918,6 +920,135 @@ except Exception:
     if knows_pat.search(content):
         content = knows_pat.sub(new_knows, content, count=1)
         print('[lobby] Updated _dh_client_knows_item to use _VEHICLE_FAMILY_MAP')
+
+    
+    # =========================================================================
+    # PART 5: Depot lag debounce & Workshop tune server persistence
+    # =========================================================================
+    # 5a. Strict _is_owned and debounce in _dh_clean_depot_duplicates
+    old_is_owned = '''        def _is_owned(iid):
+            if iid in item_list or str(iid) in item_list:
+                return True
+            cnt_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
+            if callable(cnt_fn) and cnt_fn(int(iid)) > 0:
+                return True
+            return False'''
+
+    new_is_owned = '''        def _is_owned(iid):
+            return (iid in item_list or str(iid) in item_list)'''
+
+    if old_is_owned in content:
+        content = content.replace(old_is_owned, new_is_owned)
+        print('[lobby] Fixed _is_owned in _dh_clean_depot_duplicates (no false positives)')
+
+    # 5b. Debounce at beginning of _dh_clean_depot_duplicates
+    old_clean_start = '''        pkg = getattr(player, 'dtsAppearancePackage', None)
+        if pkg is None:
+            return 0
+        item_list = getattr(pkg, 'itemList', None)
+        if not isinstance(item_list, dict):
+            return 0
+
+        cleaned = 0'''
+
+    new_clean_start = '''        import time as _time
+        now = _time.time()
+        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
+            return 0
+        player._dh_last_depot_clean_time = now
+
+        pkg = getattr(player, 'dtsAppearancePackage', None)
+        if pkg is None:
+            return 0
+        item_list = getattr(pkg, 'itemList', None)
+        if not isinstance(item_list, dict):
+            return 0
+
+        cleaned = 0'''
+
+    if old_clean_start in content:
+        content = content.replace(old_clean_start, new_clean_start)
+        print('[lobby] Added 5s debounce to _dh_clean_depot_duplicates (depot lag fixed)')
+
+    # 5c. Only refresh UI when cleaned > 0
+    old_ui_refresh = '''        # 3. Refresh appearance UIs if open
+        try:
+            import Globals
+            ui_mgr = getattr(Globals, 'uiMgr', None)
+            if ui_mgr:
+                for ui_name in ('UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2'):
+                    scr = getattr(ui_mgr, ui_name, None)
+                    if scr and getattr(scr, 'is_enter', False):
+                        for mname in ('refreshAppearanceList',):
+                            fn = getattr(scr, mname, None)
+                            if callable(fn):
+                                try:
+                                    fn()
+                                except Exception:
+                                    pass
+        except Exception:
+            pass'''
+
+    new_ui_refresh = '''        # 3. Refresh appearance UIs if open
+        if cleaned > 0:
+            try:
+                import Globals
+                ui_mgr = getattr(Globals, 'uiMgr', None)
+                if ui_mgr:
+                    for ui_name in ('UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2'):
+                        scr = getattr(ui_mgr, ui_name, None)
+                        if scr and getattr(scr, 'is_enter', False):
+                            for mname in ('refreshAppearanceList',):
+                                fn = getattr(scr, mname, None)
+                                if callable(fn):
+                                    try:
+                                        fn()
+                                    except Exception:
+                                        pass
+            except Exception:
+                pass'''
+
+    if old_ui_refresh in content:
+        content = content.replace(old_ui_refresh, new_ui_refresh)
+        print('[lobby] Conditional UI refresh in _dh_clean_depot_duplicates')
+
+    # 5d. Replace call_pyserver with ask_backend in _dh_rpc_appearance_cultivate_compound
+    old_call_pyserver = '''    # 6. Notify backend server if reachable to persist in database
+    try:
+        call_pyserver('appearanceCultivateCompound', (src_id, target_id, flag), kwargs)
+    except Exception:
+        pass'''
+
+    new_call_pyserver = '''    # 6. Notify backend server if reachable to persist in database
+    try:
+        ask = globals().get('ask_backend')
+        if callable(ask):
+            ask('appearanceCultivateCompound', [src_id, target_id, flag], kwargs, lambda reply: None)
+    except Exception:
+        pass'''
+
+    if old_call_pyserver in content:
+        content = content.replace(old_call_pyserver, new_call_pyserver)
+        print('[lobby] Replaced call_pyserver with ask_backend in _dh_rpc_appearance_cultivate_compound')
+
+    # 5e. Ensure target_id is always pushed in cultivate compound
+    old_push_cult = '''    # 3. Add target appearance item to player's package (1 copy only)
+    try:
+        own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
+        if not callable(own_fn) or own_fn(target_id) == 0:
+            _push_one_item(player, target_id, 1, 0, package='appearance')
+    except Exception:
+        log_error('local-cultivate-push-target-error', target_id=target_id)'''
+
+    new_push_cult = '''    # 3. Add target appearance item to player's package (1 copy only)
+    try:
+        _push_one_item(player, target_id, 1, 0, package='appearance')
+    except Exception:
+        log_error('local-cultivate-push-target-error', target_id=target_id)'''
+
+    if old_push_cult in content:
+        content = content.replace(old_push_cult, new_push_cult)
+        print('[lobby] Guaranteed item push in _dh_rpc_appearance_cultivate_compound')
 
     with open('clean_remote_lobby.py', 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)

@@ -4730,6 +4730,8 @@ def _dh_install_main_watch():
                         disp_args['itemIDs'] = safe_items
             except Exception:
                 pass
+        if ui_name == 'UIDtsAppearanceVehicleCultivate2':
+            _dh_install_workshop_package_count()
         result = inner(ui_name, *args, **kwargs)
         try:
             if ui_name == 'UIItemDisplay':
@@ -5298,6 +5300,9 @@ def _dh_workshop_permanent_entries(player, item_id):
     items = getattr(package, 'itemList', {})
     entries = dict(items.get(str(item_id)) or {})
     entries.update(items.get(item_id) or {})
+    lookup = getattr(package, '_getItemById', None)
+    if callable(lookup):
+        entries.update(lookup(item_id) or {})
     permanent = []
     for uuid, entry in entries.items():
         info = entry.get('info') if isinstance(entry, dict) else getattr(entry, 'info', None)
@@ -5306,6 +5311,36 @@ def _dh_workshop_permanent_entries(player, item_id):
             count = entry.get('number') if isinstance(entry, dict) else getattr(entry, 'number', 1)
             permanent.append((uuid, int(count or 1)))
     return permanent
+
+
+def _dh_install_workshop_package_count():
+    import BigWorld
+    player = BigWorld.player()
+    package = getattr(player, 'dtsAppearancePackage', None)
+    if package is None:
+        return
+    cls = type(package)
+    original = getattr(cls, 'getItemCnt', None)
+    if not callable(original) or getattr(original, '_dh_workshop_count', False):
+        return
+
+    def get_item_count(self, item_id, *args, **kwargs):
+        count = original(self, item_id, *args, **kwargs)
+        if self is getattr(BigWorld.player(), 'dtsAppearancePackage', None):
+            try:
+                item_id = int(item_id)
+                if item_id in _VEHICLE_FAMILY_MAP:
+                    entries = _dh_workshop_permanent_entries(BigWorld.player(), item_id)
+                    return max(count, sum(number for uuid, number in entries))
+            except (AttributeError, TypeError, ValueError):
+                pass
+        return count
+
+    get_item_count._dh_workshop_count = True
+    try:
+        cls.getItemCnt = get_item_count
+    except (AttributeError, TypeError):
+        log('local-workshop-package-count-unavailable')
 
 
 def _dh_sync_workshop_count(player, item_id, expected):
@@ -9716,6 +9751,8 @@ def _dh_patch_uimain_visibilities():
 
 _DH_RAPTOR_LV2_ICON = 'ui/images/dts_appearance/vehiclefull/xunmenglong2.png'
 _DH_RAPTOR_LV2_MODEL = 'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.mtg'
+_DH_MONSTER_M2_ICON = 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_04.png'
+_DH_MONSTER_M3_ICON = 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png'
 _DH_RAPTOR_LV1_GEOMETRY = 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.gim'
 _DH_RAPTOR_LV2_GEOMETRY = 'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.gim'
 
@@ -9840,42 +9877,32 @@ def _dh_ensure_synthetic_props():
         except Exception:
             pass
 
-        # 5. Monster - M2 (140404)
-        if 140404 not in _dh_synthetic_props:
+        # Use the shipped green M2 and black M3 appearances.
+        for item_id, tier, suffix, icon in (
+            (140404, 'M2', '04', _DH_MONSTER_M2_ICON),
+            (140405, 'M3', '02', _DH_MONSTER_M3_ICON),
+        ):
+            if item_id in _dh_synthetic_props or (item_id == 140405 and orig_get(item_id) is not None):
+                continue
             m1 = orig_get(140403)
-            if m1 is not None:
-                m2 = copy.copy(m1)
-                ptype = copy.copy(getattr(m1, 'PROP_TYPE', None))
-                if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/guaiwupika/cheshen_02.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/guaiwupika/geton_vehicle.mtg'),
-                                      ('DISPLAY_USING_VEHICLE_ID', 31007),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png')):
-                        try:
-                            setattr(ptype, attr, val)
-                        except Exception:
-                            pass
-                    try:
-                        dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                        if dim:
-                            new_dim = []
-                            for entry in dim:
-                                ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [140404]
-                                new_dim.append(ec)
-                            ptype.DISPLAY_IN_MODEL = new_dim
-                    except Exception:
-                        pass
-                    m2.PROP_TYPE = ptype
-                for attr, val in (('NAME', 'Monster - M2'),
-                                  ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png')):
-                    try:
-                        setattr(m2, attr, val)
-                    except Exception:
-                        pass
-                _dh_synthetic_props[140404] = m2
+            if m1 is None:
+                continue
+            appearance = copy.copy(m1)
+            ptype = copy.copy(m1.PROP_TYPE)
+            ptype.FP_MTG_PATH = 'vehicle/guaiwupika/cheshen_%s.mtg' % suffix
+            ptype.TP_MTG_PATH = 'vehicle/guaiwupika/geton_vehicle_%s.mtg' % suffix
+            ptype.AUTO_ROYALE_DISPLAY_IMG_PATH = icon
+            placement = []
+            for entry in ptype.DISPLAY_IN_MODEL or []:
+                display = copy.copy(entry)
+                display.DISPLAY_PROP_LIST = [item_id]
+                placement.append(display)
+            ptype.DISPLAY_IN_MODEL = placement
+            appearance.PROP_TYPE = ptype
+            appearance.NAME = 'Monster - ' + tier
+            appearance.ICON_PATH = icon
+            appearance.ICON_PATH_DISPLAY = icon
+            _dh_synthetic_props[item_id] = appearance
 
         # 6. Darksteel Bike Lv. 2 (140077)
         if 140077 not in _dh_synthetic_props:
@@ -10054,7 +10081,7 @@ def _dh_install_prop_table_hooks():
                         pass
                     yield item
                 syn = _dh_ensure_synthetic_props()
-                for k in (121363, 140404, 140074, 140077, 142008, 142005, 142006):
+                for k in (121363, 140404, 140405, 140074, 140077, 142008, 142005, 142006):
                     if k in syn and k not in seen_ids:
                         seen_ids.add(k)
                         yield (k, syn[k])
@@ -10103,7 +10130,7 @@ def _dh_install_prop_table_hooks():
                     utils._dh_orig_prop_type = orig_type
                     def _dh_prop_type(prop_id):
                         try:
-                            if int(prop_id) in (140404, 142008, 140074, 140077, 142005, 142006):
+                            if int(prop_id) in (140404, 140405, 142008, 140074, 140077, 142005, 142006):
                                 return 'VehicleAppearanceType'
                         except Exception:
                             pass
@@ -10115,7 +10142,7 @@ def _dh_install_prop_table_hooks():
                     utils._dh_orig_is_veh = orig_is_veh
                     def _dh_is_veh(prop_id):
                         try:
-                            if int(prop_id) in (140404, 142008, 140074, 140077, 142005, 142006):
+                            if int(prop_id) in (140404, 140405, 142008, 140074, 140077, 142005, 142006):
                                 return True
                         except Exception:
                             pass
@@ -67129,9 +67156,10 @@ _VEHICLE_FAMILY_MAP = {
     140902: (140902, [140905, 140902]),
 
     # Monster Truck
-    140406: (140403, [140406, 140404, 140403]),
-    140404: (140403, [140406, 140404, 140403]),
-    140403: (140403, [140406, 140404, 140403]),
+    140406: (140403, [140406, 140405, 140404, 140403]),
+    140405: (140403, [140406, 140405, 140404, 140403]),
+    140404: (140403, [140406, 140405, 140404, 140403]),
+    140403: (140403, [140406, 140405, 140404, 140403]),
 
     # Bugatti / Spark
     140013: (140010, [140013, 140010]),
@@ -67216,6 +67244,7 @@ _VEHICLE_NAME_MAP = {
     140905: 'Reign of Fire',
     140403: 'Monster - M1',
     140404: 'Monster - M2',
+    140405: 'Monster - M3',
     140406: 'Wild Beast',
     140010: 'Spark V3',
     140013: 'Thunderbird',
@@ -67265,7 +67294,8 @@ _VEHICLE_ICON_MAP = {
     140902: 'ui/images/dts_appearance/vehiclefull/img_tz_zj_tuktuk2.png',
     140905: 'ui/images/dts_appearance/vehiclefull/img_tz_zj_tuktuk5.png',
     140403: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png',
-    140404: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png',
+    140404: _DH_MONSTER_M2_ICON,
+    140405: _DH_MONSTER_M3_ICON,
     140406: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_03.png',
     140010: 'ui/images/dts_appearance/vehiclefull/img_zj_bjdwl_01.png',
     140013: 'ui/images/dts_appearance/vehiclefull/img_zj_bjdwl_04.png',
@@ -67315,6 +67345,7 @@ def _dh_install_vehicle_master_hooks():
         import BigWorld
         import dts_appearance_utils
         _dh_install_raptor_preview_geometry()
+        _dh_install_workshop_package_count()
         _dh_ensure_synthetic_props()
 
         # 1. Hook dts_appearance_utils methods
@@ -67462,7 +67493,7 @@ def _dh_install_vehicle_appearance_preload_hook():
                     (25000, [140051, 140048]),                       # Hunting Off-road
                     (25000, [142006, 142005, 142004]),               # Golden Flash
                     (25000, [142013, 142012, 142011]),               # Shadowfax
-                    (31002, [140406, 140404, 140403]),               # Monster Truck
+                    (31002, [140406, 140405, 140404, 140403]),       # Monster Truck
                     (31002, [140046, 140041]),                       # Frosty Frills
                     (31002, [140914, 140911]),                       # Warjeep
                     (25001, [140224, 140223, 140221]),               # Subjugator
@@ -67530,6 +67561,7 @@ def _dh_install_vehicle_appearance_preload_hook():
                                     (140035, (140031,)),
                                     (140905, (140902,)),
                                     (140404, (140403,)),
+                                    (140405, (140403,)),
                                     (140406, (140404, 140403)),
                                     (140013, (140010,)),
                                     (140024, (140021,)),

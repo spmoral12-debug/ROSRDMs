@@ -89,7 +89,8 @@ _TUNE_SOURCES = {
         140035: 140031,  # Supernova -> Nova X1
         140905: 140902,  # Reign of Fire -> 5 Star Ride
         140404: 140403,  # Monster - M2 -> Monster - M1
-        140406: 140404,  # Wild Beast (M3) -> Monster - M2
+        140405: 140403,  # Monster - M3 consumes a spare M1 after unlocking M2
+        140406: 140404,  # Wild Beast -> Monster - M2
         140013: 140010,  # Thunderbird -> Spark V3
         140024: 140021,  # Storm -> Twister - T1
         142029: 142028,  # Burst Sedan Lv. 2 -> Lv. 1
@@ -115,8 +116,8 @@ _TUNE_SOURCES = {
         140065: 140064,  # Dynamic Streamer MAX -> Lv. 1
 }
 
-_TUNE_PREREQUISITES = {140033: 140032, 140035: 140033}
-_TUNE_GOLD = {140032: 2000, 140033: 2000}
+_TUNE_PREREQUISITES = {140033: 140032, 140035: 140033, 140405: 140404, 140406: 140405}
+_TUNE_GOLD = {140032: 2000, 140033: 2000, 140404: 2000, 140405: 2000}
 
 
 @rpc("appearanceCultivateCompound")
@@ -186,6 +187,7 @@ try:
                             ("140035", ("140031",)),
                             ("140905", ("140902",)),
                             ("140406", ("140404", "140403")),
+                            ("140405", ("140403",)),
                             ("140404", ("140403",)),
                             ("140013", ("140010",)),
                             ("140024", ("140021",)),

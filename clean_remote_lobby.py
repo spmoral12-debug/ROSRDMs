@@ -4832,8 +4832,7 @@ def _dh_restore_mall_and_supply_ui():
             'UISupplyController', 'UISupplyPackage', 'UIAdvanceSupplyPackage',
             'UIMonthlySupplyPackage',
             'UIDtsAppearance', 'UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2', 'UIWorkshop',
-            'UIBraveBook2Tab', 'UIBraveBook2Award', 'UIBraveBook2Task',
-            'UIBraveBook2Shop', 'UIBraveBook2'
+            # Manual tabs manage their own visibility, including hidden templates.
         ]
         for scr_name in target_screens:
             scr = getattr(ui_mgr, scr_name, None)
@@ -4934,9 +4933,12 @@ def _dh_fix_item_display_ui():
                     try:
                         cb = getattr(disp, 'confirmBtnCb', None)
                         if callable(cb):
+                            manual_points = (_dh_last_pack_buy.get('active') and
+                                             int(_dh_last_pack_buy.get('goodID') or 0) == 3002)
                             cb()
-                            call_later(0.05, _dh_restore_mall_and_supply_ui)
-                            call_later(0.3, _dh_restore_mall_and_supply_ui)
+                            if not manual_points:
+                                call_later(0.05, _dh_restore_mall_and_supply_ui)
+                                call_later(0.3, _dh_restore_mall_and_supply_ui)
                         elif _dh_last_pack_buy.get('active') and int(_dh_last_pack_buy.get('goodID') or 0) > 0:
                             import time as _t
                             _dh_last_pack_buy['buying_again_at'] = _t.time()

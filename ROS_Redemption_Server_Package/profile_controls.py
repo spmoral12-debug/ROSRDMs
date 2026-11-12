@@ -131,10 +131,11 @@ def cultivate_compound(server, args, kwargs):
                 if source_count < 2 or src_entry.get("expires"):
                     raise AccountError("missing_duplicate", "You need two permanent copies to upgrade.")
 
-                account.spend(data, 1001, 1000, f"cultivate:{target_id}")
+                account.spend(data, 1, 1000, f"cultivate:{target_id}")
                 src_entry["count"] = source_count - 1
                 target = depot.get(str(target_id), {})
                 depot[str(target_id)] = {"count": int(target.get("count", 0) or 0) + 1, "expires": 0}
+                account.record(data, "vehicle_upgrade", source=effective_src, target=target_id)
                 
                 equipped = data.setdefault("equipped", {})
                 for k, v in list(equipped.items()):

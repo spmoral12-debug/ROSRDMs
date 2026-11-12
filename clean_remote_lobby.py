@@ -4870,6 +4870,9 @@ def _dh_restore_mall_and_supply_ui():
                             root.setVisible(True)
                         if hasattr(root, 'setTouchEnabled'):
                             root.setTouchEnabled(True)
+                    if scr_name in ('UIDtsAppearance', 'UIDtsAppearanceVehicle',
+                                    'UIDtsAppearanceVehicleCultivate2', 'UIWorkshop'):
+                        continue
                     for path, node in walk_ui_nodes(scr, limit=1000):
                         try:
                             if hasattr(node, 'setTouchEnabled'):
@@ -5258,9 +5261,36 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
         if isinstance(reply, dict) and reply.get('ok'):
             _dh_apply_cultivate_reply(player, src_id, target_id)
         else:
-            show_offline_tip('Upgrade failed. Check that you have two permanent copies and enough gold.', force=True)
+            _dh_release_workshop_input()
+            message = reply.get('message') if isinstance(reply, dict) else None
+            show_offline_tip(message or 'Upgrade failed. Check your copies and gold.', force=True)
 
     return ask_backend('appearanceCultivateCompound', [src_id, target_id, flag], kwargs, on_upgrade_reply)
+
+
+def _dh_release_workshop_input():
+    try:
+        import Globals
+        mgr = Globals.uiMgr
+        workshop = getattr(mgr, 'UIDtsAppearanceVehicleCultivate2', None)
+        if workshop is None or not getattr(workshop, 'is_enter', False):
+            return
+        for name in ('UIPayLoading', 'UICommonMask'):
+            modal = getattr(mgr, name, None)
+            if modal is not None and getattr(modal, 'is_enter', False):
+                mgr.leave_ui(name)
+        workshop.modelLoading = False
+        if hasattr(workshop, 'setTouchEnabled'):
+            workshop.setTouchEnabled(True)
+    except Exception:
+        log_error('local-workshop-release-error')
+
+
+def _dh_finish_workshop_upgrade(callback, target_id):
+    try:
+        callback(target_id)
+    finally:
+        _dh_release_workshop_input()
 
 
 def _dh_apply_cultivate_reply(player, src_id, target_id):
@@ -5331,18 +5361,14 @@ def _dh_apply_cultivate_reply(player, src_id, target_id):
     except Exception:
         log_error('local-cultivate-push-target-error', target_id=target_id)
 
-    # 4. If src_id was equipped, equip target_id instead
+    # Equip the upgrade if its source was equipped.
     try:
         for prop in ('dtsVehicleAppearanceList', 'dtsWeaponAppearanceList', 'dtsBodyAppearanceList', 'dtsWearableAppearanceList'):
             lst = getattr(player, prop, None)
             matched_old = None
             if isinstance(lst, (list, tuple)):
-                if src_id in lst:
-                    matched_old = src_id
-                elif effective_src in lst:
+                if effective_src in lst:
                     matched_old = effective_src
-                elif _tune_src_map.get(target_id) in lst:
-                    matched_old = _tune_src_map[target_id]
             if matched_old is not None:
                 new_lst = [target_id if x == matched_old else x for x in lst]
                 setattr(player, prop, new_lst)
@@ -5367,7 +5393,7 @@ def _dh_apply_cultivate_reply(player, src_id, target_id):
     cb = getattr(player, 'onAppearanceCultivateCompound', None)
     if callable(cb):
         try:
-            call_later(0.15, cb, target_id)
+            call_later(0.15, _dh_finish_workshop_upgrade, cb, target_id)
         except Exception:
             log_error('local-cultivate-cb-error', target_id=target_id)
 
@@ -5384,14 +5410,9 @@ def _dh_apply_cultivate_reply(player, src_id, target_id):
                         if callable(fn):
                             try:
                                 fn()
+                                break
                             except Exception:
                                 pass
-    except Exception:
-        pass
-
-    # 9. Clean duplicate result UI screen buttons
-    try:
-        call_later(0.2, _dh_fix_item_display_ui)
     except Exception:
         pass
 
@@ -9822,10 +9843,10 @@ def _dh_ensure_synthetic_props():
                 m2 = copy.copy(m1)
                 ptype = copy.copy(getattr(m1, 'PROP_TYPE', None))
                 if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/guaiwupika/cheshen.mtg'),
+                    for attr, val in (('FP_MTG_PATH', 'vehicle/guaiwupika/cheshen_02.mtg'),
                                       ('TP_MTG_PATH', 'vehicle/guaiwupika/geton_vehicle.mtg'),
                                       ('DISPLAY_USING_VEHICLE_ID', 31007),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png')):
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png')):
                         try:
                             setattr(ptype, attr, val)
                         except Exception:
@@ -9836,7 +9857,7 @@ def _dh_ensure_synthetic_props():
                             new_dim = []
                             for entry in dim:
                                 ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [140403]
+                                ec.DISPLAY_PROP_LIST = [140404]
                                 new_dim.append(ec)
                             ptype.DISPLAY_IN_MODEL = new_dim
                     except Exception:
@@ -9844,8 +9865,8 @@ def _dh_ensure_synthetic_props():
                     m2.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Monster - M2'),
                                   ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png')):
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png')):
                     try:
                         setattr(m2, attr, val)
                     except Exception:
@@ -10130,7 +10151,7 @@ if callable(_dh_push_inner):
             return None
         # Dedup guard: if permanent cosmetic and already owned, skip adding duplicate copy
         try:
-            if not int(expires or 0):
+            if not int(expires or 0) and int(item_id) not in globals().get('_VEHICLE_FAMILY_MAP', {}):
                 own_fn = getattr(player, 'getPermanentDtsAppearanceItemCnt', None)
                 if callable(own_fn) and own_fn(int(item_id)) > 0:
                     return 'appearance'
@@ -67239,7 +67260,7 @@ _VEHICLE_ICON_MAP = {
     140902: 'ui/images/dts_appearance/vehiclefull/img_tz_zj_tuktuk2.png',
     140905: 'ui/images/dts_appearance/vehiclefull/img_tz_zj_tuktuk5.png',
     140403: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png',
-    140404: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_01.png',
+    140404: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png',
     140406: 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_03.png',
     140010: 'ui/images/dts_appearance/vehiclefull/img_zj_bjdwl_01.png',
     140013: 'ui/images/dts_appearance/vehiclefull/img_zj_bjdwl_04.png',
@@ -67329,7 +67350,7 @@ def _dh_install_vehicle_master_hooks():
                         pkg = getattr(p, 'dtsAppearancePackage', None)
                         ilist = getattr(pkg, 'itemList', {}) if pkg else {}
                         if ciid in ilist or str(ciid) in ilist:
-                            return 1
+                            return max(1, orig_cnt_fn(iid))
                         eq = getattr(p, 'dtsVehicleAppearanceList', None)
                         if eq and (ciid in eq or str(ciid) in eq):
                             return 1
@@ -67365,7 +67386,7 @@ def _dh_install_vehicle_master_hooks():
                             pkg = getattr(self, 'dtsAppearancePackage', None)
                             ilist = getattr(pkg, 'itemList', {}) if pkg else {}
                             if ciid in ilist or str(ciid) in ilist:
-                                return 1
+                                return max(1, orig_perm(self, iid))
                             eq = getattr(self, 'dtsVehicleAppearanceList', None)
                             if eq and (ciid in eq or str(ciid) in eq):
                                 return 1

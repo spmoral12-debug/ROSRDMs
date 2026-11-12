@@ -5279,7 +5279,6 @@ def _dh_release_workshop_input():
             modal = getattr(mgr, name, None)
             if modal is not None and getattr(modal, 'is_enter', False):
                 mgr.leave_ui(name)
-        workshop.modelLoading = False
         if hasattr(workshop, 'setTouchEnabled'):
             workshop.setTouchEnabled(True)
     except Exception:
@@ -67607,22 +67606,6 @@ def _dh_install_theme_and_workshop_hooks():
                             pass
                         return orig_real_buy(self, *a, **k)
                     cls.onRealBuyBtnClicked = _dh_hooked_real_buy
-
-        # 2. UIWorkshop & UIDtsAppearanceVehicle - Catalog Unfreeze
-        for mod_name in ('ui.UIWorkshop', 'UIWorkshop', 'ui.UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicle'):
-            mod = sys.modules.get(mod_name)
-            cls = getattr(mod, mod_name.split('.')[-1], None) if mod is not None else None
-            if cls is not None:
-                orig_exit = getattr(cls, '_dh_orig_exit', getattr(cls, 'onExit', None))
-                if callable(orig_exit):
-                    cls._dh_orig_exit = orig_exit
-                    def _dh_workshop_exit(self, *a, **k):
-                        try:
-                            self.modelLoading = False
-                        except Exception:
-                            pass
-                        return orig_exit(self, *a, **k)
-                    cls.onExit = _dh_workshop_exit
 
         log('local-theme-and-workshop-hooks-installed', success=True)
     except Exception as e:

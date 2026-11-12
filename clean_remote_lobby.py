@@ -5293,10 +5293,11 @@ def _dh_finish_workshop_upgrade(callback, target_id):
         _dh_release_workshop_input()
 
 
-def _dh_sync_workshop_count(player, item_id, expected):
+def _dh_workshop_permanent_entries(player, item_id):
     package = getattr(player, 'dtsAppearancePackage', None)
     items = getattr(package, 'itemList', {})
-    entries = items.get(item_id) or items.get(str(item_id)) or {}
+    entries = dict(items.get(str(item_id)) or {})
+    entries.update(items.get(item_id) or {})
     permanent = []
     for uuid, entry in entries.items():
         info = entry.get('info') if isinstance(entry, dict) else getattr(entry, 'info', None)
@@ -5304,6 +5305,11 @@ def _dh_sync_workshop_count(player, item_id, expected):
         if not expires:
             count = entry.get('number') if isinstance(entry, dict) else getattr(entry, 'number', 1)
             permanent.append((uuid, int(count or 1)))
+    return permanent
+
+
+def _dh_sync_workshop_count(player, item_id, expected):
+    permanent = _dh_workshop_permanent_entries(player, item_id)
     delta = int(expected) - sum(count for uuid, count in permanent)
     if delta > 0:
         _push_one_item(player, item_id, delta, 0, package='appearance')
@@ -67347,6 +67353,10 @@ def _dh_install_vehicle_master_hooks():
                     import BigWorld
                     p = BigWorld.player()
                     if p is not None:
+                        if ciid in _VEHICLE_FAMILY_MAP:
+                            copies = _dh_workshop_permanent_entries(p, ciid)
+                            if copies:
+                                return sum(count for uuid, count in copies)
                         pkg = getattr(p, 'dtsAppearancePackage', None)
                         ilist = getattr(pkg, 'itemList', {}) if pkg else {}
                         if ciid in ilist or str(ciid) in ilist:
@@ -67383,6 +67393,10 @@ def _dh_install_vehicle_master_hooks():
                     def _dh_athlete_perm_cnt(self, iid):
                         try:
                             ciid = int(iid)
+                            if ciid in _VEHICLE_FAMILY_MAP:
+                                copies = _dh_workshop_permanent_entries(self, ciid)
+                                if copies:
+                                    return sum(count for uuid, count in copies)
                             pkg = getattr(self, 'dtsAppearancePackage', None)
                             ilist = getattr(pkg, 'itemList', {}) if pkg else {}
                             if ciid in ilist or str(ciid) in ilist:

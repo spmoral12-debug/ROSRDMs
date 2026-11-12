@@ -9720,6 +9720,47 @@ def _dh_patch_uimain_visibilities():
 
 _DH_RAPTOR_LV2_ICON = 'ui/images/dts_appearance/vehiclefull/xunmenglong2.png'
 _DH_RAPTOR_LV2_MODEL = 'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.mtg'
+_DH_RAPTOR_LV1_GEOMETRY = 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.gim'
+_DH_RAPTOR_LV2_GEOMETRY = 'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.gim'
+
+
+def _dh_install_raptor_preview_geometry():
+    import sys
+    try:
+        import world
+    except ImportError:
+        return
+
+    def wrap(loader):
+        def load(path, *args, **kwargs):
+            if isinstance(path, basestring) and path.replace('\\', '/').lower() == _DH_RAPTOR_LV1_GEOMETRY:
+                frame = sys._getframe(1)
+                showroom = False
+                advanced = False
+                while frame is not None:
+                    filename = frame.f_code.co_filename.replace('\\', '/').rsplit('/', 1)[-1]
+                    if filename in ('UIDtsAppearanceVehicle.py', 'UIDtsAppearanceVehicleCultivate2.py',
+                                    'ModelDisplayUtils.py'):
+                        showroom = True
+                    for key, value in frame.f_locals.items():
+                        if isinstance(value, basestring) and value.replace('\\', '/').lower() == _DH_RAPTOR_LV2_MODEL:
+                            advanced = True
+                        elif key.lower() in ('propid', 'prop_id', 'itemid', 'item_id', 'appearanceid', 'appearance_id'):
+                            if isinstance(value, (int, long, basestring)) and str(value) == '142008':
+                                advanced = True
+                    if showroom and advanced:
+                        path = _DH_RAPTOR_LV2_GEOMETRY
+                        log('local-raptor-lv2-geometry-request', geometry=path)
+                        break
+                    frame = frame.f_back
+            return loader(path, *args, **kwargs)
+        load._dh_raptor_geometry = True
+        return load
+
+    for name in ('create_model', 'create_model_async'):
+        loader = getattr(world, name, None)
+        if callable(loader) and not getattr(loader, '_dh_raptor_geometry', False):
+            setattr(world, name, wrap(loader))
 
 _dh_synthetic_props = globals().get('_dh_synthetic_props') or {}
 _dh_synthetic_building = False
@@ -67276,6 +67317,7 @@ def _dh_install_vehicle_master_hooks():
         import sys
         import BigWorld
         import dts_appearance_utils
+        _dh_install_raptor_preview_geometry()
         _dh_ensure_synthetic_props()
 
         # 1. Hook dts_appearance_utils methods

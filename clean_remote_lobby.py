@@ -9795,6 +9795,21 @@ def _dh_install_raptor_preview_geometry():
         if callable(loader) and not getattr(loader, '_dh_raptor_geometry', False):
             setattr(world, name, wrap(loader))
 
+_DH_WORKSHOP_APPEARANCES = (
+    (140074, 140073, 'Cool Summer Bicycle',
+     'ui/images/dts_appearance/vehiclefull/img_summerbike_02.png',
+     'vehicle/summer_bike_lv2/summer_bike_lv2.mtg',
+     'vehicle/summer_bike_lv2/summer_bike_lv2.mtg'),
+    (142005, 142004, 'Golden Flash Lv. 2',
+     'ui/images/dts_appearance/vehiclefull/img_weilai2.png',
+     'vehicle/weilaiche_lv2/cheshen.mtg',
+     'vehicle/weilaiche_lv2/geton_vehicle.mtg'),
+    (142006, 142004, 'Golden Flash Lv. 3',
+     'ui/images/dts_appearance/vehiclefull/img_weilai3.png',
+     'vehicle/weilaiche_lv3/cheshen.mtg',
+     'vehicle/weilaiche_lv3/geton_vehicle.mtg'),
+)
+
 _dh_synthetic_props = globals().get('_dh_synthetic_props') or {}
 _dh_synthetic_building = False
 _dh_synthetic_retry_at = 0.0
@@ -9802,7 +9817,8 @@ _dh_synthetic_retry_at = 0.0
 
 def _dh_ensure_synthetic_props():
     global _dh_synthetic_building, _dh_synthetic_retry_at
-    if 121363 in _dh_synthetic_props and 142008 in _dh_synthetic_props and 140404 in _dh_synthetic_props and 140035 in _dh_synthetic_props:
+    required = (121363, 142008, 140404, 140035, 140074, 142005, 142006)
+    if all(item_id in _dh_synthetic_props for item_id in required):
         return _dh_synthetic_props
     if _dh_synthetic_building or _dh_time.time() < _dh_synthetic_retry_at:
         return _dh_synthetic_props
@@ -9943,77 +9959,29 @@ def _dh_ensure_synthetic_props():
                         pass
                 _dh_synthetic_props[140077] = b2
 
-        # 7. Summer Bicycle Lv. 2 (140074)
-        if 140074 not in _dh_synthetic_props:
-            sb1 = orig_get(140073)
-            if sb1 is not None:
-                sb2 = copy.copy(sb1)
-                ptype = copy.copy(getattr(sb1, 'PROP_TYPE', None))
-                if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/summerbike/cheshen.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/summerbike/geton_vehicle.mtg'),
-                                      ('DISPLAY_USING_VEHICLE_ID', 30004),
-                                      ('LAND_VEHICLE_ID', 910043),
-                                      ('VEHICLE_ID', 910043),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png')):
-                        try:
-                            setattr(ptype, attr, val)
-                        except Exception:
-                            pass
-                    try:
-                        dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                        if dim:
-                            new_dim = []
-                            for entry in dim:
-                                ec = copy.copy(entry)
-                                ec.DISPLAY_PROP_LIST = [140073]
-                                new_dim.append(ec)
-                            ptype.DISPLAY_IN_MODEL = new_dim
-                    except Exception:
-                        pass
-                    sb2.PROP_TYPE = ptype
-                for attr, val in (('NAME', 'Summer Bicycle Lv. 2'),
-                                  ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png')):
-                    try:
-                        setattr(sb2, attr, val)
-                    except Exception:
-                        pass
-                _dh_synthetic_props[140074] = sb2
-
-        # 8. Golden Flash Lv. 2 (142005) & Lv. 3 (142006)
-        gf1 = orig_get(142004)
-        if gf1 is not None:
-            for gfid, gfname in ((142005, 'Golden Flash Lv. 2'), (142006, 'Golden Flash Lv. 3')):
-                if gfid not in _dh_synthetic_props:
-                    try:
-                        gfc = copy.copy(gf1)
-                        for attr, val in (('NAME', gfname),
-                                          ('QUALITY', 5),
-                                          ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png'),
-                                          ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_weilai1.png')):
-                            try:
-                                setattr(gfc, attr, val)
-                            except Exception:
-                                pass
-                        ptype = copy.copy(getattr(gf1, 'PROP_TYPE', None))
-                        if ptype is not None:
-                            try:
-                                dim = getattr(ptype, 'DISPLAY_IN_MODEL', None)
-                                if dim:
-                                    new_dim = []
-                                    for entry in dim:
-                                        ec = copy.copy(entry)
-                                        ec.DISPLAY_PROP_LIST = [142004]
-                                        new_dim.append(ec)
-                                    ptype.DISPLAY_IN_MODEL = new_dim
-                            except Exception:
-                                pass
-                            gfc.PROP_TYPE = ptype
-                        _dh_synthetic_props[gfid] = gfc
-                    except Exception:
-                        pass
+        # The upgrade rows use distinct materials and icons shipped in the client archives.
+        for item_id, base_id, name, icon, fp, tp in _DH_WORKSHOP_APPEARANCES:
+            if item_id in _dh_synthetic_props:
+                continue
+            base = orig_get(base_id)
+            if base is None:
+                continue
+            appearance = copy.copy(base)
+            ptype = copy.copy(base.PROP_TYPE)
+            ptype.FP_MTG_PATH = fp
+            ptype.TP_MTG_PATH = tp
+            ptype.AUTO_ROYALE_DISPLAY_IMG_PATH = icon
+            placement = []
+            for entry in ptype.DISPLAY_IN_MODEL or []:
+                display = copy.copy(entry)
+                display.DISPLAY_PROP_LIST = [item_id]
+                placement.append(display)
+            ptype.DISPLAY_IN_MODEL = placement
+            appearance.PROP_TYPE = ptype
+            appearance.NAME = name
+            appearance.ICON_PATH = icon
+            appearance.ICON_PATH_DISPLAY = icon
+            _dh_synthetic_props[item_id] = appearance
 
         # 9. Brain Freeze (140046) & Hovering Car Max (140061) Unhide
         for hid_id in (140046, 140061):
@@ -67326,8 +67294,6 @@ _VEHICLE_ICON_MAP = {
     140202: 'ui/images/dts_appearance/vehiclefull/img_zj_saimo_pbr04.png',
     140205: 'ui/images/dts_appearance/vehiclefull/img_zj_saimo_pbr02.png',
     142004: 'ui/images/dts_appearance/vehiclefull/img_weilai1.png',
-    142005: 'ui/images/dts_appearance/vehiclefull/img_weilai1.png',
-    142006: 'ui/images/dts_appearance/vehiclefull/img_weilai1.png',
     142011: 'ui/images/dts_appearance/vehiclefull/laosi1.png',
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
@@ -67335,11 +67301,13 @@ _VEHICLE_ICON_MAP = {
     142008: _DH_RAPTOR_LV2_ICON,
     140237: _DH_RAPTOR_LV2_ICON,
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
-    140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',
     140064: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_03.png',
     140065: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_mibao.png',
 }
+
+_VEHICLE_ICON_MAP.update((item_id, icon) for item_id, _, _, icon, _, _ in _DH_WORKSHOP_APPEARANCES)
+
 
 def _dh_install_vehicle_master_hooks():
     try:

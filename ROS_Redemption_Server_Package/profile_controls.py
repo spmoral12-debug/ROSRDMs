@@ -316,7 +316,8 @@ try:
                                 try:
                                     iid = int(k)
                                     # Cosmetic hall props: vehicles, weapons, clothes, themes
-                                    if v.get("count", 1) > 1 and iid not in _TUNE_SOURCES.values() and iid not in _TUNE_SOURCES and not (200000 <= iid < 300000 or 490000 <= iid < 500000):
+                                    # The Manual intentionally awards multiple copies of these items.
+                                    if v.get("count", 1) > 1 and iid not in (121363, 360962) and iid not in _TUNE_SOURCES.values() and iid not in _TUNE_SOURCES and not (200000 <= iid < 300000 or 490000 <= iid < 500000):
                                         v["count"] = 1
                                         changed = True
                                 except Exception:
@@ -400,6 +401,24 @@ try:
             return _orig_manual_action_state(self, data, params)
         _patched_manual_action_state._dh_manual_points = True
         ManualFeature.action_state = _patched_manual_action_state
+
+    _orig_manual_run = ManualFeature._run
+    if not getattr(_orig_manual_run, '_pink_lady_reward_repair', False):
+        def _repair_claimed_pink_lady(self, data, change, full=False):
+            result = _orig_manual_run(self, data, change, full=full)
+            state = data.get('manual', {})
+            if (101010 in state.get('claimed', []) and
+                    not data.get('manualPinkLadyRewardRepaired')):
+                depot = data.get('depot', {})
+                for item in (1110336, 1111336, 1112336):
+                    entry = depot.get(str(item), {})
+                    if not entry.get('count') or entry.get('expires'):
+                        self.account.add_item(data, item, 1, 0)
+                data['manualPinkLadyRewardRepaired'] = True
+            return result
+
+        _repair_claimed_pink_lady._pink_lady_reward_repair = True
+        ManualFeature._run = _repair_claimed_pink_lady
 
     _orig_run_route = getattr(LocalPyServer, '_run_route', None)
     if _orig_run_route is not None and not getattr(_orig_run_route, '_dh_manual_points', False):

@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from backend_server.account import Account
 from backend_server.database import Database
 from backend_server.features.manual import ManualFeature
+import profile_controls  # Apply the same account and Manual hooks as the server.
 
 
 def audit():
@@ -45,6 +46,8 @@ def audit():
                 assert set(data['manual']['claimed']) == awards
 
             saved = account.load()
+            for item in ('1110336', '1111336', '1112336'):
+                assert saved['depot'][item]['count'] >= 1, item
             for field in ('wallet', 'currencies', 'depot'):
                 assert saved.get(field) == expected_data.get(field), field
             assert set(saved['manual']['claimed']) == awards

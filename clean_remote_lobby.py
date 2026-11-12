@@ -9753,47 +9753,32 @@ _DH_RAPTOR_LV2_ICON = 'ui/images/dts_appearance/vehiclefull/xunmenglong2.png'
 _DH_RAPTOR_LV2_MODEL = 'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.mtg'
 _DH_MONSTER_M2_ICON = 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_04.png'
 _DH_MONSTER_M3_ICON = 'ui/images/dts_appearance/vehiclefull/img_zj_guaiwupk_02.png'
-_DH_RAPTOR_LV1_GEOMETRY = 'vehicle/bike_xunmenglongdiji/xunmenglongdiji.gim'
-_DH_RAPTOR_LV2_GEOMETRY = 'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.gim'
+_DH_PREVIEW_GEOMETRY = {
+    140074: ('vehicle/summer_bike_lv1/summer_bike_lv1.gim',
+             'vehicle/summer_bike_lv2/summer_bike_lv2.gim'),
+    142008: ('vehicle/bike_xunmenglongdiji/xunmenglongdiji.gim',
+             'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.gim'),
+}
 
 
-def _dh_install_raptor_preview_geometry():
+def _dh_install_vehicle_preview_geometry(appearance_utils):
     import sys
-    try:
-        import world
-    except ImportError:
+    original = getattr(appearance_utils, 'getVehicleModel', None)
+    if not callable(original) or getattr(original, '_dh_preview_geometry', False):
         return
 
-    def wrap(loader):
-        def load(path, *args, **kwargs):
-            if isinstance(path, basestring) and path.replace('\\', '/').lower() == _DH_RAPTOR_LV1_GEOMETRY:
-                frame = sys._getframe(1)
-                showroom = False
-                advanced = False
-                while frame is not None:
-                    filename = frame.f_code.co_filename.replace('\\', '/').rsplit('/', 1)[-1]
-                    if filename in ('UIDtsAppearanceVehicle.py', 'UIDtsAppearanceVehicleCultivate2.py',
-                                    'ModelDisplayUtils.py'):
-                        showroom = True
-                    for key, value in frame.f_locals.items():
-                        if isinstance(value, basestring) and value.replace('\\', '/').lower() == _DH_RAPTOR_LV2_MODEL:
-                            advanced = True
-                        elif key.lower() in ('propid', 'prop_id', 'itemid', 'item_id', 'appearanceid', 'appearance_id'):
-                            if isinstance(value, (int, long, basestring)) and str(value) == '142008':
-                                advanced = True
-                    if showroom and advanced:
-                        path = _DH_RAPTOR_LV2_GEOMETRY
-                        log('local-raptor-lv2-geometry-request', geometry=path)
-                        break
-                    frame = frame.f_back
-            return loader(path, *args, **kwargs)
-        load._dh_raptor_geometry = True
-        return load
+    def get_vehicle_model(*args, **kwargs):
+        geometry = original(*args, **kwargs)
+        caller = sys._getframe(1)
+        if caller.f_code.co_name == 'startVehicleModelDisplay':
+            pair = _DH_PREVIEW_GEOMETRY.get(caller.f_locals.get('appearanceID'))
+            if pair and geometry == pair[0]:
+                return pair[1]
+        return geometry
 
-    for name in ('create_model', 'create_model_async'):
-        loader = getattr(world, name, None)
-        if callable(loader) and not getattr(loader, '_dh_raptor_geometry', False):
-            setattr(world, name, wrap(loader))
+    get_vehicle_model._dh_preview_geometry = True
+    appearance_utils.getVehicleModel = get_vehicle_model
+
 
 _DH_WORKSHOP_APPEARANCES = (
     (140074, 140073, 'Cool Summer Bicycle',
@@ -67350,7 +67335,7 @@ def _dh_install_vehicle_master_hooks():
         import sys
         import BigWorld
         import dts_appearance_utils
-        _dh_install_raptor_preview_geometry()
+        _dh_install_vehicle_preview_geometry(dts_appearance_utils)
         _dh_install_workshop_package_count()
         _dh_ensure_synthetic_props()
 

@@ -90,7 +90,7 @@ _TUNE_SOURCES = {
         140905: 140902,  # Reign of Fire -> 5 Star Ride
         140404: 140403,  # Monster - M2 -> Monster - M1
         140405: 140403,  # Monster - M3 consumes a spare M1 after unlocking M2
-        140406: 140404,  # Wild Beast -> Monster - M2
+        140406: 140403,  # Wild Beast consumes a spare M1 after unlocking M3
         140013: 140010,  # Thunderbird -> Spark V3
         140024: 140021,  # Storm -> Twister - T1
         142029: 142028,  # Burst Sedan Lv. 2 -> Lv. 1
@@ -117,7 +117,7 @@ _TUNE_SOURCES = {
 }
 
 _TUNE_PREREQUISITES = {140033: 140032, 140035: 140033, 140405: 140404, 140406: 140405}
-_TUNE_GOLD = {140032: 2000, 140033: 2000, 140404: 2000, 140405: 2000}
+_TUNE_GOLD = {140032: 2000, 140033: 2000, 140404: 2000, 140405: 2000, 140406: 2000}
 
 
 @rpc("appearanceCultivateCompound")

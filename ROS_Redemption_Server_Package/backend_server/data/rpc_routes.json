@@ -264,23 +264,6 @@
         }
       ]
     },
-    "appearanceCultivateCompound": {
-      "_note": "Workshop appearance cultivation/tune compound: base.appearanceCultivateCompound(srcID, targetID, flag).",
-      "action": "ack",
-      "params": [
-        "src_id",
-        "target_id",
-        "flag"
-      ],
-      "reply": [
-        {
-          "method": "onAppearanceCultivateCompound",
-          "args": [
-            "$target_id"
-          ]
-        }
-      ]
-    },
     "setHasAlreadyShowMonthSupply": {
       "_note": "UIMonthlySupplyPackage.startMonthSupplyAnimCoro_NoUI after the monthly intro: remembered per account for this PH month, so UIMain.on_enter stops auto-opening the panel.",
       "action": "supplement.month_shown",

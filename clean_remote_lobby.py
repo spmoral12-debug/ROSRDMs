@@ -5258,12 +5258,13 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     log('local-cultivate-start', src_id=src_id, target_id=target_id)
 
     def on_upgrade_reply(reply):
-        if isinstance(reply, dict) and reply.get('ok'):
-            _dh_apply_cultivate_reply(player, src_id, target_id)
+        counts = reply.get('workshop_counts') if isinstance(reply, dict) else None
+        if isinstance(counts, dict) and reply.get('ok') and str(target_id) in counts:
+            _dh_apply_cultivate_reply(player, target_id, reply, counts)
         else:
             _dh_release_workshop_input()
-            message = reply.get('message') if isinstance(reply, dict) else None
-            show_offline_tip(message or 'Upgrade failed. Check your copies and gold.', force=True)
+            message = (reply.get('tip') or reply.get('message')) if isinstance(reply, dict) else None
+            show_offline_tip(message or 'The server did not confirm this upgrade.', force=True)
 
     return ask_backend('appearanceCultivateCompound', [src_id, target_id, flag], kwargs, on_upgrade_reply)
 
@@ -5292,73 +5293,42 @@ def _dh_finish_workshop_upgrade(callback, target_id):
         _dh_release_workshop_input()
 
 
-def _dh_apply_cultivate_reply(player, src_id, target_id):
-    # Evolution mappings (target_id -> src_id)
-    _tune_src_map = {
-        140032: 140031,  # Nova X2 -> Nova X1
-        140035: 140031,  # Supernova -> Nova X1
-        140905: 140902,  # Reign of Fire -> 5 Star Ride
-        140404: 140403,  # Monster - M2 -> Monster - M1
-        140406: 140404,  # Wild Beast (M3) -> Monster - M2
-        140013: 140010,  # Thunderbird -> Spark V3
-        140024: 140021,  # Storm -> Twister - T1
-        142029: 142028,  # Burst Sedan Lv. 2 -> Lv. 1
-        142030: 142029,  # Burst Sedan Lv. 3 -> Lv. 2
-        140051: 140048,  # Fiery Hunting -> Hunting Path - I
-        140046: 140041,  # Brain Freeze -> Frosty Frills - I
-        140914: 140911,  # Warjeep lv 4 -> lv 1
-        140223: 140221,  # Subjugator T2 -> Subjugator
-        140224: 140223,  # Discovery -> Subjugator T2
-        140061: 140056,  # Hovering Car Max -> Lv. 1
-        142003: 140241,  # Deathmobile -> Burst Buggy - I
-        140077: 140076,  # Darksteel Bike Lv. 2 -> Lv. 1
-        140214: 140211,  # Pegasus Turbo -> Pegasus - I
-        140205: 140202,  # Phoenix -> Blazing Flash A1
-        142005: 142004,  # Golden Flash Lv. 2 -> Lv. 1
-        142006: 142005,  # Golden Flash Lv. 3 -> Lv. 2
-        142012: 142011,  # Shadowfax Kingly -> Noble
-        142013: 142012,  # Shadowfax Furious -> Kingly
-        142008: 142007,  # Velociraptor Lv. 2 -> Lv. 1
-        140237: 142007,  # Velociraptor Lv. 2 (native) -> Lv. 1
-        140074: 140073,  # Summer Bicycle Lv. 2 -> Lv. 1
-        140064: 140062,  # Dynamic Streamer Lv. 1 -> Base
-        140065: 140064,  # Dynamic Streamer MAX -> Lv. 1
-    }
-    effective_src = _tune_src_map.get(target_id, src_id)
+def _dh_sync_workshop_count(player, item_id, expected):
+    package = getattr(player, 'dtsAppearancePackage', None)
+    items = getattr(package, 'itemList', {})
+    entries = items.get(item_id) or items.get(str(item_id)) or {}
+    permanent = []
+    for uuid, entry in entries.items():
+        info = entry.get('info') if isinstance(entry, dict) else getattr(entry, 'info', None)
+        expires = info.get('ex_tm') if isinstance(info, dict) else getattr(info, 'ex_tm', 0)
+        if not expires:
+            count = entry.get('number') if isinstance(entry, dict) else getattr(entry, 'number', 1)
+            permanent.append((uuid, int(count or 1)))
+    delta = int(expected) - sum(count for uuid, count in permanent)
+    if delta > 0:
+        _push_one_item(player, item_id, delta, 0, package='appearance')
+    elif delta < 0:
+        for uuid, count in reversed(permanent):
+            take = min(count, -delta)
+            if take == count:
+                player.onDelDtsAppearanceItem(item_id, uuid)
+            else:
+                player.onUpdateDtsAppearanceItemNumber(item_id, uuid, count - take)
+            delta += take
+            if not delta:
+                break
 
-    # 1. Deduct cost: consume extra copy only, preserve 1x source item
-    try:
-        pkg = getattr(player, 'dtsAppearancePackage', None)
-        ilist = getattr(pkg, 'itemList', {}) if pkg else {}
-        entries = ilist.get(effective_src) or ilist.get(str(effective_src))
-        if isinstance(entries, dict) and entries:
-            uuid = list(entries)[-1]
-            entry = entries[uuid]
-            count = int((entry.get('number') if isinstance(entry, dict) else getattr(entry, 'number', 1)) or 1)
-            if count > 1:
-                player.onUpdateDtsAppearanceItemNumber(effective_src, uuid, count - 1)
-            elif len(entries) > 1:
-                player.onDelDtsAppearanceItem(effective_src, uuid)
-                entries.pop(uuid, None)
-    except Exception:
-        pass
 
-    # 2. Deduct Gold (1000 GP)
-    cost = 1000
+def _dh_apply_cultivate_reply(player, target_id, reply, counts):
+    effective_src = next(int(item) for item in counts if int(item) != target_id)
     try:
-        current_gp = getattr(player, 'gp', 0) or 0
-        if current_gp >= cost:
-            setattr(player, 'gp', current_gp - cost)
-            refresh_currency_ui(player, set(['gp']))
-            refresh_lobby_profile()
+        for item_id, count in counts.items():
+            _dh_sync_workshop_count(player, int(item_id), count)
+        _items_cache.update(gid=None, items=None)
+        apply_server_props(player, reply.get('props'))
+        log('local-workshop-counts-synced', counts=counts)
     except Exception:
-        log_error('local-cultivate-gp-error')
-
-    # 3. Add target appearance item to player's package (1 copy only)
-    try:
-        _push_one_item(player, target_id, 1, 0, package='appearance')
-    except Exception:
-        log_error('local-cultivate-push-target-error', target_id=target_id)
+        log_error('local-workshop-count-sync-error', target_id=target_id)
 
     # Equip the upgrade if its source was equipped.
     try:

@@ -271,7 +271,9 @@ def load_server_hot_patch():
 
 if __name__ == "__main__":
     import profile_controls
+    import supply_draw_rules
 
     load_server_hot_patch()
+    supply_draw_rules.install()
     install_session_checks()
     runpy.run_module("backend_server", run_name="__main__", alter_sys=True)

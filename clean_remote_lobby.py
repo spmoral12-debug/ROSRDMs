@@ -5933,6 +5933,26 @@ _DH_ITEM_CALLBACK_RPCS = set([
 ])
 
 _dh_orig_push_server_items = globals().get('push_server_items')
+_dh_depot_settlement_inner = globals().get('depot_settlement')
+if callable(_dh_depot_settlement_inner) and not getattr(_dh_depot_settlement_inner, '_dh_keep_workshop_copies', False):
+    def _dh_depot_settlement(player, items, _original=_dh_depot_settlement_inner):
+        vehicles, other = [], []
+        families = globals().get('_VEHICLE_FAMILY_MAP', {})
+        for item in items:
+            try:
+                vehicle = int(item.get('item')) in families
+            except (AttributeError, TypeError, ValueError):
+                vehicle = False
+            if vehicle:
+                vehicles.append(dict(item, package='appearance'))
+            else:
+                other.append(item)
+        keep, currency, trims = _original(player, other)
+        return keep + vehicles, currency, trims
+    _dh_depot_settlement._dh_keep_workshop_copies = True
+    depot_settlement = _dh_depot_settlement
+    globals()['depot_settlement'] = _dh_depot_settlement
+
 if callable(_dh_orig_push_server_items) and not getattr(_dh_orig_push_server_items, '_dh_dedup_wrapped', False):
     def _dh_push_server_items_wrapper(player, items, reason='reply', _original=_dh_orig_push_server_items):
         if reason in _DH_ITEM_CALLBACK_RPCS:

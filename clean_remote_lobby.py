@@ -67113,9 +67113,10 @@ if callable(_dh_orig_start_local_lobby):
 _VEHICLE_FAMILY_MAP = {
     # target_tier -> (base_tier, [all_tiers_from_highest_to_lowest])
     # Nova / Lamborghini
-    140035: (140031, [140035, 140032, 140031]),
-    140032: (140031, [140035, 140032, 140031]),
-    140031: (140031, [140035, 140032, 140031]),
+    140035: (140031, [140035, 140033, 140032, 140031]),
+    140033: (140031, [140035, 140033, 140032, 140031]),
+    140032: (140031, [140035, 140033, 140032, 140031]),
+    140031: (140031, [140035, 140033, 140032, 140031]),
 
     # Three-wheeler / Tuk-tuk
     140905: (140902, [140905, 140902]),
@@ -67440,7 +67441,7 @@ def _dh_install_vehicle_appearance_preload_hook():
                 # Full vehicle evolution chains mapped by land_vid
                 chains_by_vid = {}
                 for land_vid, chain in (
-                    (25000, [140035, 140032, 140031]),               # Nova / Supernova
+                    (25000, [140035, 140033, 140032, 140031]),       # Nova / Supernova
                     (25000, [140013, 140010]),                       # Spark / Thunderbird
                     (25000, [140024, 140021]),                       # Twister / Storm
                     (25000, [142030, 142029, 142028]),               # Burst Sedan
@@ -67511,6 +67512,7 @@ def _dh_install_vehicle_appearance_preload_hook():
                                     (142008, (142007,)),
                                     (140237, (142007,)),
                                     (140032, (140031,)),
+                                    (140033, (140031,)),
                                     (140035, (140031,)),
                                     (140905, (140902,)),
                                     (140404, (140403,)),

@@ -85,6 +85,7 @@ def change_flag(server, args, kwargs):
 
 _TUNE_SOURCES = {
         140032: 140031,  # Nova X2 -> Nova X1
+        140033: 140031,  # Nova X3 consumes a spare Nova X1 after unlocking X2
         140035: 140031,  # Supernova -> Nova X1
         140905: 140902,  # Reign of Fire -> 5 Star Ride
         140404: 140403,  # Monster - M2 -> Monster - M1
@@ -114,6 +115,9 @@ _TUNE_SOURCES = {
         140065: 140064,  # Dynamic Streamer MAX -> Lv. 1
 }
 
+_TUNE_PREREQUISITES = {140033: 140032, 140035: 140033}
+_TUNE_GOLD = {140032: 2000, 140033: 2000}
+
 
 @rpc("appearanceCultivateCompound")
 def cultivate_compound(server, args, kwargs):
@@ -126,12 +130,17 @@ def cultivate_compound(server, args, kwargs):
         with account.db.transaction() as conn:
             with account.edit_in(conn) as data:
                 depot = data.setdefault("depot", {})
+                prerequisite = _TUNE_PREREQUISITES.get(target_id)
+                if prerequisite is not None:
+                    previous = depot.get(str(prerequisite), {})
+                    if int(previous.get("count", 0) or 0) < 1 or previous.get("expires"):
+                        raise AccountError("missing_prerequisite", "Unlock the previous upgrade first.")
                 src_entry = depot.get(str(effective_src), {})
                 source_count = int(src_entry.get("count", 0) or 0)
                 if source_count < 2 or src_entry.get("expires"):
                     raise AccountError("missing_duplicate", "You need two permanent copies to upgrade.")
 
-                account.spend(data, 1, 2000 if target_id == 140032 else 1000, f"cultivate:{target_id}")
+                account.spend(data, 1, _TUNE_GOLD.get(target_id, 1000), f"cultivate:{target_id}")
                 src_entry["count"] = source_count - 1
                 target = depot.get(str(target_id), {})
                 depot[str(target_id)] = {"count": int(target.get("count", 0) or 0) + 1, "expires": 0}
@@ -173,6 +182,7 @@ try:
                         # 1. Evolution pairs cleanup: prune source items if upgraded tier is owned
                         evo_pairs = [
                             ("140032", ("140031",)),
+                            ("140033", ("140031",)),
                             ("140035", ("140031",)),
                             ("140905", ("140902",)),
                             ("140406", ("140404", "140403")),

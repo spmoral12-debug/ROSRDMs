@@ -9764,61 +9764,23 @@ def _dh_ensure_synthetic_props():
                 _dh_synthetic_props[492081] = bow
                 _dh_synthetic_props[492082] = bow
 
-        # 2. Velociraptor Lv. 2 (142008 & 140237)
-        if 142008 not in _dh_synthetic_props or 140237 not in _dh_synthetic_props:
-            raptor_src = None
-            try:
-                raptor_src = orig_get(142007)
-            except Exception:
-                raptor_src = None
-            if raptor_src is None:
-                try:
-                    raptor_src = orig_get(140237)
-                except Exception:
-                    raptor_src = None
-            if raptor_src is not None:
-                raptor_lv2 = copy.copy(raptor_src)
-                for attr, val in (('NAME', 'Velociraptor Lv. 2'),
-                                  ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
-                                  ('HIDE_IN_UI', False)):
-                    try:
-                        setattr(raptor_lv2, attr, val)
-                    except Exception:
-                        pass
-                ptype = copy.copy(getattr(raptor_src, 'PROP_TYPE', None))
-                if ptype is not None:
-                    for attr, val in (('FP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
-                                      ('TP_MTG_PATH', 'vehicle/bike_xunmenglongdiji/xunmenglongdiji_1.mtg'),
-                                      ('DISPLAY_USING_VEHICLE_ID', 910059),
-                                      ('LAND_VEHICLE_ID', 910043),
-                                      ('VEHICLE_ID', 910043),
-                                      ('TRANSFER_LAND_VEHICLE_ID', 910059),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
-                                      ('HIDE_IN_UI', False)):
-                        try:
-                            setattr(ptype, attr, val)
-                        except Exception:
-                            pass
-                    try:
-                        base_dim = getattr(orig_get(142007).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
-                    except Exception:
-                        base_dim = None
-                    if not base_dim:
-                        try:
-                            base_dim = getattr(orig_get(140237).PROP_TYPE, 'DISPLAY_IN_MODEL', None)
-                        except Exception:
-                            base_dim = None
-                    if base_dim:
-                        ec = copy.copy(base_dim[0])
-                        ec.DISPLAY_PROP_LIST = [142008]
-                        ec.DISPLAY_POS_ID = 1224
-                        ec.SHOULD_SHOW = True
-                        ptype.DISPLAY_IN_MODEL = [ec]
-                    raptor_lv2.PROP_TYPE = ptype
+        # Use the native frost raptor for rendering and the base raptor's Depot placement.
+        if 142008 not in _dh_synthetic_props:
+            native = orig_get(140237)
+            base = orig_get(142007)
+            if native is not None and base is not None:
+                raptor_lv2 = copy.copy(native)
+                ptype = copy.copy(native.PROP_TYPE)
+                placement = copy.copy(base.PROP_TYPE.DISPLAY_IN_MODEL[0])
+                placement.DISPLAY_PROP_LIST = [140237]
+                ptype.DISPLAY_IN_MODEL = [placement]
+                ptype.LAND_VEHICLE_ID = base.PROP_TYPE.LAND_VEHICLE_ID
+                raptor_lv2.PROP_TYPE = ptype
+                raptor_lv2.NAME = 'Velociraptor Lv. 2'
                 _dh_synthetic_props[142008] = raptor_lv2
-                _dh_synthetic_props[140237] = raptor_lv2
+                log('local-raptor-lv2-preview-configured', icon=native.ICON_PATH,
+                    model=ptype.FP_MTG_PATH, entity=ptype.DISPLAY_USING_VEHICLE_ID,
+                    position=placement.DISPLAY_POS_ID)
 
         # 3. Supernova (140035) Unhide (keep native turntable empty DISPLAY_IN_MODEL)
         try:
@@ -67294,8 +67256,8 @@ _VEHICLE_ICON_MAP = {
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
     142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    140237: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
+    142008: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
+    140237: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',

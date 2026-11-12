@@ -9800,11 +9800,11 @@ _DH_WORKSHOP_APPEARANCES = (
      'ui/images/dts_appearance/vehiclefull/img_summerbike_02.png',
      'vehicle/summer_bike_lv2/summer_bike_lv2.mtg',
      'vehicle/summer_bike_lv2/summer_bike_lv2.mtg'),
-    (142005, 142004, 'Golden Flash Lv. 2',
+    (142006, 142004, 'Golden Flash Lv. 2',
      'ui/images/dts_appearance/vehiclefull/img_weilai2.png',
      'vehicle/weilaiche_lv2/cheshen.mtg',
      'vehicle/weilaiche_lv2/geton_vehicle.mtg'),
-    (142006, 142004, 'Golden Flash Lv. 3',
+    (142005, 142004, 'Golden Flash Lv. 3',
      'ui/images/dts_appearance/vehiclefull/img_weilai3.png',
      'vehicle/weilaiche_lv3/cheshen.mtg',
      'vehicle/weilaiche_lv3/geton_vehicle.mtg'),
@@ -67243,8 +67243,8 @@ _VEHICLE_NAME_MAP = {
     140202: 'Blazing Flash A1',
     140205: 'Phoenix',
     142004: 'Golden Flash Lv. 1',
-    142005: 'Golden Flash Lv. 2',
-    142006: 'Golden Flash Lv. 3',
+    142005: 'Golden Flash Lv. 3',
+    142006: 'Golden Flash Lv. 2',
     142011: 'Shadowfax - Noble',
     142012: 'Shadowfax - Kingly',
     142013: 'Shadowfax - Furious',
@@ -67305,6 +67305,42 @@ _VEHICLE_ICON_MAP = {
     140064: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_03.png',
     140065: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_mibao.png',
 }
+
+# Vehicle families exported from the live Workshop catalog.
+_DH_NATIVE_WORKSHOP_CHAINS = (
+    (140064, 140065),
+    (140031, 140032, 140033, 140034),
+    (142014, 142015),
+    (140041, 140042, 140043, 140045),
+    (142007, 142008),
+    (142028, 142029, 142030),
+    (140932, 140933, 140934),
+    (140940, 140941, 140942),
+    (140056, 140057, 140059),
+    (142011, 142012, 142013),
+    (140001, 140004, 140003, 140006, 140009, 140008, 140007),
+    (142017, 142018),
+    (140921, 140922, 140923),
+    (140902, 140903, 140904, 140905),
+    (140906, 140907, 140908, 140909, 140910),
+    (140911, 140912, 140913, 140914),
+    (140915, 140916, 140917),
+    (140918, 140919, 140920),
+    (140010, 140011, 140012, 140013),
+    (140073, 140074, 140075),
+    (140202, 140203, 140204, 140205),
+    (140403, 140404, 140405, 140406),
+    (140021, 140022, 140024),
+    (140211, 140212, 140213, 140214),
+    (140945, 140946),
+    (142004, 142006, 142005),
+    (140924, 140925),
+    (140926, 140927, 140928),
+    (140223, 140224),
+)
+for _dh_chain in _DH_NATIVE_WORKSHOP_CHAINS:
+    for _dh_tier_id in _dh_chain:
+        _VEHICLE_FAMILY_MAP[_dh_tier_id] = (_dh_chain[0], list(reversed(_dh_chain)))
 
 _VEHICLE_ICON_MAP.update((item_id, icon) for item_id, _, _, icon, _, _ in _DH_WORKSHOP_APPEARANCES)
 
@@ -67461,7 +67497,7 @@ def _dh_install_vehicle_appearance_preload_hook():
                     (25000, [140024, 140021]),                       # Twister / Storm
                     (25000, [142030, 142029, 142028]),               # Burst Sedan
                     (25000, [140051, 140048]),                       # Hunting Off-road
-                    (25000, [142006, 142005, 142004]),               # Golden Flash
+                    (25000, [142005, 142006, 142004]),               # Golden Flash
                     (25000, [142013, 142012, 142011]),               # Shadowfax
                     (31002, [140406, 140405, 140404, 140403]),       # Monster Truck
                     (31002, [140046, 140041]),                       # Frosty Frills
@@ -67544,8 +67580,8 @@ def _dh_install_vehicle_appearance_preload_hook():
                                     (140077, (140076,)),
                                     (140214, (140211,)),
                                     (140205, (140202,)),
-                                    (142005, (142004,)),
-                                    (142006, (142005, 142004)),
+                                    (142006, (142004,)),
+                                    (142005, (142006, 142004)),
                                     (142012, (142011,)),
                                     (142013, (142012, 142011)),
                                     (140074, (140073,)),

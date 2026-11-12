@@ -130,6 +130,84 @@ _TUNE_PREREQUISITES = {
 _TUNE_GOLD = {140032: 2000, 140033: 2000, 140074: 2000, 140404: 2000, 140405: 2000, 140406: 2000}
 
 
+# Vehicle Workshop catalog exported from the game client.
+# Target: (spare base item, gold cost, required unlocked tier).
+_VEHICLE_WORKSHOP_RULES = {
+    140003: (140001, 1000, 140004),  # Comet - T6
+    140004: (140001, 1000, None),  # Comet - T4
+    140006: (140001, 1000, 140003),  # Eclipse - S1
+    140007: (140001, 1000, 140009),  # Blue Eclipse
+    140008: (140001, 1000, 140009),  # Eclipse - S3
+    140009: (140001, 1000, 140006),  # Eclipse - S2
+    140011: (140010, 2000, None),  # Spark V5
+    140012: (140010, 2000, 140011),  # Spark V7
+    140013: (140010, 2000, 140012),  # Thunderbird
+    140022: (140021, 2000, None),  # Twister - T2
+    140024: (140021, 2000, 140022),  # Storm
+    140032: (140031, 2000, None),  # Nova X2
+    140033: (140031, 2000, 140032),  # Nova X3
+    140034: (140031, 2000, 140033),  # Supernova
+    140042: (140041, 2000, None),  # Frosty Frills - II
+    140043: (140041, 2000, 140042),  # Frosty Frills - III
+    140045: (140041, 2000, 140043),  # Brain Freeze
+    140057: (140056, 2000, None),  # Hovering Car Lv.2
+    140059: (140056, 2000, 140057),  # Hovering Car Lv. Max
+    140065: (140064, 1000, None),  # Dynamic Streamer MAX
+    140074: (140073, 2000, None),  # Cool Summer Bicycle
+    140075: (140073, 2000, 140074),  # Exquisite Summer Bicycle
+    140203: (140202, 2000, None),  # Blazing Flash A3
+    140204: (140202, 2000, 140203),  # Blazing Flash A5
+    140205: (140202, 2000, 140204),  # Phoenix
+    140212: (140211, 2000, None),  # Pegasus - II
+    140213: (140211, 2000, 140212),  # Pegasus - III
+    140214: (140211, 2000, 140213),  # Pegasus Turbo
+    140224: (140223, 2000, None),  # Discovery
+    140404: (140403, 2000, None),  # Monster - M2
+    140405: (140403, 2000, 140404),  # Monster - M3
+    140406: (140403, 2000, 140405),  # Wild Beast
+    140903: (140902, 1000, None),  # Party On
+    140904: (140902, 1000, 140903),  # Destroyer
+    140905: (140902, 1000, 140904),  # Reign of Fire
+    140907: (140906, 1000, None),  # Smash
+    140908: (140906, 1000, 140907),  # Scorch
+    140909: (140906, 1000, 140908),  # Lightning
+    140910: (140906, 1000, 140909),  # Scream
+    140912: (140911, 2000, None),  # Warjeep lv 2
+    140913: (140911, 2000, 140912),  # Warjeep lv 3
+    140914: (140911, 2000, 140913),  # Warjeep lv 4
+    140916: (140915, 2000, None),  # Hovercycle - sunset
+    140917: (140915, 2000, 140916),  # Hovercycle - Sapphire
+    140919: (140918, 2000, None),  # Love Scooter lv 2
+    140920: (140918, 2000, 140919),  # Love Eternal
+    140922: (140921, 1000, None),  # Sting lv 2
+    140923: (140921, 2000, 140922),  # Sting lv 3
+    140925: (140924, 1000, None),  # Golden Elephant
+    140927: (140926, 2000, None),  # Scorpion-lv2
+    140928: (140926, 2000, 140927),  # Scorpion-lv3
+    140933: (140932, 2000, None),  # Terror Truck lv.2
+    140934: (140932, 2000, 140933),  # Terror Truck lv.3
+    140941: (140940, 1000, None),  # Blaze Jackal
+    140942: (140940, 2000, 140941),  # Ice Cobra
+    140946: (140945, 1000, None),  # Crush Lv.2
+    142005: (142004, 2000, 142006),  # Golden Flash Lv. 3
+    142006: (142004, 1000, None),  # Golden Flash Lv. 2
+    142008: (142007, 1000, None),  # Velociraptor Lv. 2
+    142012: (142011, 1000, None),  # Shadowfax - Kingly
+    142013: (142011, 2000, 142012),  # Shadowfax - Furious
+    142015: (142014, 1000, None),  # Venomous Tracks LV.2
+    142018: (142017, 1000, None),  # Knight Formula lv.2
+    142029: (142028, 1000, None),  # Burst Sedan Lv.2
+    142030: (142028, 2000, 142029),  # Burst Sedan Lv.3
+}
+for _target, (_base, _gold, _required) in _VEHICLE_WORKSHOP_RULES.items():
+    _TUNE_SOURCES[_target] = _base
+    _TUNE_GOLD[_target] = _gold
+    if _required is None:
+        _TUNE_PREREQUISITES.pop(_target, None)
+    else:
+        _TUNE_PREREQUISITES[_target] = _required
+
+
 @rpc("appearanceCultivateCompound")
 def cultivate_compound(server, args, kwargs):
     target_id = int(args[1]) if len(args) > 1 else 0
@@ -214,7 +292,7 @@ try:
                             ("140077", ("140076",)),
                             ("140214", ("140211",)),
                             ("140205", ("140202",)),
-                            ("142006", ("142005", "142004")),
+                            ("142006", ("142004",)),
                             ("142005", ("142004",)),
                             ("142013", ("142012", "142011")),
                             ("142012", ("142011",)),

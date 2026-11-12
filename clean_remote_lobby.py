@@ -9718,6 +9718,9 @@ def _dh_patch_uimain_visibilities():
     except Exception:
         pass
 
+_DH_RAPTOR_LV2_ICON = 'ui/images/dts_appearance/vehiclefull/xunmenglong2.png'
+_DH_RAPTOR_LV2_MODEL = 'vehicle/bike_xunmenglonggaoji/xunmenglonggaoji.mtg'
+
 _dh_synthetic_props = globals().get('_dh_synthetic_props') or {}
 _dh_synthetic_building = False
 _dh_synthetic_retry_at = 0.0
@@ -9764,21 +9767,24 @@ def _dh_ensure_synthetic_props():
                 _dh_synthetic_props[492081] = bow
                 _dh_synthetic_props[492082] = bow
 
-        # Use the native frost raptor for rendering and the base raptor's Depot placement.
+        # Use the advanced raptor assets shipped in this client build.
         if 142008 not in _dh_synthetic_props:
-            native = orig_get(140237)
             base = orig_get(142007)
-            if native is not None and base is not None:
-                raptor_lv2 = copy.copy(native)
-                ptype = copy.copy(native.PROP_TYPE)
-                placement = copy.copy(base.PROP_TYPE.DISPLAY_IN_MODEL[0])
-                placement.DISPLAY_PROP_LIST = [140237]
+            if base is not None:
+                raptor_lv2 = copy.copy(base)
+                ptype = copy.copy(base.PROP_TYPE)
+                placement = copy.copy(ptype.DISPLAY_IN_MODEL[0])
+                placement.DISPLAY_PROP_LIST = [142008]
                 ptype.DISPLAY_IN_MODEL = [placement]
-                ptype.LAND_VEHICLE_ID = base.PROP_TYPE.LAND_VEHICLE_ID
+                ptype.FP_MTG_PATH = _DH_RAPTOR_LV2_MODEL
+                ptype.TP_MTG_PATH = _DH_RAPTOR_LV2_MODEL
+                ptype.AUTO_ROYALE_DISPLAY_IMG_PATH = _DH_RAPTOR_LV2_ICON
                 raptor_lv2.PROP_TYPE = ptype
                 raptor_lv2.NAME = 'Velociraptor Lv. 2'
+                raptor_lv2.ICON_PATH = _DH_RAPTOR_LV2_ICON
+                raptor_lv2.ICON_PATH_DISPLAY = _DH_RAPTOR_LV2_ICON
                 _dh_synthetic_props[142008] = raptor_lv2
-                log('local-raptor-lv2-preview-configured', icon=native.ICON_PATH,
+                log('local-raptor-lv2-preview-configured', icon=raptor_lv2.ICON_PATH,
                     model=ptype.FP_MTG_PATH, entity=ptype.DISPLAY_USING_VEHICLE_ID,
                     position=placement.DISPLAY_POS_ID)
 
@@ -67256,8 +67262,8 @@ _VEHICLE_ICON_MAP = {
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
     142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
-    140237: 'ui/images/dts_appearance/vehicle/img_xunmenglong_02_fk.png',
+    142008: _DH_RAPTOR_LV2_ICON,
+    140237: _DH_RAPTOR_LV2_ICON,
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',

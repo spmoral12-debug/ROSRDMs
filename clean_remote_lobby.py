@@ -5943,30 +5943,30 @@ _DH_ITEM_CALLBACK_RPCS = set([
 
 _dh_orig_push_server_items = globals().get('push_server_items')
 if callable(_dh_orig_push_server_items) and not getattr(_dh_orig_push_server_items, '_dh_dedup_wrapped', False):
-    def _dh_push_server_items_wrapper(player, items, reason='reply'):
+    def _dh_push_server_items_wrapper(player, items, reason='reply', _original=_dh_orig_push_server_items):
         if reason in _DH_ITEM_CALLBACK_RPCS:
             try:
                 log('local-depot-push-suppressed-for-callback', reason=reason, count=len(items) if isinstance(items, (list, tuple)) else 0)
             except Exception:
                 pass
             return 0
-        return _dh_orig_push_server_items(player, items, reason=reason)
+        return _original(player, items, reason=reason)
     _dh_push_server_items_wrapper._dh_dedup_wrapped = True
     push_server_items = _dh_push_server_items_wrapper
     globals()['push_server_items'] = _dh_push_server_items_wrapper
 
 _dh_orig_finish_rpc = globals().get('finish_rpc')
 if callable(_dh_orig_finish_rpc) and not getattr(_dh_orig_finish_rpc, '_dh_pack_wrapped', False):
-    def _dh_finish_rpc_pack_wrapper(player, name, args, kwargs, reply, count):
+    def _dh_finish_rpc_pack_wrapper(player, name, args, kwargs, reply, count, _original=_dh_orig_finish_rpc):
         items_for_ui = reply.get('items') if isinstance(reply, dict) else None
         # If this RPC already delivers items via engine callbacks, strip reply['items']
         # before the base finish_rpc can invoke push_server_items
         if name in _DH_ITEM_CALLBACK_RPCS and isinstance(reply, dict) and 'items' in reply:
             reply_copy = dict(reply)
             reply_copy.pop('items', None)
-            res = _dh_orig_finish_rpc(player, name, args, kwargs, reply_copy, count)
+            res = _original(player, name, args, kwargs, reply_copy, count)
         else:
-            res = _dh_orig_finish_rpc(player, name, args, kwargs, reply, count)
+            res = _original(player, name, args, kwargs, reply, count)
         try:
             if name in ('buyMallGood', 'buyMallGoodInAppearanceMall', 'buyMultipleMallGood', 'buyDtsHallProp') and isinstance(reply, dict) and reply.get('ok'):
                 items = (items_for_ui if isinstance(items_for_ui, list) else None) or (kwargs or {}).get('items') or _dh_last_pack_buy.get('last_opened') or []
@@ -9740,6 +9740,7 @@ def _dh_ensure_synthetic_props():
     _dh_synthetic_building = True
     try:
         import copy
+        _dh_patch_whitelist_stub()
         legacy = __import__('helpers.character_scene', fromlist=['legacyProperties']).legacyProperties
         orig_get = getattr(legacy, '_dh_orig_get_dts_prop', legacy.getDtsHallPropData)
 
@@ -9786,8 +9787,8 @@ def _dh_ensure_synthetic_props():
                 raptor_lv2 = copy.copy(raptor_src)
                 for attr, val in (('NAME', 'Velociraptor Lv. 2'),
                                   ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                  ('ICON_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
                                   ('HIDE_IN_UI', False)):
                     try:
                         setattr(raptor_lv2, attr, val)
@@ -9801,7 +9802,7 @@ def _dh_ensure_synthetic_props():
                                       ('LAND_VEHICLE_ID', 910043),
                                       ('VEHICLE_ID', 910043),
                                       ('TRANSFER_LAND_VEHICLE_ID', 910059),
-                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png'),
+                                      ('AUTO_ROYALE_DISPLAY_IMG_PATH', 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png'),
                                       ('HIDE_IN_UI', False)):
                         try:
                             setattr(ptype, attr, val)
@@ -9818,7 +9819,7 @@ def _dh_ensure_synthetic_props():
                             base_dim = None
                     if base_dim:
                         ec = copy.copy(base_dim[0])
-                        ec.DISPLAY_PROP_LIST = [140237]
+                        ec.DISPLAY_PROP_LIST = [142008]
                         ec.DISPLAY_POS_ID = 1224
                         ec.SHOULD_SHOW = True
                         ptype.DISPLAY_IN_MODEL = [ec]
@@ -67298,8 +67299,8 @@ _VEHICLE_ICON_MAP = {
     142012: 'ui/images/dts_appearance/vehiclefull/laosi2.png',
     142013: 'ui/images/dts_appearance/vehiclefull/laosi3.png',
     142007: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
-    142008: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
-    140237: 'ui/images/dts_appearance/vehiclefull/img_xunmenglong_02.png',
+    142008: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
+    140237: 'ui/images/dts_appearance/vehiclefull/xunmenglong1.png',
     140073: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140074: 'ui/images/dts_appearance/vehiclefull/img_summerbike_01.png',
     140062: 'ui/images/dts_appearance/vehiclefull/img_zj_huaban_01.png',
@@ -67431,12 +67432,13 @@ def _dh_install_vehicle_appearance_preload_hook():
                     return ret
                 pkg = getattr(player, 'dtsAppearancePackage', None)
                 ilist = getattr(pkg, 'itemList', {}) if pkg else {}
-                eq_vehicles = set(getattr(player, 'dtsVehicleAppearanceList', []) or [])
+                equipped = getattr(player, 'dtsVehicleAppearanceList', None) or ()
+                eq_vehicles = set(str(iid) for iid in equipped)
+                if isinstance(equipped, dict):
+                    eq_vehicles.update(str(iid) for iid in equipped.values())
 
                 def _has(iid):
-                    return (iid in ilist or str(iid) in ilist or iid in eq_vehicles)
-
-                _dh_ensure_synthetic_props()
+                    return int(iid) in ilist or str(iid) in ilist or str(iid) in eq_vehicles
 
                 # Full vehicle evolution chains mapped by land_vid
                 chains_by_vid = {}
@@ -67465,9 +67467,15 @@ def _dh_install_vehicle_appearance_preload_hook():
                     chains_by_vid.setdefault(land_vid, []).append(chain)
 
                 if isinstance(ret, dict):
+                    ret = dict(ret)
                     for cat_key, cat_dict in ret.items():
                         if not isinstance(cat_dict, dict):
                             continue
+                        cat_dict = dict(cat_dict)
+                        ret[cat_key] = cat_dict
+                        for vid_key, current in cat_dict.items():
+                            if isinstance(current, (list, tuple)):
+                                cat_dict[vid_key] = [int(iid) for iid in current if _has(iid)]
                         for land_vid, family_chains in chains_by_vid.items():
                             vid_key = land_vid if land_vid in cat_dict else (str(land_vid) if str(land_vid) in cat_dict else None)
                             if vid_key is None:
@@ -67478,6 +67486,8 @@ def _dh_install_vehicle_appearance_preload_hook():
                             all_chain_tiers = set()
                             for chain in family_chains:
                                 all_chain_tiers.update(chain)
+                            if 142008 in all_chain_tiers:
+                                all_chain_tiers.add(140237)
 
                             new_list = []
                             seen = set()
@@ -67536,20 +67546,6 @@ def _dh_install_vehicle_appearance_preload_hook():
                                         if tier in owned_in_chain and tier not in seen:
                                             seen.add(tier)
                                             new_list.append(tier)
-                                            # Ensure owned tier is in player's package
-                                            if not (tier in ilist or str(tier) in ilist):
-                                                push = globals().get('_push_one_item')
-                                                if callable(push):
-                                                    try:
-                                                        push(player, tier, 1, 0, package='appearance')
-                                                    except Exception:
-                                                        pass
-                                else:
-                                    # Not owned yet: show base tier so player can view it in catalog
-                                    base_tier = chain[-1]
-                                    if base_tier not in seen:
-                                        seen.add(base_tier)
-                                        new_list.append(base_tier)
 
                             cat_dict[vid_key] = new_list
 

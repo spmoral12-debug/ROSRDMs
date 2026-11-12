@@ -9832,8 +9832,8 @@ def _dh_ensure_synthetic_props():
                     bow.PROP_TYPE = ptype
                 for attr, val in (('NAME', 'Compound Bow-Pink Lady'),
                                   ('QUALITY', 5),
-                                  ('ICON_PATH', 'ui/images/dts_item/package/icn_gong_package.png'),
-                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_item/package/icn_gong_package.png')):
+                                  ('ICON_PATH', 'ui/images/dts_appearance/gunfull/img_fuhegong_fenhongtuzi.png'),
+                                  ('ICON_PATH_DISPLAY', 'ui/images/dts_appearance/gunfull/img_fuhegong_fenhongtuzi.png')):
                     try:
                         setattr(bow, attr, val)
                     except Exception:

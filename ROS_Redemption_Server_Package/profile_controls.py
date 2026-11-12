@@ -95,21 +95,21 @@ _TUNE_SOURCES = {
         140013: 140010,  # Thunderbird -> Spark V3
         140024: 140021,  # Storm -> Twister - T1
         142029: 142028,  # Burst Sedan Lv. 2 -> Lv. 1
-        142030: 142029,  # Burst Sedan Lv. 3 -> Lv. 2
+        142030: 142028,  # Burst Sedan Lv. 3 consumes a spare Lv. 1
         140051: 140048,  # Fiery Hunting -> Hunting Path - I
         140046: 140041,  # Brain Freeze -> Frosty Frills - I
         140914: 140911,  # Warjeep lv 4 -> lv 1
         140223: 140221,  # Subjugator T2 -> Subjugator
-        140224: 140223,  # Discovery -> Subjugator T2
+        140224: 140221,  # Discovery consumes a spare Subjugator
         140061: 140056,  # Hovering Car Max -> Lv. 1
         142003: 140241,  # Deathmobile -> Burst Buggy - I
         140077: 140076,  # Darksteel Bike Lv. 2 -> Lv. 1
         140214: 140211,  # Pegasus Turbo -> Pegasus - I
         140205: 140202,  # Phoenix -> Blazing Flash A1
         142005: 142004,  # Golden Flash Lv. 2 -> Lv. 1
-        142006: 142005,  # Golden Flash Lv. 3 -> Lv. 2
+        142006: 142004,  # Golden Flash Lv. 3 consumes a spare Lv. 1
         142012: 142011,  # Shadowfax Kingly -> Noble
-        142013: 142012,  # Shadowfax Furious -> Kingly
+        142013: 142011,  # Shadowfax Furious consumes a spare Noble
         142008: 142007,  # Velociraptor Lv. 2 -> Lv. 1
         140237: 142007,  # Velociraptor Lv. 2 (native) -> Lv. 1
         140074: 140073,  # Summer Bicycle Lv. 2 -> Lv. 1
@@ -117,7 +117,16 @@ _TUNE_SOURCES = {
         140065: 140064,  # Dynamic Streamer MAX -> Lv. 1
 }
 
-_TUNE_PREREQUISITES = {140033: 140032, 140035: 140033, 140405: 140404, 140406: 140405}
+_TUNE_PREREQUISITES = {
+    140033: 140032,
+    140035: 140033,
+    140224: 140223,
+    140405: 140404,
+    140406: 140405,
+    142006: 142005,
+    142013: 142012,
+    142030: 142029,
+}
 _TUNE_GOLD = {140032: 2000, 140033: 2000, 140074: 2000, 140404: 2000, 140405: 2000, 140406: 2000}
 
 

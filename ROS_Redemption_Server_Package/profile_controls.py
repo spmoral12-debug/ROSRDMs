@@ -87,6 +87,7 @@ _TUNE_SOURCES = {
         140032: 140031,  # Nova X2 -> Nova X1
         140033: 140031,  # Nova X3 consumes a spare Nova X1 after unlocking X2
         140035: 140031,  # Supernova -> Nova X1
+        140903: 140902,  # Party On -> 5 Star Ride
         140905: 140902,  # Reign of Fire -> 5 Star Ride
         140404: 140403,  # Monster - M2 -> Monster - M1
         140405: 140403,  # Monster - M3 consumes a spare M1 after unlocking M2
@@ -185,6 +186,7 @@ try:
                             ("140032", ("140031",)),
                             ("140033", ("140031",)),
                             ("140035", ("140031",)),
+                            ("140903", ("140902",)),
                             ("140905", ("140902",)),
                             ("140406", ("140404", "140403")),
                             ("140405", ("140403",)),

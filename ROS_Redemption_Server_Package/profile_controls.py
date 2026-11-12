@@ -83,15 +83,8 @@ def change_flag(server, args, kwargs):
     return _reply("rlRedemptionFlag", [flag, now], "Flag changed.")
 
 
-@rpc("appearanceCultivateCompound")
-def cultivate_compound(server, args, kwargs):
-    src_id = int(args[0]) if len(args) > 0 else 0
-    target_id = int(args[1]) if len(args) > 1 else 0
-    flag = int(args[2]) if len(args) > 2 else 0
-    if not target_id:
-        raise AccountError("bad_item", "Invalid target item.")
-    
-    _tune_src_map = {
+_TUNE_SOURCES = {
+        140032: 140031,  # Nova X2 -> Nova X1
         140035: 140031,  # Supernova -> Nova X1
         140905: 140902,  # Reign of Fire -> 5 Star Ride
         140404: 140403,  # Monster - M2 -> Monster - M1
@@ -119,43 +112,41 @@ def cultivate_compound(server, args, kwargs):
         140074: 140073,  # Summer Bicycle Lv. 2 -> Lv. 1
         140064: 140062,  # Dynamic Streamer Lv. 1 -> Base
         140065: 140064,  # Dynamic Streamer MAX -> Lv. 1
-    }
-    effective_src = _tune_src_map.get(target_id, src_id)
+}
+
+
+@rpc("appearanceCultivateCompound")
+def cultivate_compound(server, args, kwargs):
+    target_id = int(args[1]) if len(args) > 1 else 0
+    effective_src = _TUNE_SOURCES.get(target_id)
+    if effective_src is None:
+        raise AccountError("bad_item", "Unsupported Workshop upgrade.")
     account = server.account
     try:
         with account.db.transaction() as conn:
             with account.edit_in(conn) as data:
                 depot = data.setdefault("depot", {})
-                # Consume extra copy only: ensure 1x source item remains in depot
-                for s_check in (effective_src, src_id):
-                    if s_check and str(s_check) in depot:
-                        src_entry = depot[str(s_check)]
-                        if isinstance(src_entry, dict):
-                            cnt = int(src_entry.get("count", 1) or 1)
-                            if cnt > 1:
-                                src_entry["count"] = cnt - 1
-                            else:
-                                src_entry["count"] = 1
-                    elif s_check:
-                        depot[str(s_check)] = {"count": 1, "expires": 0}
-                
-                try:
-                    account.spend(data, 1001, 1000, f"cultivate:{target_id}")
-                except Exception:
-                    pass
-                
-                # Set target item count to exactly 1
-                depot[str(target_id)] = {"count": 1, "expires": 0}
+                src_entry = depot.get(str(effective_src), {})
+                source_count = int(src_entry.get("count", 0) or 0)
+                if source_count < 2 or src_entry.get("expires"):
+                    raise AccountError("missing_duplicate", "You need two permanent copies to upgrade.")
+
+                account.spend(data, 1001, 1000, f"cultivate:{target_id}")
+                src_entry["count"] = source_count - 1
+                target = depot.get(str(target_id), {})
+                depot[str(target_id)] = {"count": int(target.get("count", 0) or 0) + 1, "expires": 0}
                 
                 equipped = data.setdefault("equipped", {})
                 for k, v in list(equipped.items()):
-                    if isinstance(v, list) and (effective_src in v or src_id in v):
-                        equipped[k] = [target_id if (x == effective_src or x == src_id) else x for x in v]
-                    elif v == effective_src or v == src_id:
+                    if isinstance(v, list) and effective_src in v:
+                        equipped[k] = [target_id if x == effective_src else x for x in v]
+                    elif v == effective_src:
                         equipped[k] = target_id
                 
                 # Clear recent_changes so server does not send duplicate items in reply['items']
                 server.account.recent_changes = []
+    except AccountError:
+        raise
     except Exception as error:
         raise AccountError("cultivate_error", str(error))
     return {
@@ -177,7 +168,8 @@ try:
                     if isinstance(depot, dict):
                         changed = False
                         # 1. Evolution pairs cleanup: prune source items if upgraded tier is owned
-                        evo_prune_pairs = [
+                        evo_pairs = [
+                            ("140032", ("140031",)),
                             ("140035", ("140031",)),
                             ("140905", ("140902",)),
                             ("140406", ("140404", "140403")),
@@ -220,7 +212,7 @@ try:
                                 try:
                                     iid = int(k)
                                     # Cosmetic hall props: vehicles, weapons, clothes, themes
-                                    if v.get("count", 1) > 1 and not (200000 <= iid < 300000 or 490000 <= iid < 500000):
+                                    if v.get("count", 1) > 1 and iid not in _TUNE_SOURCES.values() and iid not in _TUNE_SOURCES and not (200000 <= iid < 300000 or 490000 <= iid < 500000):
                                         v["count"] = 1
                                         changed = True
                                 except Exception:

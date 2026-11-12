@@ -5053,40 +5053,13 @@ def _dh_remove_all_appearance_copies(player, item_id):
 
 
 def _dh_clean_depot_duplicates(player=None):
-    """Scan player's dtsAppearancePackage:
-    1. Clamp all permanent cosmetic items to strictly 1 copy and delete duplicate UUIDs.
-    2. Handle both str and int keys in pkg.itemList.
-    3. Purge lower-tier source vehicles when upgraded/evolved vehicles are owned or equipped:
-       - Monster - M2 (140404) / M3 (140406) -> remove Monster - M1 (140403)
-       - Velociraptor Lv. 2 (142008) -> remove Velociraptor Lv. 1 (142007)
-       - Darksteel Bike Lv. 2 (140077) -> remove Darksteel Bike Lv. 1 (140076)
-       - Summer Bicycle Lv. 2 (140074) -> remove Summer Bicycle (140073)
-    4. Never push duplicate items; refresh UIDtsAppearanceVehicle if active.
-    """
+    """Deduplicate cosmetics while preserving vehicle copies used by Workshop."""
     try:
         if player is None:
             import BigWorld
             player = BigWorld.player()
         if player is None:
             return 0
-        import time as _time
-        now = _time.time()
-        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
-            return 0
-        player._dh_last_depot_clean_time = now
-
-        import time as _time
-        now = _time.time()
-        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
-            return 0
-        player._dh_last_depot_clean_time = now
-
-        import time as _time
-        now = _time.time()
-        if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
-            return 0
-        player._dh_last_depot_clean_time = now
-
         import time as _time
         now = _time.time()
         if now - getattr(player, '_dh_last_depot_clean_time', 0.0) < 5.0:
@@ -5131,6 +5104,8 @@ def _dh_clean_depot_duplicates(player=None):
             grouped.setdefault(iid, []).append(k)
 
         for iid, keys in grouped.items():
+            if iid in _VEHICLE_FAMILY_MAP:
+                continue
             if len(keys) > 1:
                 main_k = iid if iid in keys else keys[0]
                 main_dict = item_list.setdefault(main_k, {})
@@ -5279,8 +5254,19 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
 
     log('local-cultivate-start', src_id=src_id, target_id=target_id)
 
+    def on_upgrade_reply(reply):
+        if isinstance(reply, dict) and reply.get('ok'):
+            _dh_apply_cultivate_reply(player, src_id, target_id)
+        else:
+            show_offline_tip('Upgrade failed. Check that you have two permanent copies and enough gold.', force=True)
+
+    return ask_backend('appearanceCultivateCompound', [src_id, target_id, flag], kwargs, on_upgrade_reply)
+
+
+def _dh_apply_cultivate_reply(player, src_id, target_id):
     # Evolution mappings (target_id -> src_id)
     _tune_src_map = {
+        140032: 140031,  # Nova X2 -> Nova X1
         140035: 140031,  # Supernova -> Nova X1
         140905: 140902,  # Reign of Fire -> 5 Star Ride
         140404: 140403,  # Monster - M2 -> Monster - M1
@@ -5315,14 +5301,16 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     try:
         pkg = getattr(player, 'dtsAppearancePackage', None)
         ilist = getattr(pkg, 'itemList', {}) if pkg else {}
-        for s_check in (effective_src, src_id):
-            if not s_check:
-                continue
-            entries = ilist.get(s_check) or ilist.get(str(s_check))
-            if isinstance(entries, dict) and len(entries) > 1:
-                uuids = list(entries.keys())
-                player.onDelDtsAppearanceItem(int(s_check), uuids[-1])
-                entries.pop(uuids[-1], None)
+        entries = ilist.get(effective_src) or ilist.get(str(effective_src))
+        if isinstance(entries, dict) and entries:
+            uuid = list(entries)[-1]
+            entry = entries[uuid]
+            count = int((entry.get('number') if isinstance(entry, dict) else getattr(entry, 'number', 1)) or 1)
+            if count > 1:
+                player.onUpdateDtsAppearanceItemNumber(effective_src, uuid, count - 1)
+            elif len(entries) > 1:
+                player.onDelDtsAppearanceItem(effective_src, uuid)
+                entries.pop(uuid, None)
     except Exception:
         pass
 
@@ -5375,24 +5363,7 @@ def _dh_rpc_appearance_cultivate_compound(player, *args, **kwargs):
     except Exception:
         log_error('local-cultivate-equip-update-error')
 
-    # 5. Clean any residual duplicate copies
-    try:
-        call_later(0.1, _dh_clean_depot_duplicates, player)
-        call_later(0.3, _dh_clean_depot_duplicates, player)
-        call_later(0.8, _dh_clean_depot_duplicates, player)
-        call_later(1.5, _dh_clean_depot_duplicates, player)
-    except Exception:
-        pass
-
-    # 6. Notify backend server if reachable to persist in database
-    try:
-        ask = globals().get('ask_backend')
-        if callable(ask):
-            ask('appearanceCultivateCompound', [src_id, target_id, flag], kwargs, lambda reply: None)
-    except Exception:
-        pass
-
-    # 7. Deliver callback onAppearanceCultivateCompound to player
+    # Deliver the Workshop callback after the backend confirms the upgrade.
     cb = getattr(player, 'onAppearanceCultivateCompound', None)
     if callable(cb):
         try:
@@ -9729,14 +9700,16 @@ def _dh_patch_uimain_visibilities():
 
 _dh_synthetic_props = globals().get('_dh_synthetic_props') or {}
 _dh_synthetic_building = False
+_dh_synthetic_retry_at = 0.0
 
 
 def _dh_ensure_synthetic_props():
-    global _dh_synthetic_building
+    global _dh_synthetic_building, _dh_synthetic_retry_at
     if 121363 in _dh_synthetic_props and 142008 in _dh_synthetic_props and 140404 in _dh_synthetic_props and 140035 in _dh_synthetic_props:
         return _dh_synthetic_props
-    if _dh_synthetic_building:
+    if _dh_synthetic_building or _dh_time.time() < _dh_synthetic_retry_at:
         return _dh_synthetic_props
+    _dh_synthetic_retry_at = _dh_time.time() + 1.0
     _dh_synthetic_building = True
     try:
         import copy
@@ -67121,8 +67094,9 @@ if callable(_dh_orig_start_local_lobby):
 _VEHICLE_FAMILY_MAP = {
     # target_tier -> (base_tier, [all_tiers_from_highest_to_lowest])
     # Nova / Lamborghini
-    140035: (140031, [140035, 140031]),
-    140031: (140031, [140035, 140031]),
+    140035: (140031, [140035, 140032, 140031]),
+    140032: (140031, [140035, 140032, 140031]),
+    140031: (140031, [140035, 140032, 140031]),
 
     # Three-wheeler / Tuk-tuk
     140905: (140902, [140905, 140902]),
@@ -67210,6 +67184,7 @@ _VEHICLE_FAMILY_MAP = {
 
 _VEHICLE_NAME_MAP = {
     140031: 'Nova X1',
+    140032: 'Nova X2',
     140035: 'Supernova',
     140902: '5 Star Ride',
     140905: 'Reign of Fire',
@@ -67432,10 +67407,12 @@ def _dh_install_vehicle_appearance_preload_hook():
                     return ret
                 pkg = getattr(player, 'dtsAppearancePackage', None)
                 ilist = getattr(pkg, 'itemList', {}) if pkg else {}
-                equipped = getattr(player, 'dtsVehicleAppearanceList', None) or ()
-                eq_vehicles = set(str(iid) for iid in equipped)
-                if isinstance(equipped, dict):
-                    eq_vehicles.update(str(iid) for iid in equipped.values())
+                eq_vehicles = set()
+                for attr in ('dtsVehicleAppearanceList', 'dtsShowVehicleAppearanceList'):
+                    equipped = getattr(player, attr, None) or ()
+                    if isinstance(equipped, dict):
+                        equipped = equipped.values()
+                    eq_vehicles.update(str(iid) for iid in equipped)
 
                 def _has(iid):
                     return int(iid) in ilist or str(iid) in ilist or str(iid) in eq_vehicles
@@ -67443,7 +67420,7 @@ def _dh_install_vehicle_appearance_preload_hook():
                 # Full vehicle evolution chains mapped by land_vid
                 chains_by_vid = {}
                 for land_vid, chain in (
-                    (25000, [140035, 140031]),                       # Nova / Supernova
+                    (25000, [140035, 140032, 140031]),               # Nova / Supernova
                     (25000, [140013, 140010]),                       # Spark / Thunderbird
                     (25000, [140024, 140021]),                       # Twister / Storm
                     (25000, [142030, 142029, 142028]),               # Burst Sedan
@@ -67513,6 +67490,7 @@ def _dh_install_vehicle_appearance_preload_hook():
                                 for higher_id, base_ids in (
                                     (142008, (142007,)),
                                     (140237, (142007,)),
+                                    (140032, (140031,)),
                                     (140035, (140031,)),
                                     (140905, (140902,)),
                                     (140404, (140403,)),

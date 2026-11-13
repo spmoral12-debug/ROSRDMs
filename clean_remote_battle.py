@@ -10145,14 +10145,13 @@ def _dh_rich_sync_teammates(mates):
             except Exception:
                 pass
 
+    # Native badge lookups use an ordered roster. Preserve the local seat
+    # and use each remote avatar's current ID exactly once.
+    seat_ids = [record.entID for record in records]
     player.battleTeammates = records
-    try:
-        player.validBattleTeammates = list(valid_mates)
-        player.battleTeamEntIDs = [record.entID for record in records if record.entID]
-        player.battleTeamMateIds = [record.entID for record in valid_mates]
-        player.fixedBattleTeamMateIds = [getattr(r, 'entID', 0) for r in valid_mates if getattr(r, 'entID', 0)]
-    except Exception:
-        pass
+    player.validBattleTeammates = list(valid_mates)
+    player.battleTeamEntIDs = list(seat_ids)
+    player.fixedBattleTeamMateIds = list(seat_ids)
 
     # Enable the native team layout before publishing its member rows.
     if valid_mates:
@@ -10175,28 +10174,24 @@ def _dh_rich_sync_teammates(mates):
         except Exception:
             log_error('local-mates-setter-error')
 
-    try:
-        if valid_mates and not getattr(player, 'validBattleTeammates', None):
-            player.validBattleTeammates = list(valid_mates)
-    except Exception:
-        pass
-
-    # The prep roster can arrive before the teammate's avatar exists.
-    # Ask the native marker lifecycle to attach once the avatar is available.
+    # The native setter retains old IDs for reconnects. During prep the
+    # same teammate can transition from a server ID to a local avatar ID.
+    player.fixedBattleTeamMateIds = list(seat_ids)
     if on_island_stage():
         import BigWorld
-        check_marker = getattr(player, 'checkClientTeammate', None)
-        markers = getattr(player, 'clientTeammates', {})
-        if callable(check_marker) and isinstance(markers, dict):
+        create_marker = getattr(player, '_createClientTeammate', None)
+        markers = getattr(player, 'clientTeammates', None)
+        if callable(create_marker) and isinstance(markers, dict):
             for record in valid_mates:
                 if record.entID in markers or BigWorld.entities.get(record.entID) is None:
                     continue
                 try:
-                    check_marker(record, False)
+                    create_marker(record)
                 except Exception:
                     if not _dh_mates.get('prep_marker_warned'):
                         _dh_mates['prep_marker_warned'] = True
                         log_error('local-mates-prep-marker-error')
+
     _dh_publish_team_hud(player)
     _dh_sync_client_teammates()
 

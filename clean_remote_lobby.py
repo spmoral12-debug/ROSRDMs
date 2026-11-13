@@ -4603,6 +4603,18 @@ def _dh_trigger_pack_buy_again():
     return False
 
 
+_DH_REWARD_SOURCE_SCREENS = (
+    'UIMallController', 'UIMallCloth', 'UIMall',
+    'UISupplyController', 'UISupplyPackage', 'UIAdvanceSupplyPackage', 'UIMonthlySupplyPackage',
+)
+
+
+def _dh_close_reward_source_for_depot(ui_mgr):
+    for name in _DH_REWARD_SOURCE_SCREENS:
+        if _ui_open(ui_mgr, name) is not None:
+            ui_mgr.leave_ui(name)
+
+
 def _dh_install_main_watch():
     import Globals
     mgr = getattr(Globals, 'uiMgr', None)
@@ -4763,6 +4775,11 @@ def _dh_install_main_watch():
                     _dh_remove_scene_wallpaper(scene)
             except Exception:
                 log_error('local-character-wallpaper-cleanup-error')
+        if ui_name == 'UIDtsAppearanceMainController':
+            try:
+                _dh_close_reward_source_for_depot(mgr)
+            except Exception:
+                log_error('local-reward-depot-transition-error')
         result = inner(ui_name, *args, **kwargs)
         try:
             if ui_name == 'UIItemDisplay':
@@ -4865,7 +4882,10 @@ def _dh_restore_mall_and_supply_ui():
             'UIDtsAppearance', 'UIDtsAppearanceVehicle', 'UIDtsAppearanceVehicleCultivate2', 'UIWorkshop',
             # Manual tabs manage their own visibility, including hidden templates.
         ]
+        depot_open = _ui_open(ui_mgr, 'UIDtsAppearanceMainController') is not None
         for scr_name in target_screens:
+            if depot_open and scr_name in _DH_REWARD_SOURCE_SCREENS:
+                continue
             scr = getattr(ui_mgr, scr_name, None)
             if scr is not None and getattr(scr, 'is_enter', False):
                 try:

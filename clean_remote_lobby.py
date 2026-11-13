@@ -4608,6 +4608,18 @@ def _dh_install_main_watch():
                 _dh_install_death_killer_guard()
             except Exception:
                 log_error('local-death-killer-install-error')
+        elif ui_name == 'UIHallThemeMall':
+            try:
+                __import__('ui.UIHallThemeMall')
+                _dh_install_free_countryside()
+            except Exception:
+                log_error('local-countryside-install-error')
+        elif ui_name == 'UIDtsAppearanceOthersAction':
+            try:
+                __import__('ui.UIDtsAppearanceOthersAction')
+                _dh_install_default_emote_preview()
+            except Exception:
+                log_error('local-emote-preview-install-error')
         elif ui_name == 'UIGiftBagConfirm':
             try:
                 if args and isinstance(args[0], dict):
@@ -9590,6 +9602,69 @@ if callable(_dh_m117_prev_entry):
     _dh_entry_gate_wrapper._dh_inner = _dh_m117_prev_entry
     _dh_entry_gate_wrapper._dh_entry_gate = True
     finish_local_lobby_entry = _dh_entry_gate_wrapper
+
+
+def _dh_install_free_countryside():
+    module = 'ui.UIHallThemeMall'
+    screen = 'UIHallThemeMall'
+
+    def state_factory(inner):
+        native = inner.func_globals
+
+        def getThemeState(self, goodID):
+            if goodID and native['mall_utils'].getMallGoodItemPropID(goodID) == _DH_DEFAULT_LOBBY_THEME:
+                states = native['ClientConsts'].HallThemeGoodState
+                player = native['BigWorld'].player()
+                if player is not None and player.dtsHallThemeID == _DH_DEFAULT_LOBBY_THEME:
+                    return states.USING
+                return states.OWNED
+            return inner(self, goodID)
+        return getThemeState
+
+    def is_selected(self):
+        selected = self.selectedMallData
+        return bool(selected and selected[1] == _DH_DEFAULT_LOBBY_THEME)
+
+    def buttons_factory(inner):
+        def _setBuyBtn(self):
+            result = inner(self)
+            if is_selected(self):
+                label = self.useBtn.getChildByName('Txt_default')
+                if label is not None:
+                    label.setString('Apply')
+            return result
+        return _setBuyBtn
+
+    def apply_factory(inner):
+        native = inner.func_globals
+
+        def onDefaultBtnClicked(self, args):
+            if not is_selected(self):
+                return inner(self, args)
+            if args.touch.phase == native['TouchPhase'].Ended:
+                _dh_theme_remember(_DH_DEFAULT_LOBBY_THEME)
+                self.refreshAppearanceList()
+        return onDefaultBtnClicked
+
+    _dh_class_wrap(module, screen, '_setBuyBtn', buttons_factory, '_dh_countryside_button')
+    _dh_class_wrap(module, screen, 'onDefaultBtnClicked', apply_factory, '_dh_countryside_apply')
+    return _dh_class_wrap(module, screen, 'getThemeState', state_factory, '_dh_countryside_owned')
+
+
+def _dh_install_default_emote_preview():
+    def preview_factory(inner):
+        def changeGender(self, actionGender):
+            if actionGender not in (1, 2):
+                return inner(self, actionGender)
+            player = self.player
+            if player.dtsAppearanceGender == actionGender:
+                return False
+            player.base.setDtsAppearanceGender(actionGender)
+            return True
+        return changeGender
+
+    return _dh_class_wrap('ui.UIDtsAppearanceOthersAction', 'UIDtsAppearanceOthersAction',
+                          'changeGender', preview_factory, '_dh_default_emote_preview')
 
 
 def _dh_theme117_install(tries=0):

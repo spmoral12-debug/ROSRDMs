@@ -57,6 +57,17 @@ def _redemption_nickname_changed(player, name):
             refresh_lobby_profile()
         except Exception:
             pass
+        # The nameplate reads the lobby team slot, which has its own name fields.
+        try:
+            member = (getattr(player, 'hallTeamData', None) or {}).get(player.gid)
+            if member is not None:
+                member['nickname'] = name
+                member['baseNickname'] = name
+                main_ui = getattr(Globals.uiMgr, 'UIMain', None)
+                if main_ui is not None:
+                    main_ui.onFormTeam(False)
+        except Exception:
+            log_error('local-redemption-nameplate-refresh-error')
         for panel in gc.get_objects():
             if type(panel).__name__ == 'UIBattleGroundRecordPanel':
                 try:

@@ -1628,6 +1628,11 @@ def _dh_art_pass(name, ui, step):
     open_id = _dh_screens['open'].get(name)
     for path, node in walk_ui_nodes(ui, limit=800):
         try:
+            # The full-screen background already carries the branded art.
+            # The PC loading layout can also show a centered copy in this slot.
+            if name == 'UILoading' and path.strip('/') == 'pic/bg_small':
+                node.setVisible(False)
+                continue
             if not (callable(getattr(node, 'loadTexture', None)) or callable(getattr(node, 'setTexture', None))):
                 node = _dh_typed_widget(ui, path)
                 if node is None:

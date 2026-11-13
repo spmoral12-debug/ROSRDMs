@@ -10149,7 +10149,6 @@ def _dh_rich_sync_teammates(mates):
     # and use each remote avatar's current ID exactly once.
     seat_ids = [record.entID for record in records]
     player.battleTeammates = records
-    player.validBattleTeammates = list(valid_mates)
     player.battleTeamEntIDs = list(seat_ids)
     player.fixedBattleTeamMateIds = list(seat_ids)
 

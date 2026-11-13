@@ -66717,6 +66717,45 @@ try:
             except Exception:
                 log_error('local-future-sight-backdrop-position-error')
 
+    def _dh_wait_for_future_sight(base):
+        def finish_loading(Globals, player, scene, attempt):
+            import BigWorld
+            if BigWorld.player() is not player or getattr(Globals, 'loginScene', None) is not scene:
+                return
+            try:
+                models = scene_models(scene)
+                _dh_restore_future_sight_backdrop(player, models)
+                for model, name in models:
+                    if (str(name).lower().endswith('plane_bg2.gim')
+                            and _dh_backdrop_can_show(model) and model.visible):
+                        pos = model.position
+                        if (pos.x, pos.y, pos.z) != (0.0, 0.0, 0.0):
+                            log('local-future-sight-ready-before-reveal', attempt=attempt)
+                            return base(Globals)
+                if attempt < 30:
+                    call_later(0.1, finish_loading, Globals, player, scene, attempt + 1)
+                    return
+                log('local-future-sight-reveal-timeout')
+            except Exception:
+                log_error('local-future-sight-reveal-error')
+            return base(Globals)
+
+        def end_loading(Globals):
+            import BigWorld
+            player = BigWorld.player()
+            scene = getattr(Globals, 'loginScene', None)
+            if (_lobby.get('returned') and scene is not None
+                    and getattr(player, 'dtsHallThemeID', None) == 279001):
+                return finish_loading(Globals, player, scene, 0)
+            return base(Globals)
+        end_loading._dh_future_sight_inner = base
+        return end_loading
+
+    _dh_loading_base = end_loading
+    while getattr(_dh_loading_base, '_dh_future_sight_inner', None) is not None:
+        _dh_loading_base = _dh_loading_base._dh_future_sight_inner
+    end_loading = _dh_wait_for_future_sight(_dh_loading_base)
+
     def _dh_future_sight_load_factory(inner):
         def baseModelLoadDoneCallback(self, *args, **kwargs):
             result = inner(self, *args, **kwargs)

@@ -66695,6 +66695,25 @@ try:
     # Clean native backdrop passthroughs:
     # When inspecting Firearms, Vehicles, or Clothes in Depot: hides backdrops so dark smoke showroom renders cleanly.
     # When in UIMain (main lobby): ALWAYS ensure sky and backdrop planes are visible, preventing pitch black sky and clay floor!
+    def _dh_restore_future_sight_backdrop(player, models):
+        if getattr(player, 'dtsHallThemeID', None) != 279001:
+            return
+        natives = _lobby.get('native_hall_models') or []
+        for model, name in models:
+            if not str(name).lower().endswith('plane_bg2.gim') or not _dh_backdrop_can_show(model):
+                continue
+            try:
+                pos = model.position
+                if (pos.x, pos.y, pos.z) != (0.0, 0.0, 0.0):
+                    continue
+                for native in natives:
+                    if str(native.filename).lower().endswith('plane_bg2.gim'):
+                        model.position = native.position
+                        log('local-future-sight-backdrop-position-restored')
+                        break
+            except Exception:
+                log_error('local-future-sight-backdrop-position-error')
+
     def _dh_backdrop_can_show(model):
         return not (same_model(model, _lobby.get('native_hall_models') or []) or
                     same_model(model, _lobby.get('retired_hall_models') or []))
@@ -66849,8 +66868,9 @@ try:
 
                 # Only manage theme and scene backdrop when player is in the main lobby, NOT inspecting!
                 if not _inspecting and scene is not None:
-                    # Unhide sky and backdrop planes in UIMain
-                    for model, name in scene_models(scene):
+                    models = scene_models(scene)
+                    _dh_restore_future_sight_backdrop(player, models)
+                    for model, name in models:
                         name_lower = str(name).lower()
                         if any(k in name_lower for k in ('plane_bg', 'sky', 'mountain', 'road', 'city', 'building', 'terrain')):
                             if 'motor' not in name_lower:

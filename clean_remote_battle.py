@@ -8295,51 +8295,36 @@ log('local-m49-installed', reload_safe=True)
 # ticket arrives with the player still in the lobby (UIMain up): switching to the default there is a normal theme
 # switch - it clears the equipped theme's LIVE models cleanly, so nothing stale is left for the post-match rebuild to
 # choke on.  The equipped theme is kept in the lobby state (dhThemeOwn) and returns at the next login; a session flag
-# (BigWorld._dh_theme_suspended) tells the lobby patch's season pass not to re-apply it after the battle.
+# (BigWorld._dh_theme_suspended) keeps the return scene on the default theme.
 _DH_HALL_DEFAULT = 270000
 
 
 def _dh_hall_reset_for_match(player):
-    try:
-        cur = int(getattr(player, 'dtsHallThemeID', 0) or 0)
-        if cur in (0, _DH_HALL_DEFAULT):
-            return
-        switch = getattr(player, 'onUpdateDtsHallThemeID', None)
-        if switch is None:
-            return
-        import BigWorld as _bw
-        _bw._dh_theme_suspended = False
+    import BigWorld
+    BigWorld._dh_theme_suspended = True
+    cur = int(getattr(player, 'dtsHallThemeID', 0) or 0)
+    if cur in (0, _DH_HALL_DEFAULT):
+        return
+    player.dtsHallThemeID = _DH_HALL_DEFAULT
+    player.onUpdateDtsHallThemeID(_DH_HALL_DEFAULT)
+    log('local-hall-reset-for-match', was=cur)
+
+
+def _dh_leave_lobby_with_theme_reset(step):
+    def leave_lobby(player):
         try:
-            player.dtsHallThemeID = _DH_HALL_DEFAULT
+            _dh_hall_reset_for_match(player)
         except Exception:
-            pass
-        switch(_DH_HALL_DEFAULT)
-        log('local-hall-reset-for-match', was=cur)
-    except Exception:
-        log_error('local-hall-reset-for-match-error')
+            log_error('local-hall-reset-for-match-error')
+        return step(player)
+    leave_lobby._dh_inner = step
+    return leave_lobby
 
 
-_dh_begin_matching_inner = _dh_unwrap(globals().get('begin_matching'))
-
-
-def _dh_begin_matching_theme(player, ticket):
-    try:
-        _dh_hall_reset_for_match(player)
-    except Exception:
-        log_error('local-hall-reset-call-error')
-    return _dh_begin_matching_theme._dh_inner(player, ticket)
-
-
-try:
-    if _dh_begin_matching_inner is not None:
-        _dh_begin_matching_theme._dh_inner = _dh_begin_matching_inner
-        begin_matching = _dh_begin_matching_theme
-        log('local-m50-installed', reset=True)
-    else:
-        log('local-m50-installed', reset=False)
-except Exception:
-    log_error('local-m50-install-error')
-
+# The loading screen is already up, and the old hall space still exists.
+ENTER_STEPS = tuple((name, _dh_leave_lobby_with_theme_reset(_dh_unwrap(step))
+                     if name == 'leave-lobby' else step)
+                    for name, step in ENTER_STEPS)
 
 
 # ==============================================================================

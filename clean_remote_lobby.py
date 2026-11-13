@@ -9545,6 +9545,7 @@ def _dh_theme_remember(theme_id):
         log_error('local-lobby-theme-own-error')
     try:
         import BigWorld
+        BigWorld._dh_theme_suspended = False
         player = BigWorld.player()
         if player is not None:
             active_theme = theme_id if theme_id else 270000
@@ -9584,7 +9585,8 @@ def _dh_theme_update_athlete_factory(inner):
     def onUpdateDtsHallThemeID(self, theme_id, *args, **kwargs):
         try:
             tid = int(theme_id or 0)
-            if tid:
+            import BigWorld
+            if tid and not getattr(BigWorld, '_dh_theme_suspended', False):
                 _dh_theme117['own'] = tid
                 save_state_durable(lobby={'dhThemeOwn': tid, 'dtsHallThemeID': tid})
                 log('local-lobby-theme-athlete-updated', theme=tid)
@@ -66668,6 +66670,9 @@ except Exception:
 try:
     _dh_orig_hall_theme_id = globals().get('hall_theme_id')
     def _dh_safe_hall_theme_id():
+        import BigWorld
+        if getattr(BigWorld, '_dh_theme_suspended', False):
+            return 270000
         own = _dh_theme_own()
         if own and own != 279008:
             return own
@@ -66846,13 +66851,13 @@ try:
                                 except Exception:
                                     pass
 
-                    if player is not None and not _dh_theme_switching[0]:
+                    if (player is not None and not _dh_theme_switching[0]
+                            and not getattr(BigWorld, '_dh_theme_suspended', False)):
                         own = _dh_theme_own()
                         target_theme = own if (own and own != 279008) else 270000
                         cur_theme = int(getattr(player, 'dtsHallThemeID', 0) or 0)
                         if cur_theme != target_theme:
                             _dh_theme_switching[0] = True
-                            BigWorld._dh_theme_suspended = False
                             player.dtsHallThemeID = target_theme
                             if hasattr(player, 'onUpdateDtsHallThemeID'):
                                 try:
@@ -67173,11 +67178,10 @@ while getattr(_dh_orig_main_ready, '_dh_party_ready_inner', None) is not None:
 def _dh_party_main_ready(*args, **kwargs):
     try:
         import BigWorld
-        BigWorld._dh_theme_suspended = False
         p = BigWorld.player()
         own = _dh_theme_own()
         target_th = own if (own and own != 279008) else 270000
-        if p is not None:
+        if p is not None and not getattr(BigWorld, '_dh_theme_suspended', False):
             cur_th = getattr(p, 'dtsHallThemeID', 0) or 0
             if not cur_th or cur_th == 279008:
                 p.dtsHallThemeID = target_th

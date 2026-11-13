@@ -6398,7 +6398,10 @@ def _dh_install_season_screens():
                                     pass
                                 return res
                             return _wrapped_bgrp
-                        setattr(bgrp, method_name, make_bgrp_wrapper(orig_fn, method_name))
+                        original = getattr(orig_fn, 'im_func', orig_fn)
+                        wrapped = make_bgrp_wrapper(original, method_name)
+                        wrapped.__dict__.update(original.__dict__)
+                        setattr(bgrp, method_name, wrapped)
                 done.append('UIBattleGroundRecordPanel')
     except Exception:
         pass

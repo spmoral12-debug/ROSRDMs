@@ -10016,12 +10016,35 @@ def _dh_publish_team_hud(player, records):
     if not callable(update):
         return
     for index, record in enumerate(records):
+        if record.entID == player.id:
+            continue
         try:
             update(index)
         except Exception:
             if not _dh_mates.get('warned'):
                 _dh_mates['warned'] = True
                 log_error('local-mates-update-error', index=index)
+    try:
+        import Globals
+        hud = getattr(Globals.uiMgr, 'UIBattlegroundsInGame', None)
+        panel = hud.GetComponent('UIPanelTeam') if hud is not None else None
+        refresh = getattr(panel, 'refreshAllMembers', None)
+        if not callable(refresh):
+            return
+        fn = getattr(refresh, 'im_func', refresh)
+        client_utils = fn.func_globals['client_utils']
+        original = client_utils.getCurrTeammatesData
+        def teammates_for_panel(*args, **kwargs):
+            return [row for row in original(*args, **kwargs) if row.entID != player.id]
+        client_utils.getCurrTeammatesData = teammates_for_panel
+        try:
+            refresh()
+        finally:
+            client_utils.getCurrTeammatesData = original
+    except Exception:
+        if not _dh_mates.get('panel_refresh_warned'):
+            _dh_mates['panel_refresh_warned'] = True
+            log_error('local-mates-panel-refresh-error')
 
 
 def _dh_rich_sync_teammates(mates):
@@ -10155,6 +10178,8 @@ def _dh_rich_sync_teammates(mates):
     except Exception:
         pass
 
+    # The native seat lookup reserves seat 1 for the local player.
+    player.battleTeamMateIds = [record.entID for record in valid_mates]
     # The prep snapshot initially uses server IDs before avatars exist.
     # Recreate a marker under its avatar ID when that avatar becomes available.
     markers = getattr(player, 'clientTeammates', None)
@@ -10162,7 +10187,7 @@ def _dh_rich_sync_teammates(mates):
         for client_id, entity_id, _, _, _, _, _ in mates:
             if client_id != entity_id and entity_id in markers:
                 try:
-                    player.destroyClientTeammate(entity_id)
+                    player.destroyClientTeammate(TeammateRecord(entID=entity_id))
                 except Exception:
                     log_error('local-mates-marker-rebind-error')
     _dh_publish_team_hud(player, records)

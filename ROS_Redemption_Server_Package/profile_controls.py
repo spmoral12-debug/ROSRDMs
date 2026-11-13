@@ -403,8 +403,8 @@ try:
         ManualFeature.action_state = _patched_manual_action_state
 
     _orig_manual_run = ManualFeature._run
-    if not getattr(_orig_manual_run, '_pink_lady_reward_repair', False):
-        def _repair_claimed_pink_lady(self, data, change, full=False):
+    if not getattr(_orig_manual_run, '_manual_outfit_reward_repair', False):
+        def _repair_claimed_manual_outfits(self, data, change, full=False):
             result = _orig_manual_run(self, data, change, full=full)
             state = data.get('manual', {})
             if (101010 in state.get('claimed', []) and
@@ -415,10 +415,22 @@ try:
                     if not entry.get('count') or entry.get('expires'):
                         self.account.add_item(data, item, 1, 0)
                 data['manualPinkLadyRewardRepaired'] = True
+            claimed = state.get('claimed', [])
+            repaired = data.setdefault('manualGoannaRewardsRepaired', [])
+            for award, items in ((101016, (1110338, 1110339)),
+                                 (101018, (1111338, 1111339)),
+                                 (101020, (1112338, 1112339))):
+                if award in claimed and award not in repaired:
+                    depot = data.get('depot', {})
+                    for item in items:
+                        entry = depot.get(str(item), {})
+                        if not entry.get('count') or entry.get('expires'):
+                            self.account.add_item(data, item, 1, 0)
+                    repaired.append(award)
             return result
 
-        _repair_claimed_pink_lady._pink_lady_reward_repair = True
-        ManualFeature._run = _repair_claimed_pink_lady
+        _repair_claimed_manual_outfits._manual_outfit_reward_repair = True
+        ManualFeature._run = _repair_claimed_manual_outfits
 
     _orig_run_route = getattr(LocalPyServer, '_run_route', None)
     if _orig_run_route is not None and not getattr(_orig_run_route, '_dh_manual_points', False):

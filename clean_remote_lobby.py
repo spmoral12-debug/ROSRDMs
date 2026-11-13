@@ -659,7 +659,7 @@ def _dh_finish_entry_wrapper(Globals, lobby_player, scene_attempt=0, _retry=0):
             elif _retry < 120:
                 if _retry in (0, 10, 40, 100):
                     log('local-lobby-enter-retry', attempt=_retry, player=safe(fresh))
-                call_later(0.5, _dh_finish_entry_wrapper, Globals, lobby_player, scene_attempt, _retry + 1)
+                call_later(0.5, finish_local_lobby_entry, Globals, lobby_player, scene_attempt, _retry + 1)
                 return None
     except Exception:
         log_error('local-lobby-enter-retry-error')
@@ -687,7 +687,7 @@ def _dh_kick_stuck_lobby():
         if player is None or getattr(Globals, 'hallSceneReady', False):
             return
         log('local-lobby-enter-kick', player=safe(player), has_enter=hasattr(player, 'enterHall'))
-        _dh_finish_entry_wrapper(Globals, player)
+        finish_local_lobby_entry(Globals, player)
     except Exception:
         log_error('local-lobby-enter-kick-error')
 

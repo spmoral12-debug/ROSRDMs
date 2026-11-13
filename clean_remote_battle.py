@@ -10182,10 +10182,19 @@ def _dh_rich_sync_teammates(mates):
         markers = getattr(player, 'clientTeammates', None)
         if callable(create_marker) and isinstance(markers, dict):
             for record in valid_mates:
-                if record.entID in markers or BigWorld.entities.get(record.entID) is None:
+                if BigWorld.entities.get(record.entID) is None:
                     continue
                 try:
-                    create_marker(record, False)
+                    if record.entID not in markers:
+                        create_marker(record, False)
+                        continue
+                    marker = markers[record.entID]
+                    if isinstance(marker, (int, long_type)):
+                        marker = BigWorld.entities.get(marker)
+                    show_name = getattr(type(marker), 'showName', None)
+                    plate = getattr(marker, '_ui3DName', None)
+                    if callable(show_name) and not callable(getattr(type(plate), 'getDistance', None)):
+                        show_name(marker, record.nickname, '', record.nationalFlag)
                 except Exception:
                     if not _dh_mates.get('prep_marker_warned'):
                         _dh_mates['prep_marker_warned'] = True

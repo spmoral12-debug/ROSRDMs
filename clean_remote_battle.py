@@ -9891,6 +9891,18 @@ def _dh_sync_client_teammates():
                 if target_pos is None and entity_id in pos_map:
                     target_pos = pos_map[entity_id]
 
+            if matched_mate is not None:
+                setter = getattr(ct, 'setState', None)
+                state = _dh_player_state('Died' if not alive else 'Wounded') if not alive or down else alive_state()
+                if callable(setter) and state is not None:
+                    try:
+                        if getattr(ct, 'state', None) != state:
+                            setter(state)
+                    except Exception:
+                        if not _dh_mates.get('marker_state_warned'):
+                            _dh_mates['marker_state_warned'] = True
+                            log_error('local-mates-marker-state-error')
+
             if target_pos is not None:
                 try:
                     ct.position = target_pos
@@ -9990,39 +10002,28 @@ def _dh_rich_team_mates_from(snapshot):
     return mates
 
 
-def _dh_refresh_hud_teammates(force=False):
-    """Deliver teammate updates to player and active UIBattlegroundsInGame."""
-    try:
-        import BigWorld
-        player = BigWorld.player()
-        if player is None:
-            return
-        records = getattr(player, 'battleTeammates', None)
-        if not records:
-            return
+def _dh_team_hud_record_is_zombie(self):
+    # Local matches do not use the Wild Mode zombie role.
+    return False
 
-        update = getattr(player, 'onBattleTeammateUpdate', None)
-        if callable(update):
-            for idx in range(len(records)):
-                try:
-                    update(idx)
-                except Exception:
-                    pass
 
-        import Globals
-        ig = getattr(getattr(Globals, 'uiMgr', None), 'UIBattlegroundsInGame', None)
-        if ig is None:
-            ig = (getattr(getattr(Globals, 'uiMgr', None), '____all_ui__', {}) or {}).get('UIBattlegroundsInGame')
-        if ig is not None:
-            for m in ('initTeammate', 'refreshTeammate', 'updateTeammate', 'onTeammateUpdate', 'updateTeamMateInfo', 'initTeamPanel', 'updateTeamPanel'):
-                fn = getattr(ig, m, None)
-                if callable(fn):
-                    try:
-                        fn()
-                    except Exception:
-                        pass
-    except Exception:
-        pass
+class _DhHudTeammateRecord(_DhLiveRecord):
+    isZombie = _dh_team_hud_record_is_zombie
+
+
+def _dh_publish_team_hud(player, records):
+    update = getattr(player, 'onBattleTeammateUpdate', None)
+    if not callable(update):
+        return
+    for index, record in enumerate(records):
+        if record.entID == player.id:
+            continue
+        try:
+            update(index)
+        except Exception:
+            if not _dh_mates.get('warned'):
+                _dh_mates['warned'] = True
+                log_error('local-mates-update-error', index=index)
 
 
 def _dh_rich_sync_teammates(mates):
@@ -10059,7 +10060,7 @@ def _dh_rich_sync_teammates(mates):
 
     own_hp = max(0, min(100, int(getattr(player, 'hp', 100) if getattr(player, 'hp', None) is not None else 100)))
     own_max_hp = max(100, int(getattr(player, 'maxHp', 100) or 100))
-    me = TeammateRecord(
+    me = _DhHudTeammateRecord(
         entID=getattr(player, 'id', 0),
         gid=own_gid,
         nickname=str(getattr(player, 'nickname', '') or 'Player'),
@@ -10091,7 +10092,7 @@ def _dh_rich_sync_teammates(mates):
             st = wounded
         else:
             st = alive_state()
-        rec = _DhLiveRecord(
+        rec = _DhHudTeammateRecord(
             entID=client_id,
             gid=mate_gid,
             nickname=name,
@@ -10156,18 +10157,7 @@ def _dh_rich_sync_teammates(mates):
     except Exception:
         pass
 
-    update = getattr(player, 'onBattleTeammateUpdate', None)
-    if callable(update):
-        for index in range(len(records)):
-            try:
-                update(index)
-            except Exception:
-                if not _dh_mates.get('warned'):
-                    _dh_mates['warned'] = True
-                    log_error('local-mates-update-error', index=index)
-                break
-
-    _dh_refresh_hud_teammates()
+    _dh_publish_team_hud(player, records)
     _dh_sync_client_teammates()
 
     _dh_mates['sig'] = signature
@@ -10219,7 +10209,9 @@ def _dh_teammate_tick():
         now = time.time()
         if now - float(_dh_team_ui_state.get('last_tick') or 0.0) >= 1.0:
             _dh_team_ui_state['last_tick'] = now
-            _dh_refresh_hud_teammates()
+            player = current_player()
+            if player is not None and BATTLE.get('phase') == 'fighting':
+                _dh_publish_team_hud(player, getattr(player, 'battleTeammates', None) or [])
     except Exception:
         pass
 

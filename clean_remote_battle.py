@@ -10094,7 +10094,7 @@ def _dh_rich_sync_teammates(mates):
         baseCharacterType=int(getattr(player, 'characterType', DEFAULT_CHARACTER_TYPE) or DEFAULT_CHARACTER_TYPE),
         characterType=int(getattr(player, 'characterType', DEFAULT_CHARACTER_TYPE) or DEFAULT_CHARACTER_TYPE),
         index=0,
-        teamIndex=1,
+        teamIndex=0,
         inVehicle=bool(getattr(player, 'inVehicle', False) or getattr(player, 'vehicleEntID', 0)),
         heroname='',
         markPosition=prev_marks.get(getattr(player, 'id', 0), unmarked()),
@@ -10126,7 +10126,7 @@ def _dh_rich_sync_teammates(mates):
             baseCharacterType=DEFAULT_CHARACTER_TYPE,
             characterType=DEFAULT_CHARACTER_TYPE,
             index=index + 1,
-            teamIndex=index + 2,
+            teamIndex=index + 1,
             inVehicle=False,
             heroname='',
             markPosition=prev_marks.get(client_id, unmarked()),
@@ -10148,7 +10148,8 @@ def _dh_rich_sync_teammates(mates):
     player.battleTeammates = records
     try:
         player.validBattleTeammates = list(valid_mates)
-        player.battleTeamEntIDs = [getattr(r, 'entID', 0) for r in records if getattr(r, 'entID', 0)]
+        player.battleTeamEntIDs = [record.entID for record in records if record.entID]
+        player.battleTeamMateIds = [record.entID for record in valid_mates]
         player.fixedBattleTeamMateIds = [getattr(r, 'entID', 0) for r in valid_mates if getattr(r, 'entID', 0)]
     except Exception:
         pass
@@ -10180,8 +10181,22 @@ def _dh_rich_sync_teammates(mates):
     except Exception:
         pass
 
-    # The native seat lookup reserves seat 1 for the local player.
-    player.battleTeamMateIds = [record.entID for record in valid_mates]
+    # The prep roster can arrive before the teammate's avatar exists.
+    # Ask the native marker lifecycle to attach once the avatar is available.
+    if on_island_stage():
+        import BigWorld
+        check_marker = getattr(player, 'checkClientTeammate', None)
+        markers = getattr(player, 'clientTeammates', {})
+        if callable(check_marker) and isinstance(markers, dict):
+            for record in valid_mates:
+                if record.entID in markers or BigWorld.entities.get(record.entID) is None:
+                    continue
+                try:
+                    check_marker(record, False)
+                except Exception:
+                    if not _dh_mates.get('prep_marker_warned'):
+                        _dh_mates['prep_marker_warned'] = True
+                        log_error('local-mates-prep-marker-error')
     _dh_publish_team_hud(player)
     _dh_sync_client_teammates()
 

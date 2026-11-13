@@ -10016,8 +10016,6 @@ def _dh_publish_team_hud(player, records):
     if not callable(update):
         return
     for index, record in enumerate(records):
-        if record.entID == player.id:
-            continue
         try:
             update(index)
         except Exception:
@@ -10157,6 +10155,16 @@ def _dh_rich_sync_teammates(mates):
     except Exception:
         pass
 
+    # The prep snapshot initially uses server IDs before avatars exist.
+    # Recreate a marker under its avatar ID when that avatar becomes available.
+    markers = getattr(player, 'clientTeammates', None)
+    if isinstance(markers, dict):
+        for client_id, entity_id, _, _, _, _, _ in mates:
+            if client_id != entity_id and entity_id in markers:
+                try:
+                    player.destroyClientTeammate(entity_id)
+                except Exception:
+                    log_error('local-mates-marker-rebind-error')
     _dh_publish_team_hud(player, records)
     _dh_sync_client_teammates()
 

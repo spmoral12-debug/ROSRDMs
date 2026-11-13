@@ -10011,36 +10011,37 @@ class _DhHudTeammateRecord(_DhLiveRecord):
     isZombie = _dh_team_hud_record_is_zombie
 
 
-def _dh_publish_team_hud(player, records):
-    update = getattr(player, 'onBattleTeammateUpdate', None)
-    if not callable(update):
-        return
-    for index, record in enumerate(records):
-        if record.entID == player.id:
-            continue
-        try:
-            update(index)
-        except Exception:
-            if not _dh_mates.get('warned'):
-                _dh_mates['warned'] = True
-                log_error('local-mates-update-error', index=index)
+def _dh_with_teammates_for_panel(player, action):
+    import Globals
+    hud = getattr(Globals.uiMgr, 'UIBattlegroundsInGame', None)
+    panel = hud.GetComponent('UIPanelTeam') if hud is not None else None
+    refresh = getattr(panel, 'refreshAllMembers', None)
+    fn = getattr(refresh, 'im_func', refresh)
+    namespace = getattr(fn, 'func_globals', {})
+    client_utils = namespace.get('client_utils')
+    original = getattr(client_utils, 'getCurrTeammatesData', None)
+    if not callable(original):
+        return action()
+
+    def teammates_for_panel(*args, **kwargs):
+        return [row for row in original(*args, **kwargs)
+                if row.entID != player.id]
+
+    client_utils.getCurrTeammatesData = teammates_for_panel
+    try:
+        return action()
+    finally:
+        client_utils.getCurrTeammatesData = original
+
+
+def _dh_publish_team_hud(player):
     try:
         import Globals
         hud = getattr(Globals.uiMgr, 'UIBattlegroundsInGame', None)
         panel = hud.GetComponent('UIPanelTeam') if hud is not None else None
         refresh = getattr(panel, 'refreshAllMembers', None)
-        if not callable(refresh):
-            return
-        fn = getattr(refresh, 'im_func', refresh)
-        client_utils = fn.func_globals['client_utils']
-        original = client_utils.getCurrTeammatesData
-        def teammates_for_panel(*args, **kwargs):
-            return [row for row in original(*args, **kwargs) if row.entID != player.id]
-        client_utils.getCurrTeammatesData = teammates_for_panel
-        try:
-            refresh()
-        finally:
-            client_utils.getCurrTeammatesData = original
+        if callable(refresh):
+            _dh_with_teammates_for_panel(player, refresh)
     except Exception:
         if not _dh_mates.get('panel_refresh_warned'):
             _dh_mates['panel_refresh_warned'] = True
@@ -10160,7 +10161,8 @@ def _dh_rich_sync_teammates(mates):
             previous_size = int(getattr(player, 'battleGroundTeamSize', 0) or 0)
             if previous_size < team_size:
                 player.battleGroundTeamSize = team_size
-                player.set_battleGroundTeamSize(previous_size)
+                _dh_with_teammates_for_panel(
+                    player, lambda: player.set_battleGroundTeamSize(previous_size))
                 log('local-match-team-layout-enabled', size=team_size)
         except Exception:
             log_error('local-match-team-layout-error')
@@ -10180,17 +10182,7 @@ def _dh_rich_sync_teammates(mates):
 
     # The native seat lookup reserves seat 1 for the local player.
     player.battleTeamMateIds = [record.entID for record in valid_mates]
-    # The prep snapshot initially uses server IDs before avatars exist.
-    # Recreate a marker under its avatar ID when that avatar becomes available.
-    markers = getattr(player, 'clientTeammates', None)
-    if isinstance(markers, dict):
-        for client_id, entity_id, _, _, _, _, _ in mates:
-            if client_id != entity_id and entity_id in markers:
-                try:
-                    player.destroyClientTeammate(TeammateRecord(entID=entity_id))
-                except Exception:
-                    log_error('local-mates-marker-rebind-error')
-    _dh_publish_team_hud(player, records)
+    _dh_publish_team_hud(player)
     _dh_sync_client_teammates()
 
     _dh_mates['sig'] = signature
@@ -10244,7 +10236,7 @@ def _dh_teammate_tick():
             _dh_team_ui_state['last_tick'] = now
             player = current_player()
             if player is not None and BATTLE.get('phase') == 'fighting':
-                _dh_publish_team_hud(player, getattr(player, 'battleTeammates', None) or [])
+                _dh_publish_team_hud(player)
     except Exception:
         pass
 

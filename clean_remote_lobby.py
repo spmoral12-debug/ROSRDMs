@@ -9625,6 +9625,15 @@ if getattr(_dh_m117_prev_entry, '_dh_entry_gate', False):           # hot reload
     _dh_m117_prev_entry = _dh_m117_prev_entry._dh_inner
 
 
+def _dh_bind_return_scene(scene):
+    if not _lobby.get('returned') or _lobby.get('return_scene_bound') == id(scene):
+        return
+    import world
+    world.set_active_scene(scene)
+    _lobby['return_scene_bound'] = id(scene)
+    log('local-lobby-return-render-scene-bound')
+
+
 def _dh_entry_gate_wrapper(Globals, lobby_player, scene_attempt=0, _retry=0):
     try:
         scene = getattr(Globals, 'loginScene', None)
@@ -9640,6 +9649,7 @@ def _dh_entry_gate_wrapper(Globals, lobby_player, scene_attempt=0, _retry=0):
             if waits:
                 log('local-lobby-level-ready', progress=round(prog, 3), waited_s=round(waits * 0.2, 1))
             _dh_entry_gate['waits'] = 0
+            _dh_bind_return_scene(scene)
     except Exception:
         log_error('local-lobby-level-wait-error')
     if getattr(_dh_m117_prev_entry, '__name__', '') == '_dh_finish_entry_wrapper':

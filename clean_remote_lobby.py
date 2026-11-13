@@ -3008,6 +3008,20 @@ def _dh_in_lobby():
         return False
 
 
+def _dh_remove_scene_wallpaper(scene):
+    bg = scene.getChildByName('ros_redemption_bg')
+    if bg is not None:
+        bg.removeFromParent()
+
+
+def _dh_character_screen_open():
+    try:
+        import Globals
+        return _ui_open(Globals.uiMgr, 'UISelectCharacter') is not None
+    except Exception:
+        return False
+
+
 def _dh_scene_brand_pass():
     cc = _dh_cc()
     if cc is None:
@@ -3016,12 +3030,9 @@ def _dh_scene_brand_pass():
     if scene is None:
         return
 
-    # In lobby or in battle: remove wallpaper so 3D lobby, room, and character are clean
-    if _dh_in_lobby() or _dh_in_battle():
+    if _dh_character_screen_open() or _dh_in_lobby() or _dh_in_battle():
         try:
-            bg = scene.getChildByName('ros_redemption_bg')
-            if bg is not None:
-                bg.removeFromParent()
+            _dh_remove_scene_wallpaper(scene)
         except Exception:
             pass
         return
@@ -4744,6 +4755,14 @@ def _dh_install_main_watch():
                 pass
         if ui_name == 'UIDtsAppearanceVehicleCultivate2':
             _dh_install_workshop_package_count()
+        if ui_name == 'UISelectCharacter':
+            try:
+                cc = _dh_cc()
+                scene = cc.Director.getInstance().getRunningScene() if cc else None
+                if scene is not None:
+                    _dh_remove_scene_wallpaper(scene)
+            except Exception:
+                log_error('local-character-wallpaper-cleanup-error')
         result = inner(ui_name, *args, **kwargs)
         try:
             if ui_name == 'UIItemDisplay':

@@ -66633,6 +66633,10 @@ try:
     # Clean native backdrop passthroughs:
     # When inspecting Firearms, Vehicles, or Clothes in Depot: hides backdrops so dark smoke showroom renders cleanly.
     # When in UIMain (main lobby): ALWAYS ensure sky and backdrop planes are visible, preventing pitch black sky and clay floor!
+    def _dh_backdrop_can_show(model):
+        return not (same_model(model, _lobby.get('native_hall_models') or []) or
+                    same_model(model, _lobby.get('retired_hall_models') or []))
+
     def _dh_show_lobby_backdrop_safe(show):
         try:
             import BigWorld
@@ -66642,13 +66646,7 @@ try:
             if scene is None:
                 return 0
             
-            # Reset retirement tracking when showing lobby
-            if show:
-                _lobby['native_hall_models'] = []
-                _lobby['retired_hall_models'] = []
-                _lobby['backdrop_hidden'] = False
-            else:
-                _lobby['backdrop_hidden'] = True
+            _lobby['backdrop_hidden'] = not show
 
             changed = 0
             for model, name in scene_models(scene):
@@ -66668,7 +66666,7 @@ try:
                     continue
 
                 try:
-                    vis = bool(show)
+                    vis = bool(show) and _dh_backdrop_can_show(model)
                     if bool(getattr(model, 'visible', False)) != vis:
                         model.visible = vis
                         changed += 1
@@ -66793,9 +66791,11 @@ try:
                     for model, name in scene_models(scene):
                         name_lower = str(name).lower()
                         if any(k in name_lower for k in ('plane_bg', 'sky', 'mountain', 'road', 'city', 'building', 'terrain')):
-                            if 'motor' not in name_lower and not getattr(model, 'visible', False):
+                            if 'motor' not in name_lower:
                                 try:
-                                    model.visible = True
+                                    visible = _dh_backdrop_can_show(model)
+                                    if bool(model.visible) != visible:
+                                        model.visible = visible
                                 except Exception:
                                     pass
 
@@ -67149,11 +67149,9 @@ def _dh_party_main_ready(*args, **kwargs):
                 if any(k in name_lower for k in ('plane_bg', 'sky', 'mountain', 'road', 'city', 'building', 'terrain')):
                     if 'motor' not in name_lower:
                         try:
-                            model.visible = True
+                            model.visible = _dh_backdrop_can_show(model)
                         except Exception:
                             pass
-        _lobby['retired_hall_models'] = []
-        _lobby['native_hall_models'] = []
         _lobby['backdrop_hidden'] = False
 
         # Clear select character preloaded model so it cannot leak

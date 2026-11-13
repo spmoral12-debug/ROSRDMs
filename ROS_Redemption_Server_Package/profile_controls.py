@@ -416,10 +416,9 @@ try:
                         self.account.add_item(data, item, 1, 0)
                 data['manualPinkLadyRewardRepaired'] = True
             claimed = state.get('claimed', [])
-            repaired = data.setdefault('manualGoannaRewardsRepaired', [])
-            for award, items in ((101016, (1110338, 1110339)),
-                                 (101018, (1111338, 1111339)),
-                                 (101020, (1112338, 1112339))):
+            repaired = data.setdefault('manualVerifiedOutfitsRepaired', [])
+            for key, items in self.catalog().get('verified_outfit_repairs', {}).items():
+                award = int(key)
                 if award in claimed and award not in repaired:
                     depot = data.get('depot', {})
                     for item in items:

@@ -8287,46 +8287,6 @@ log('local-m48-installed', bridge=_dh_m48_bridge() is not None)
 log('local-m49-installed', reload_safe=True)
 
 
-# ---- m50 (2026-11-02): reset the lobby theme to the default hall when a match starts, so the lobby comes back clean
-# after the match instead of a black / bare one.  After a battle the lobby scene's objects are torn down and the game
-# cannot rebuild an equipped / seasonal lobby theme (HallTheme._clearOldTheme raises "Invalid space object which has
-# been destroyed!"; the themed models never load - owner report + scene dumps 2026-11-02).  No in-place rebuild is safe
-# (forcing it hangs the client); only the DEFAULT hall always rebuilds.  begin_matching runs when the backend's battle
-# ticket arrives with the player still in the lobby (UIMain up): switching to the default there is a normal theme
-# switch - it clears the equipped theme's LIVE models cleanly, so nothing stale is left for the post-match rebuild to
-# choke on.  The equipped theme is kept in the lobby state (dhThemeOwn) and returns at the next login; a session flag
-# (BigWorld._dh_theme_suspended) keeps the return scene on the default theme.
-_DH_HALL_DEFAULT = 270000
-
-
-def _dh_hall_reset_for_match(player):
-    import BigWorld
-    BigWorld._dh_theme_suspended = True
-    cur = int(getattr(player, 'dtsHallThemeID', 0) or 0)
-    if cur in (0, _DH_HALL_DEFAULT):
-        return
-    player.dtsHallThemeID = _DH_HALL_DEFAULT
-    player.onUpdateDtsHallThemeID(_DH_HALL_DEFAULT)
-    log('local-hall-reset-for-match', was=cur)
-
-
-def _dh_leave_lobby_with_theme_reset(step):
-    def leave_lobby(player):
-        try:
-            _dh_hall_reset_for_match(player)
-        except Exception:
-            log_error('local-hall-reset-for-match-error')
-        return step(player)
-    leave_lobby._dh_inner = step
-    return leave_lobby
-
-
-# The loading screen is already up, and the old hall space still exists.
-ENTER_STEPS = tuple((name, _dh_leave_lobby_with_theme_reset(_dh_unwrap(step))
-                     if name == 'leave-lobby' else step)
-                    for name, step in ENTER_STEPS)
-
-
 # ==============================================================================
 # ROS REDEMPTION - MASTER PRODUCTION ENGINE PATCH
 # 1. UISelectHero suppression for standard maps

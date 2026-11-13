@@ -10130,6 +10130,19 @@ def _dh_rich_sync_teammates(mates):
     except Exception:
         pass
 
+    # Enable the native team layout before publishing its member rows.
+    if valid_mates:
+        try:
+            configured_size = int((BATTLE.get('ticket') or {}).get('teamSize') or 0)
+            team_size = max(configured_size, len(records))
+            previous_size = int(getattr(player, 'battleGroundTeamSize', 0) or 0)
+            if previous_size < team_size:
+                player.battleGroundTeamSize = team_size
+                player.set_battleGroundTeamSize(previous_size)
+                log('local-match-team-layout-enabled', size=team_size)
+        except Exception:
+            log_error('local-match-team-layout-error')
+
     setter = getattr(player, 'set_battleTeammates', None)
     if callable(setter):
         try:

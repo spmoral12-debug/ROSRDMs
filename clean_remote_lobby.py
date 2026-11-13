@@ -66708,8 +66708,11 @@ try:
                     continue
                 for native in natives:
                     if str(native.filename).lower().endswith('plane_bg2.gim'):
+                        # The scene template also supplies the backdrop's orientation and size.
+                        model.rotation_matrix = native.rotation_matrix
+                        model.scale = native.scale
                         model.position = native.position
-                        log('local-future-sight-backdrop-position-restored')
+                        log('local-future-sight-backdrop-transform-restored')
                         break
             except Exception:
                 log_error('local-future-sight-backdrop-position-error')

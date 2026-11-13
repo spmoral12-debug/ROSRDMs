@@ -10178,14 +10178,14 @@ def _dh_rich_sync_teammates(mates):
     player.fixedBattleTeamMateIds = list(seat_ids)
     if on_island_stage():
         import BigWorld
-        create_marker = getattr(player, '_createClientTeammate', None)
+        create_marker = getattr(player, 'createClientTeammate', None)
         markers = getattr(player, 'clientTeammates', None)
         if callable(create_marker) and isinstance(markers, dict):
             for record in valid_mates:
                 if record.entID in markers or BigWorld.entities.get(record.entID) is None:
                     continue
                 try:
-                    create_marker(record)
+                    create_marker(record, False)
                 except Exception:
                     if not _dh_mates.get('prep_marker_warned'):
                         _dh_mates['prep_marker_warned'] = True

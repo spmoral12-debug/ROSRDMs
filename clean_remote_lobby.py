@@ -66717,6 +66717,34 @@ try:
             except Exception:
                 log_error('local-future-sight-backdrop-position-error')
 
+    def _dh_future_sight_load_factory(inner):
+        def baseModelLoadDoneCallback(self, *args, **kwargs):
+            result = inner(self, *args, **kwargs)
+            try:
+                import BigWorld
+                model = args[0] if args else kwargs.get('model')
+                player = BigWorld.player()
+                if player is not None and model is not None:
+                    _dh_restore_future_sight_backdrop(player, [(model, model.filename)])
+            except Exception:
+                log_error('local-future-sight-backdrop-load-error')
+            return result
+        return baseModelLoadDoneCallback
+
+    def _dh_install_backdrop_load_hook(base):
+        def install_hall_theme_cleanup():
+            result = base()
+            _dh_class_wrap('ui.main.HallTheme', 'HallTheme', 'baseModelLoadDoneCallback',
+                           _dh_future_sight_load_factory, '_dh_future_sight_load')
+            return result
+        install_hall_theme_cleanup._dh_backdrop_load_inner = base
+        return install_hall_theme_cleanup
+
+    _dh_backdrop_load_base = install_hall_theme_cleanup
+    while getattr(_dh_backdrop_load_base, '_dh_backdrop_load_inner', None) is not None:
+        _dh_backdrop_load_base = _dh_backdrop_load_base._dh_backdrop_load_inner
+    install_hall_theme_cleanup = _dh_install_backdrop_load_hook(_dh_backdrop_load_base)
+
     def _dh_backdrop_can_show(model):
         return not (same_model(model, _lobby.get('native_hall_models') or []) or
                     same_model(model, _lobby.get('retired_hall_models') or []))

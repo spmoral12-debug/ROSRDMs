@@ -9604,9 +9604,74 @@ if callable(_dh_m117_prev_entry):
     finish_local_lobby_entry = _dh_entry_gate_wrapper
 
 
+_dh_theme_selection = []
+
+
 def _dh_install_free_countryside():
     module = 'ui.UIHallThemeMall'
     screen = 'UIHallThemeMall'
+
+    from libclaudia.Classes.GameObject import GameObject
+
+    selection = _dh_theme_selection
+    original = GameObject.SendMessage
+    if not getattr(original, '_dh_theme_select_guard', False):
+        def SendMessage(self, name, *args, **kwargs):
+            if name == 'onShowTheme' and selection:
+                selection[-1]._dh_theme_preview = (self, args, kwargs)
+                return None
+            return original(self, name, *args, **kwargs)
+        SendMessage._dh_theme_select_guard = True
+        GameObject.SendMessage = SendMessage
+
+    def select_factory(inner):
+        def onHallMallBtnEvent(self, args):
+            selection.append(self)
+            try:
+                return inner(self, args)
+            finally:
+                selection.pop()
+        return onHallMallBtnEvent
+
+    def try_factory(inner):
+        native = inner.func_globals
+
+        def onPreviewBtnClicked(self, args):
+            preview = getattr(self, '_dh_theme_preview', None)
+            if preview and args.touch.phase == native['TouchPhase'].Ended:
+                target, message_args, message_kwargs = preview
+                target.SendMessage('onShowTheme', *message_args, **message_kwargs)
+                self._dh_theme_try_target = target
+            return inner(self, args)
+        return onPreviewBtnClicked
+
+    def return_factory(inner):
+        native = inner.func_globals
+
+        def onReturnBtnClicked(self, args):
+            result = inner(self, args)
+            target = getattr(self, '_dh_theme_try_target', None)
+            if target is not None and args.touch.phase == native['TouchPhase'].Ended:
+                self._dh_theme_try_target = None
+                target.SendMessage('onShowOriTheme')
+            return result
+        return onReturnBtnClicked
+
+    def leave_factory(inner):
+        def on_leave(self):
+            try:
+                return inner(self)
+            finally:
+                self._dh_theme_preview = None
+                self._dh_theme_try_target = None
+        return on_leave
+
+    for method, factory in (('onHallMallBtnEvent', select_factory),
+                            ('onPreviewBtnClicked', try_factory),
+                            ('onReturnBtnClicked', return_factory),
+                            ('on_leave', leave_factory)):
+        _dh_class_wrap(module, screen, method, factory, '_dh_theme_explicit_try')
+
 
     def state_factory(inner):
         native = inner.func_globals

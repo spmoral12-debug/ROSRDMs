@@ -10048,6 +10048,48 @@ def _dh_publish_team_hud(player):
             log_error('local-mates-panel-refresh-error')
 
 
+def _dh_layout_detailed_teammate_plate(plate):
+    widget = getattr(plate, 'widget', None)
+    if widget is None:
+        return
+    normal = widget.getChildByName('normal')
+    if normal is None or not normal.isVisible():
+        return
+    name = normal.getChildByName('name')
+    distance = normal.getChildByName('title')
+    if name is None or distance is None:
+        return
+
+    import cc
+    width = float(normal.getContentSize().width)
+    if width <= 16.0:
+        return
+    # The authored rows share the same horizontal center. Keep the existing
+    # labels and let the game continue updating distance and mark mode.
+    for key, label, bottom, height, color in (
+        ('redemption_name_bg', name, 22.0, 28.0, (34, 41, 49, 220)),
+        ('redemption_distance_bg', distance, 0.0, 22.0, (228, 233, 236, 232)),
+    ):
+        background = normal.getChildByName(key)
+        if background is None:
+            background = cc.LayerColor.create(cc.Color4B(*color), width, height)
+            background.setName(key)
+            normal.addChild(background, 10)
+        background.setPosition(cc.Vec2(0.0, bottom))
+        background.setContentSize(cc.Size(width, height))
+        label.setLocalZOrder(11)
+        label.setAnchorPoint(cc.Vec2(0.5, 0.5))
+        label.setPosition(cc.Vec2(width / 2.0, bottom + height / 2.0))
+        text_width = max(1.0, float(label.getContentSize().width))
+        label.setScaleX(min(1.0, (width - 16.0) / text_width))
+
+    set_text_color = getattr(distance, 'setTextColor', None)
+    if callable(set_text_color):
+        set_text_color(cc.Color4B(39, 47, 54, 255))
+    else:
+        distance.setColor(cc.c3b(39, 47, 54))
+
+
 def _dh_rich_sync_teammates(mates):
     _dh_mates['live_list'] = list(mates or [])
     signature = tuple(mates or [])
@@ -10201,6 +10243,7 @@ def _dh_rich_sync_teammates(mates):
                     if callable(show_name) and not callable(getattr(type(plate), 'getDistance', None)):
                         native_show_name = getattr(show_name, 'im_func', show_name)
                         native_show_name(avatar, record.nickname, '', record.nationalFlag)
+                    _dh_layout_detailed_teammate_plate(getattr(avatar, '_ui3DName', None))
                 except Exception:
                     if not _dh_mates.get('prep_marker_warned'):
                         _dh_mates['prep_marker_warned'] = True

@@ -8974,9 +8974,9 @@ except Exception:
 try:
     def redemption_disperse_island_bots():
         try:
-            if not on_island_stage():
+            if BATTLE.get('phase') != 'fighting' or not on_island_stage():
                 return
-            
+
             map_id = BATTLE.get('map') or 700
             count = int((BATTLE.get('match') or {}).get('bots') or 40)
             
@@ -9019,25 +9019,22 @@ try:
             log_error('local-battle-island-disperse-error', err=str(ex))
 
     # Periodic check on island to keep bots nicely spread out
-    def _dh_island_bot_tick():
+    def _dh_island_bot_tick(flight_token):
         try:
-            if on_island_stage():
+            if (flight_token == _flight.get('token') and
+                    BATTLE.get('phase') in ('entering', 'fighting') and on_island_stage()):
                 redemption_disperse_island_bots()
-                call_later(6.0, _dh_island_bot_tick)
+                call_later(6.0, _dh_island_bot_tick, flight_token)
         except Exception:
             pass
 
     # Call on start
-    call_later(1.0, redemption_disperse_island_bots)
-    call_later(3.0, redemption_disperse_island_bots)
-    call_later(6.0, _dh_island_bot_tick)
-
     # Hook schedule_plane to trigger dispersion right when island starts
     _orig_schedule_plane = globals().get('schedule_plane')
     if callable(_orig_schedule_plane):
         def redemption_schedule_plane():
             res = _orig_schedule_plane()
-            call_later(0.5, redemption_disperse_island_bots)
+            call_later(0.5, _dh_island_bot_tick, _flight.get('token'))
             return res
         globals()['schedule_plane'] = redemption_schedule_plane
 
@@ -9657,11 +9654,28 @@ def _dh_leave_battle_purge_wrapper(*a, **k):
     except Exception:
         pass
     res = None
+    returning = getattr(LOBBY, 'return_to_lobby', None)
+
+    def traced_return(*args, **kwargs):
+        log('local-battle-quit-lobby-start')
+        try:
+            result = returning(*args, **kwargs)
+            log('local-battle-quit-lobby-end', ready=bool(result))
+            return result
+        except Exception:
+            log_error('local-battle-quit-lobby-error')
+            raise
+
     if callable(_dh_orig_leave_battle_purge):
+        if callable(returning):
+            LOBBY.return_to_lobby = traced_return
         try:
             res = _dh_orig_leave_battle_purge(*a, **k)
         except Exception:
             log_error('local-battle-quit-handler-error')
+        finally:
+            if callable(returning) and LOBBY.return_to_lobby is traced_return:
+                LOBBY.return_to_lobby = returning
     log('local-battle-quit-cleanup-start')
     try:
         _dh_purge_client_teammates()
@@ -10086,6 +10100,17 @@ def _dh_layout_detailed_teammate_plate(plate, meters):
         return
 
     background = normal.getChildByName('redemption_name_bg')
+    # The artwork can also be a wide image child of the Detailed panel.
+    # Restrict removal to the name row's backing, leaving the two labels
+    # and the separate Simple Mode panel under native control.
+    for child in normal.getChildren():
+        if child.getName() in ('name', 'title', 'redemption_name_bg', 'master_icon'):
+            continue
+        if type(child).__name__ not in ('ImageView', 'Sprite', 'LayerColor', 'Layout'):
+            continue
+        size = child.getContentSize()
+        if size.width >= width * 0.65 and 10.0 <= size.height <= 35.0:
+            child.setVisible(False)
     if background is None:
         # Use a single continuous translucent backing for the name row.
         background = cc.LayerColor.create(cc.Color4B(12, 17, 23, 145), width, 28.0)

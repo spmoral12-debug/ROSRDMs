@@ -191,29 +191,16 @@ except Exception as e:
     print('[server] Error patching queue_up:', e, flush=True)
 
 # ----------------------------------------------------------
-# 7. Monkey-patch Battle.place_bots (Never Clump Bots on Client Place)
+# 7. Keep server-owned patrols when older clients send placement requests.
 # ----------------------------------------------------------
 try:
     def redemption_place_bots(self, points):
-        with self._lock:
-            bots = [e for e in self.entities.values() if e.kind == battle.BOT and e.alive]
-            pool = list(MAIN_ISLAND_POINTS)
-            if pool:
-                self._random.shuffle(pool)
-            for index, entity in enumerate(bots):
-                if pool:
-                    base = pool[index % len(pool)]
-                    spot = (base[0] + self._random.uniform(-10, 10), base[1], base[2] + self._random.uniform(-10, 10))
-                else:
-                    spot = entity.position
-                entity.position = spot
-                entity.home = spot
-                entity.target = None
-            print('[server] ROS Redemption: %d bots placed dispersed across Ghillie Island!' % len(bots), flush=True)
-            return len(bots)
+        # Prep and first landing used this request. By then the match already
+        # has a shared set of bot homes, including in matches with older clients.
+        return 0
 
     battle.Battle.place_bots = redemption_place_bots
-    print('[server] ROS Redemption: place_bots anti-clump patch installed!', flush=True)
+    print('[server] ROS Redemption: server-owned bot patrols enabled.', flush=True)
 except Exception as e:
     print('[server] Error patching place_bots:', e, flush=True)
 

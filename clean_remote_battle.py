@@ -8294,7 +8294,7 @@ log('local-m49-installed', reload_safe=True)
 # 3. Vehicle Spawning: Boats in water, Land vehicles on land
 # 4. Killfeed color fix: Real killer ID for BLUE name & bot kill crediting
 # 5. Shift+1 Bicycle & In-game Tango Emote handlers + Chat Commands
-# 6. Anti-Clump Bot Dispersion in place_bots_near
+# 6. Preserve server-owned bot positions
 # 7. Admin / GM Chat Command Protection (Cheats locked to Admin Sean only)
 # ==============================================================================
 
@@ -8601,27 +8601,13 @@ try:
 except Exception:
     pass
 
-# 6. Anti-Clump Bot Dispersion in place_bots_near
-try:
-    def redemption_place_bots_near(point, randomizer, count=None):
-        count = count if count is not None else int((BATTLE.get('match') or {}).get('bots') or 0)
-        # Scatter bots across the whole map using large radius (1500m - 5000m)
-        points = []
-        for _index in range(count):
-            angle = randomizer.uniform(0.0, 2.0 * math.pi)
-            distance = randomizer.uniform(800.0, 4500.0)
-            x = point[0] + distance * math.cos(angle)
-            z = point[2] + distance * math.sin(angle)
-            ground = ground_height(x, z)
-            points.append([round(x, 2), round(ground if ground else point[1], 2), round(z, 2)])
-        if points:
-            send(BOT_PREFIX + json.dumps({'action': 'place', 'points': points}))
-        log('ros-redemption-fix', fix='bots dispersed broadly across map, zero clumping')
-        return points
+# Keep the server's initial bot homes when a client finishes landing.
+def redemption_keep_bot_homes(point, randomizer, count=None):
+    return []
 
-    globals()['place_bots_near'] = redemption_place_bots_near
-except Exception:
-    pass
+
+globals()['place_bots_near'] = redemption_keep_bot_homes
+
 
 # 7. Admin / GM Chat Command Protection (Cheats locked to Admin Sean only)
 try:
@@ -8955,79 +8941,6 @@ except Exception:
     pass
 
 
-# 5. Prepare Island Bot Dispersion (Anti-Clump / Spread out across the island)
-try:
-    def redemption_disperse_island_bots():
-        try:
-            if BATTLE.get('phase') != 'fighting' or not on_island_stage():
-                return
-
-            map_id = BATTLE.get('map') or 700
-            count = int((BATTLE.get('match') or {}).get('bots') or 40)
-            
-            # 1. Try to get official RebornPosition points on the island
-            island_points = []
-            try:
-                pts = level_points(level_record(map_id), 'RebornPosition')
-                if pts:
-                    import random
-                    rng = random.Random()
-                    if len(pts) >= count:
-                        island_points = [[round(p[0], 2), round(p[1], 2), round(p[2], 2)] for p in rng.sample(pts, count)]
-                    else:
-                        island_points = [[round(p[0], 2), round(p[1], 2), round(p[2], 2)] for p in pts]
-            except Exception:
-                island_points = []
-
-            # 2. If no level points, generate wide radial spots around island
-            if not island_points:
-                player = current_player()
-                pos = getattr(player, 'position', None)
-                if pos is not None:
-                    cx = float(pos[0] if hasattr(pos, '__getitem__') else getattr(pos, 'x', 0.0))
-                    cy = float(pos[1] if hasattr(pos, '__getitem__') else getattr(pos, 'y', 10.0))
-                    cz = float(pos[2] if hasattr(pos, '__getitem__') else getattr(pos, 'z', 0.0))
-                    import random, math
-                    rng = random.Random()
-                    for idx in range(count):
-                        angle = (2.0 * math.pi * idx) / float(max(1, count)) + rng.uniform(-0.3, 0.3)
-                        dist = rng.uniform(40.0, 240.0)
-                        px = cx + dist * math.cos(angle)
-                        pz = cz + dist * math.sin(angle)
-                        py = ground_height(px, pz) or cy
-                        island_points.append([round(px, 2), round(py, 2), round(pz, 2)])
-
-            if island_points:
-                send(BOT_PREFIX + json.dumps({'action': 'place', 'points': island_points}))
-                log('ros-redemption-fix', fix='prepare island bots dispersed', count=len(island_points))
-        except Exception as ex:
-            log_error('local-battle-island-disperse-error', err=str(ex))
-
-    # Periodic check on island to keep bots nicely spread out
-    def _dh_island_bot_tick(flight_token):
-        try:
-            if (flight_token == _flight.get('token') and
-                    BATTLE.get('phase') in ('entering', 'fighting') and on_island_stage()):
-                redemption_disperse_island_bots()
-                call_later(6.0, _dh_island_bot_tick, flight_token)
-        except Exception:
-            pass
-
-    # Call on start
-    # Hook schedule_plane to trigger dispersion right when island starts
-    _orig_schedule_plane = globals().get('schedule_plane')
-    if callable(_orig_schedule_plane):
-        def redemption_schedule_plane():
-            res = _orig_schedule_plane()
-            call_later(0.5, _dh_island_bot_tick, _flight.get('token'))
-            return res
-        globals()['schedule_plane'] = redemption_schedule_plane
-
-    log('ros-redemption-fix', fix='prepare island anti-clump installed')
-except Exception:
-    pass
-
-
 # 6. Varied Bot Appearance (Gender & Model variety instead of all cloned identical males)
 try:
     _orig_remote_properties = globals().get('remote_properties')
@@ -9035,9 +8948,8 @@ try:
         def redemption_remote_properties(item, class_name):
             props = _orig_remote_properties(item, class_name)
             try:
-                item_id = int(item.get('id') or 0)
-                name = str(item.get('name') or '')
-                if 'Bot' in name or item.get('kind') == 'bot' or item_id >= 900000:
+                if item.get('kind') == 'bot':
+                    item_id = int(item.get('id') or 0)
                     # Alternate male (10002) and female (10001)
                     props['characterType'] = 10001 if (item_id % 2 == 1) else 10002
             except Exception:
@@ -9065,6 +8977,28 @@ _car_turbo_state = {}
 _car_empty_gas = set()
 
 # --- 1. CAR SKIN SYSTEM ---
+def redemption_vehicle_skin(player, car):
+    land = int(getattr(car, 'characterType', 0) or 0)
+    if not land:
+        return None
+    equipped = getattr(player, 'landVehicleID2AppearanceIDDict', None) or {}
+    candidate = equipped.get(land) or equipped.get(str(land))
+    candidates = [candidate] if candidate else []
+    candidates.extend(getattr(player, 'dtsVehicleAppearanceList', None) or [])
+    if candidates:
+        import dts_appearance_utils
+        for appearance in candidates:
+            if int(dts_appearance_utils.getVehicleAppearanceLandVehicleID(appearance) or 0) == land:
+                return appearance
+    return None
+
+
+def redemption_apply_boarding_skin(player, car, appearance_id):
+    if (current_player() is player and getattr(player, 'isLandDriver', False)
+            and getattr(player, 'vehicleEntID', None) == car.id and vehicle_entity(car.id) is not None):
+        redemption_apply_car_skin(car, appearance_id)
+
+
 try:
     def redemption_apply_car_skin(car, appearance_id):
         if car is None:
@@ -9074,6 +9008,8 @@ try:
             if not aid:
                 return False
             old_aid = getattr(car, 'tpsVehicleID', 0)
+            if old_aid == aid:
+                return True
             car.tpsVehicleID = aid
 
             veh_dict = globals().get('_vehicles')
@@ -9155,20 +9091,9 @@ try:
             try:
                 driver_socket = globals().get('VEHICLE_DRIVER_SOCKET', 'Driver')
                 if socket == driver_socket and car is not None:
-                    skins_dict = getattr(player, 'landVehicleID2AppearanceIDDict', None)
-                    chosen_skin = None
-                    if isinstance(skins_dict, dict):
-                        char_type = int(getattr(car, 'characterType', 0) or 0)
-                        if char_type in skins_dict:
-                            chosen_skin = skins_dict[char_type]
-                        elif skins_dict:
-                            chosen_skin = list(skins_dict.values())[0]
-                    if not chosen_skin:
-                        app_list = getattr(player, 'dtsVehicleAppearanceList', None)
-                        if app_list:
-                            chosen_skin = app_list[0]
+                    chosen_skin = redemption_vehicle_skin(player, car)
                     if chosen_skin:
-                        call_later(0.2, redemption_apply_car_skin, car, chosen_skin)
+                        call_later(0.2, redemption_apply_boarding_skin, player, car, chosen_skin)
             except Exception:
                 pass
             return res

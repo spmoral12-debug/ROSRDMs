@@ -8342,8 +8342,6 @@ except Exception:
 try:
     def redemption_step_join(player):
         session = LOBBY._backend.get('session') if LOBBY is not None and hasattr(LOBBY, '_backend') else ''
-        if not session:
-            session = 'sean_redemption_session'
         profile = {}
         try:
             profile = LOBBY._local_profile(player)
@@ -8370,7 +8368,7 @@ try:
                 spawn, randomized = picked, True
         BATTLE.update(map=map_id, map_from=source, spawn=spawn, spawn_from=spawn_from, spawn_randomized=randomized)
         request = {
-            'session': session,
+            'session': session or '',
             'name': str(profile.get('nickname') or 'sean'),
             'gid': int(profile.get('gid') or 10000002),
             'map': map_id,
@@ -8388,30 +8386,17 @@ try:
             pass
 
         drain(32)
-        send(JOIN_PREFIX + json.dumps(request))
-        time.sleep(0.08)
+        def accepts_join(packet):
+            return is_join_reply(packet) and 'tick' not in packet
 
-        reply = None
-        for _ in range(30):
-            for packet in drain():
-                if is_join_reply(packet):
-                    reply = packet
-                    break
-            if reply is not None:
-                break
-            time.sleep(0.03)
+        reply = ask(JOIN_PREFIX + json.dumps(request), accept=accepts_join) or {}
+        you = reply.get('you')
+        if not reply.get('ok') or not isinstance(you, dict) or not you.get('id'):
+            log('local-battle-join-refused', error=safe(reply.get('message') or 'the battle host did not confirm a player ID'))
+            return 'fail'
 
-        if not isinstance(reply, dict) or not reply.get('ok'):
-            log('local-battle-join-fallback', req=request)
-            reply = {
-                'ok': True,
-                'you': {'id': 41, 'kind': 'player', 'name': request['name'], 'team': request['team']},
-                'match': {'battle': 1, 'map': map_id, 'bots': 40}
-            }
-
-        you = reply.get('you') or {}
-        BATTLE['entity_id'] = int(you.get('id') or 41)
-        BATTLE['match'] = reply.get('match') or {'battle': 1, 'map': map_id, 'bots': 40}
+        BATTLE['entity_id'] = int(you['id'])
+        BATTLE['match'] = reply.get('match') or {}
         log('local-battle-joined', entity=BATTLE['entity_id'], map=BATTLE['map'],
             map_from=BATTLE['map_from'], bots=BATTLE['match'].get('bots', 40),
             spawn=list(_spawn_point()),
@@ -9617,29 +9602,14 @@ def _dh_install_battle_quit_guards():
 _dh_install_battle_quit_guards()
 
 
-# 6C. Purge ClientTeammate entities on leave_battle & drop_battle_world
-def _dh_purge_client_teammates():
-    try:
-        import BigWorld
-        for ent in list(BigWorld.entities.values()):
-            if ent is None:
-                continue
-            cname = getattr(getattr(ent, '__class__', None), '__name__', '')
-            if cname == 'ClientTeammate' or 'ClientTeammate' in str(type(ent)):
-                try:
-                    BigWorld.destroyEntity(ent.id)
-                except Exception:
-                    pass
-        p = BigWorld.player()
-        if p is not None:
-            p_cname = getattr(getattr(p, '__class__', None), '__name__', '')
-            if p_cname == 'ClientTeammate' or 'ClientTeammate' in str(type(p)):
-                try:
-                    BigWorld.destroyEntity(p.id)
-                except Exception:
-                    pass
-    except Exception:
-        pass
+# 6C. Detach teammate tracking before the engine clears the battle world.
+def _dh_stop_teammate_tracking(player):
+    _dh_mates.update(live_list=[], client_ids={}, positions={}, sig=None, last_hud_push=0.0)
+    markers = getattr(player, 'clientTeammates', None)
+    if isinstance(markers, dict) and markers:
+        count = len(markers)
+        markers.clear()
+        log('local-battle-teammate-tracking-stopped', markers=count)
 
 
 _dh_orig_leave_battle_purge = globals().get('leave_battle')
@@ -9650,9 +9620,9 @@ while getattr(_dh_orig_leave_battle_purge, '_dh_purge_inner', None) is not None:
 def _dh_leave_battle_purge_wrapper(*a, **k):
     try:
         _dh_install_battle_quit_guards()
-        _dh_purge_client_teammates()
+        _dh_stop_teammate_tracking(current_player())
     except Exception:
-        pass
+        log_error('local-battle-quit-cleanup-error')
     res = None
     returning = getattr(LOBBY, 'return_to_lobby', None)
 
@@ -9676,12 +9646,6 @@ def _dh_leave_battle_purge_wrapper(*a, **k):
         finally:
             if callable(returning) and LOBBY.return_to_lobby is traced_return:
                 LOBBY.return_to_lobby = returning
-    log('local-battle-quit-cleanup-start')
-    try:
-        _dh_purge_client_teammates()
-    except Exception:
-        log_error('local-battle-quit-cleanup-error')
-    log('local-battle-quit-cleanup-end')
     return res
 
 
@@ -9695,22 +9659,9 @@ while getattr(_dh_orig_drop_battle_world, '_dh_purge_inner', None) is not None:
 
 
 def _dh_drop_battle_world_wrapper(*a, **k):
-    try:
-        _dh_install_battle_quit_guards()
-        _dh_purge_client_teammates()
-    except Exception:
-        pass
-    res = None
     if callable(_dh_orig_drop_battle_world):
-        try:
-            res = _dh_orig_drop_battle_world(*a, **k)
-        except Exception:
-            pass
-    try:
-        _dh_purge_client_teammates()
-    except Exception:
-        pass
-    return res
+        _dh_stop_teammate_tracking(current_player())
+        return _dh_orig_drop_battle_world(*a, **k)
 
 
 if callable(_dh_orig_drop_battle_world):
@@ -9774,14 +9725,9 @@ def _dh_install_teammate_entity_plumbing():
                     setattr(mod, 'PlayerClientTeammate', cls)
                 cls.onBecomePlayer = lambda self=None: None
                 cls.onBecomeNonPlayer = lambda self=None: None
-                if not hasattr(cls, 'setPosition'):
-                    def _ct_set_pos(self, pos=None, *a, **k):
-                        try:
-                            if pos is not None:
-                                self.position = pos
-                        except Exception:
-                            pass
-                    cls.setPosition = _ct_set_pos
+                position_setter = getattr(cls, 'setPosition', None)
+                if not getattr(position_setter, '_dh_ct_position', False):
+                    cls.setPosition = _dh_teammate_position_setter(position_setter)
                 orig_enter = getattr(cls, 'enterWorld', None)
                 if not getattr(orig_enter, '_dh_ct_enter', False):
                     def _ct_enter_world(self, *a, **k):
@@ -9822,6 +9768,18 @@ def _dh_install_teammate_entity_plumbing():
                     cls.setPosition = _avatar_noop_set_position
                 except Exception:
                     pass
+
+
+def _dh_teammate_position_setter(original):
+    def set_position(marker, position=None, *args, **kwargs):
+        if BATTLE.get('phase') not in ('entering', 'fighting') or not _dh_mates.get('live_list'):
+            return
+        if callable(original) and callable(getattr(getattr(marker, 'filter', None), 'moveStraightTo', None)):
+            return original(marker, position, *args, **kwargs)
+        if position is not None:
+            marker.position = position
+    set_position._dh_ct_position = True
+    return set_position
 
 
 def _dh_install_ct_create_wrapper():
@@ -9887,6 +9845,8 @@ def _dh_find_all_client_teammates():
 def _dh_sync_client_teammates():
     """Pin every ClientTeammate to its matching teammate avatar position every frame,
     ensuring native 3D overhead names & seat numbers follow them smoothly, and keeping the white pillar hidden."""
+    if BATTLE.get('phase') not in ('entering', 'fighting') or not _dh_mates.get('live_list'):
+        return
     try:
         import BigWorld
         cts = _dh_find_all_client_teammates()
@@ -9987,9 +9947,10 @@ def _dh_begin_matching_with_party_flags(player, ticket):
     accepted = _dh_begin_matching_with_party_flags._dh_inner(player, ticket)
     if accepted:
         party = getattr(player, 'hallTeamData', None) or {}
+        cards = getattr(LOBBY, '_player_cards', {}) or {}
         BATTLE['teammate_flags'] = [
             (card.get('gid') or gid, card.get('nickname') or card.get('name'),
-             card.get('nationalFlag') or card.get('flag'))
+             _dh_country_code(card) or _dh_country_code(cards.get(card.get('gid') or gid)))
             for gid, card in party.items() if isinstance(card, dict)
             and str(gid) != str(getattr(player, 'gid', None))
         ] if isinstance(party, dict) else []
@@ -9999,17 +9960,24 @@ def _dh_begin_matching_with_party_flags(player, ticket):
 _dh_wrap_global('begin_matching', _dh_begin_matching_with_party_flags, '_dh_party_flags')
 
 
+def _dh_country_code(record):
+    if isinstance(record, dict):
+        for key in ('nationalFlag', 'flag', 'country', 'nation'):
+            flag = record.get(key)
+            if isinstance(flag, basestring):
+                code = flag.strip().upper()
+                if len(code) == 2 and code != 'UN' and all('A' <= ch <= 'Z' for ch in code):
+                    return code
+    return ''
+
+
 def _dh_teammate_flag(item, avatar, name):
     party = BATTLE.get('teammate_flags') or []
     gid = item.get('gid')
     matches = [code for member_gid, member_name, code in party
-               if (str(member_gid) == str(gid) if gid else
-                   isinstance(member_name, basestring) and member_name == name)]
+               if (str(member_gid) == str(gid) if gid else member_name == name)]
     party_flag = matches[0] if len(matches) == 1 else ''
-    for flag in (item.get('nationalFlag'), item.get('flag'), party_flag, _dh_flag_of(avatar)):
-        if isinstance(flag, basestring) and len(flag) == 2 and all('A' <= ch <= 'Z' for ch in flag.upper()):
-            return flag.upper()
-    return ''
+    return _dh_country_code(item) or party_flag or _dh_country_code({'nationalFlag': _dh_flag_of(avatar)}) or 'UN'
 
 
 def _dh_rich_team_mates_from(snapshot):
@@ -10021,6 +9989,12 @@ def _dh_rich_team_mates_from(snapshot):
     if not (_DH_PARTY_LOW <= team < _DH_PARTY_HIGH):
         return None
     me = int(BATTLE.get('entity_id') or 0)
+    player = current_player()
+    own_client_id = getattr(player, 'id', None)
+    own_gid = str(getattr(player, 'gid', None) or '')
+    seen = set()
+    seen_clients = set()
+    snapshot_owner = (snapshot or {}).get('you')
     mates = []
     client_map = _dh_mates.setdefault('client_ids', {})
     pos_map = _dh_mates.setdefault('positions', {})
@@ -10031,7 +10005,8 @@ def _dh_rich_team_mates_from(snapshot):
             entity_id = int(item.get('id'))
         except (TypeError, ValueError, AttributeError):
             continue
-        if entity_id == me:
+        if (entity_id == me or str(entity_id) == str(snapshot_owner) or entity_id in seen
+                or (own_gid and str(item.get('gid')) == own_gid)):
             continue
         if item.get('pos') is not None:
             try:
@@ -10043,6 +10018,10 @@ def _dh_rich_team_mates_from(snapshot):
         client_id = getattr(resolved, 'id', None) if resolved is not None else client_map.get(entity_id)
         if client_id is None:
             client_id = entity_id
+        if client_id == own_client_id or client_id in seen_clients:
+            continue
+        seen.add(entity_id)
+        seen_clients.add(client_id)
         client_map[entity_id] = client_id
         alive = item.get('alive') is not False
         raw_hp = item.get('hp')
@@ -10278,6 +10257,7 @@ def _dh_rich_sync_teammates(mates):
     if _dh_mates['updates'] <= 15:
         log('local-mates-synced', mates=[m[2] for m in mates],
             alive=[m[3] for m in mates], hp=[m[4] for m in mates],
+            flags=[m[7] for m in mates],
             team=(BATTLE.get('ticket') or {}).get('team'))
     return True
 

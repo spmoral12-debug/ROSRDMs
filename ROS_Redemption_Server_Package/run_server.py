@@ -21,6 +21,43 @@ def strip_packet_mac(data):
     return data
 
 
+DEFAULT_NATIONAL_FLAG = "UN"
+
+
+def install_character_flags():
+    from backend_server.database import Database
+
+    update_character = Database.update_character_in
+
+    def update_with_flag(self, conn, gid, **fields):
+        if fields.get("created") or "lobby" in fields:
+            row = conn.execute("SELECT created, lobby FROM characters WHERE gid = ?", (gid,)).fetchone()
+            if row is not None and (fields.get("created") or row["created"]):
+                lobby = fields.get("lobby", row["lobby"])
+                lobby = json.loads(lobby or "{}") if isinstance(lobby, str) else dict(lobby or {})
+                if not lobby.get("nationalFlag"):
+                    lobby["nationalFlag"] = DEFAULT_NATIONAL_FLAG
+                    fields["lobby"] = lobby
+        return update_character(self, conn, gid, **fields)
+
+    Database.update_character_in = update_with_flag
+
+
+def backfill_character_flags(db):
+    with db.transaction() as conn:
+        rows = conn.execute(
+            "SELECT gid, lobby FROM characters WHERE created = 1"
+        ).fetchall()
+        for row in rows:
+            try:
+                lobby = json.loads(row["lobby"] or "{}")
+            except ValueError:
+                continue
+            if isinstance(lobby, dict) and not lobby.get("nationalFlag"):
+                lobby["nationalFlag"] = DEFAULT_NATIONAL_FLAG
+                db.update_character_in(conn, row["gid"], lobby=lobby)
+
+
 def start_auth_api(db, host="0.0.0.0", port=30063):
     """Serve launcher auth and server-list endpoints on a forwarded port."""
     from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -201,6 +238,7 @@ def install_session_checks():
         return session
 
     def start(self):
+        backfill_character_flags(self.db)
         game_start(self)
         if self.sessions.accounts is None:
             self.sessions.accounts = Accounts(self.db)
@@ -275,5 +313,6 @@ if __name__ == "__main__":
 
     load_server_hot_patch()
     supply_draw_rules.install()
+    install_character_flags()
     install_session_checks()
     runpy.run_module("backend_server", run_name="__main__", alter_sys=True)

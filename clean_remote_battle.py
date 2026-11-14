@@ -8450,23 +8450,33 @@ try:
         killer_name = str(item.get('killer') or 'Player')
         weapon_name = str(item.get('weapon') or '')
         target = _resolve_entity(handle)
+        if target is None or isinstance(target, (int, long_type)) or target.id in _dead:
+            return False
         target_name = str(item.get('name') or avatar_name(target))
-        victim_id = getattr(target, 'id', 0) if target is not None else 0
+        victim_id = target.id
 
         player = current_player()
         my_id = getattr(player, 'id', None)
-        my_bid = BATTLE.get('entity_id')
+        my_bid = int(BATTLE.get('entity_id') or 0)
         killer_id = int(item.get('killer_id') or 0)
-
-        is_my_kill = (killer_name == getattr(player, 'name', '') or
-                      (my_id is not None and killer_id == my_id) or
-                      (my_bid is not None and killer_id == my_bid))
+        is_my_kill = player is not None and killer_id != 0 and killer_id == my_bid
+        _dead.add(victim_id)
+        try:
+            target.hp = 0
+            position = _point(target.position)
+            weapon = weapon_record(0, 0, HIT_SHOOT)
+            if not broadcast(target, 'die', (0, position, weapon, CHEST_PART, HIT_SHOOT)):
+                target.onDie(position, 0, weapon, CHEST_PART, HIT_SHOOT)
+        except Exception:
+            if once('remote-die'):
+                log_error('local-battle-remote-die-error', target=battle_id)
 
         # Passing player.id renders killer name BLUE in HUD kill info
-        actual_killer_id = my_id if (is_my_kill and my_id is not None) else killer_id
+        killer = _resolve_entity(_remote.get(killer_id)) if killer_id and not is_my_kill else None
+        actual_killer_id = my_id if is_my_kill else getattr(killer, 'id', 0)
         show_kill_feed(killer_name, weapon_name, target_name, actual_killer_id, victim_id)
 
-        if is_my_kill and not on_island_stage() and target is not None:
+        if is_my_kill and not on_island_stage():
             credit_player_kill(target, item)
 
         call_later(BODY_LINGER, bury_body, battle_id)
@@ -8760,10 +8770,8 @@ try:
 
             player = current_player()
             my_id = getattr(player, 'id', None)
-            my_name = str(getattr(player, 'name', '') or avatar_name(player) or '')
-
-            is_my_kill = (my_id is not None and killer_id == my_id) or (str(killer) == my_name)
-            is_my_victim = (my_id is not None and victim_id == my_id) or (str(victim) == my_name)
+            is_my_kill = bool(my_id and killer_id == my_id)
+            is_my_victim = bool(my_id and victim_id == my_id)
 
             if is_my_kill:
                 killer_str = _color_name(killer, _COLOR_MY_KILL)

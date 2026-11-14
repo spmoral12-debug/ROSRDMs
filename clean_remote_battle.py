@@ -10048,7 +10048,7 @@ def _dh_publish_team_hud(player):
             log_error('local-mates-panel-refresh-error')
 
 
-def _dh_layout_detailed_teammate_plate(plate):
+def _dh_layout_detailed_teammate_plate(plate, meters):
     widget = getattr(plate, 'widget', None)
     if widget is None:
         return
@@ -10056,38 +10056,38 @@ def _dh_layout_detailed_teammate_plate(plate):
     if normal is None or not normal.isVisible():
         return
     name = normal.getChildByName('name')
-    distance = normal.getChildByName('title')
-    if name is None or distance is None:
+    title = normal.getChildByName('title')
+    if name is None or title is None:
         return
 
     import cc
     width = float(normal.getContentSize().width)
     if width <= 16.0:
         return
-    # The authored rows share the same horizontal center. Keep the existing
-    # labels and let the game continue updating distance and mark mode.
-    for key, label, bottom, height, color in (
-        ('redemption_name_bg', name, 22.0, 28.0, (34, 41, 49, 220)),
-        ('redemption_distance_bg', distance, 0.0, 22.0, (228, 233, 236, 232)),
-    ):
-        background = normal.getChildByName(key)
-        if background is None:
-            background = cc.LayerColor.create(cc.Color4B(*color), width, height)
-            background.setName(key)
-            normal.addChild(background, 10)
-        background.setPosition(cc.Vec2(0.0, bottom))
-        background.setContentSize(cc.Size(width, height))
+
+    background = normal.getChildByName('redemption_name_bg')
+    if background is None:
+        # Use a single continuous translucent backing for the name row.
+        background = cc.LayerColor.create(cc.Color4B(12, 17, 23, 145), width, 28.0)
+        background.setName('redemption_name_bg')
+        normal.addChild(background, 10)
+        clear_fill = getattr(normal, 'setBackGroundColorType', None)
+        if callable(clear_fill):
+            clear_fill(0)
+    background.setPosition(cc.Vec2(0.0, 22.0))
+    background.setContentSize(cc.Size(width, 28.0))
+
+    for label, y in ((name, 32.0), (title, 11.0)):
         label.setLocalZOrder(11)
         label.setAnchorPoint(cc.Vec2(0.5, 0.5))
-        label.setPosition(cc.Vec2(width / 2.0, bottom + height / 2.0))
+        label.setPosition(cc.Vec2(width / 2.0, y))
         text_width = max(1.0, float(label.getContentSize().width))
         label.setScaleX(min(1.0, (width - 16.0) / text_width))
 
-    set_text_color = getattr(distance, 'setTextColor', None)
-    if callable(set_text_color):
-        set_text_color(cc.Color4B(39, 47, 54, 255))
-    else:
-        distance.setColor(cc.c3b(39, 47, 54))
+    # Scale about the panel's bottom-center anchor as the teammate moves away.
+    scale = max(0.50, 65.0 / (65.0 + max(0.0, meters - 12.0)))
+    normal.setScaleX(scale)
+    normal.setScaleY(scale)
 
 
 def _dh_rich_sync_teammates(mates):
@@ -10243,7 +10243,9 @@ def _dh_rich_sync_teammates(mates):
                     if callable(show_name) and not callable(getattr(type(plate), 'getDistance', None)):
                         native_show_name = getattr(show_name, 'im_func', show_name)
                         native_show_name(avatar, record.nickname, '', record.nationalFlag)
-                    _dh_layout_detailed_teammate_plate(getattr(avatar, '_ui3DName', None))
+                    _dh_layout_detailed_teammate_plate(
+                        getattr(avatar, '_ui3DName', None),
+                        distance(_point(player.position), _point(avatar.position)))
                 except Exception:
                     if not _dh_mates.get('prep_marker_warned'):
                         _dh_mates['prep_marker_warned'] = True

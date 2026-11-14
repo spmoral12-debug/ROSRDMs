@@ -9912,7 +9912,7 @@ def _dh_sync_client_teammates():
                 matched_mate = mates[0]
 
             if matched_mate is not None:
-                client_id, entity_id, name, alive, hp, max_hp, down = matched_mate
+                client_id, entity_id, name, alive, hp, max_hp, down = matched_mate[:7]
                 avatar = BigWorld.entities.get(client_id)
                 if avatar is None:
                     avatar = _resolve_entity(_remote.get(entity_id))
@@ -9983,8 +9983,37 @@ _dh_mates.setdefault('positions', {})
 _dh_mates.setdefault('last_hud_push', 0.0)
 
 
+def _dh_begin_matching_with_party_flags(player, ticket):
+    accepted = _dh_begin_matching_with_party_flags._dh_inner(player, ticket)
+    if accepted:
+        party = getattr(player, 'hallTeamData', None) or {}
+        BATTLE['teammate_flags'] = [
+            (card.get('gid') or gid, card.get('nickname') or card.get('name'),
+             card.get('nationalFlag') or card.get('flag'))
+            for gid, card in party.items() if isinstance(card, dict)
+            and str(gid) != str(getattr(player, 'gid', None))
+        ] if isinstance(party, dict) else []
+    return accepted
+
+
+_dh_wrap_global('begin_matching', _dh_begin_matching_with_party_flags, '_dh_party_flags')
+
+
+def _dh_teammate_flag(item, avatar, name):
+    party = BATTLE.get('teammate_flags') or []
+    gid = item.get('gid')
+    matches = [code for member_gid, member_name, code in party
+               if (str(member_gid) == str(gid) if gid else
+                   isinstance(member_name, basestring) and member_name == name)]
+    party_flag = matches[0] if len(matches) == 1 else ''
+    for flag in (item.get('nationalFlag'), item.get('flag'), party_flag, _dh_flag_of(avatar)):
+        if isinstance(flag, basestring) and len(flag) == 2 and all('A' <= ch <= 'Z' for ch in flag.upper()):
+            return flag.upper()
+    return ''
+
+
 def _dh_rich_team_mates_from(snapshot):
-    """Return [(client_id, entity_id, name, alive, hp, max_hp, down)] of party teammates in snapshot, or None if solo."""
+    """Return [(client_id, entity_id, name, alive, hp, max_hp, down, flag)] of party teammates in snapshot, or None if solo."""
     try:
         team = int((BATTLE.get('ticket') or {}).get('team') or 0)
     except (TypeError, ValueError):
@@ -10031,7 +10060,8 @@ def _dh_rich_team_mates_from(snapshot):
                     resolved.campType = p.campType
             except Exception:
                 pass
-        mates.append((int(client_id), int(entity_id), name, bool(alive), int(hp), int(max_hp), bool(down)))
+        mates.append((int(client_id), int(entity_id), name, bool(alive), int(hp), int(max_hp), bool(down),
+                      _dh_teammate_flag(item, resolved, name)))
     mates.sort(key=lambda entry: entry[1])
     return mates
 
@@ -10080,65 +10110,6 @@ def _dh_publish_team_hud(player):
         if not _dh_mates.get('panel_refresh_warned'):
             _dh_mates['panel_refresh_warned'] = True
             log_error('local-mates-panel-refresh-error')
-
-
-def _dh_layout_detailed_teammate_plate(plate, meters):
-    widget = getattr(plate, 'widget', None)
-    if widget is None:
-        return
-    normal = widget.getChildByName('normal')
-    if normal is None or not normal.isVisible():
-        return
-    name = normal.getChildByName('name')
-    title = normal.getChildByName('title')
-    if name is None or title is None:
-        return
-
-    import cc
-    width = float(normal.getContentSize().width)
-    if width <= 16.0:
-        return
-
-    background = normal.getChildByName('redemption_name_bg')
-    # The artwork can also be a wide image child of the Detailed panel.
-    # Restrict removal to the name row's backing, leaving the two labels
-    # and the separate Simple Mode panel under native control.
-    for child in normal.getChildren():
-        if child.getName() in ('name', 'title', 'redemption_name_bg', 'master_icon'):
-            continue
-        if type(child).__name__ not in ('ImageView', 'Sprite', 'LayerColor', 'Layout'):
-            continue
-        size = child.getContentSize()
-        if size.width >= width * 0.65 and 10.0 <= size.height <= 35.0:
-            child.setVisible(False)
-    if background is None:
-        # Use a single continuous translucent backing for the name row.
-        background = cc.LayerColor.create(cc.Color4B(12, 17, 23, 145), width, 28.0)
-        background.setName('redemption_name_bg')
-        normal.addChild(background, 10)
-    # Layout background images are rendered internally by Cocos and
-    # do not appear among the named children.
-    remove_image = getattr(normal, 'removeBackGroundImage', None)
-    if callable(remove_image):
-        remove_image()
-    clear_fill = getattr(normal, 'setBackGroundColorType', None)
-    if callable(clear_fill):
-        clear_fill(0)
-    background.setAnchorPoint(cc.Vec2(0.0, 0.0))
-    background.setPosition(cc.Vec2(0.0, 22.0))
-    background.setContentSize(cc.Size(width, 28.0))
-
-    for label, y in ((name, 32.0), (title, 11.0)):
-        label.setLocalZOrder(11)
-        label.setAnchorPoint(cc.Vec2(0.5, 0.5))
-        label.setPosition(cc.Vec2(width / 2.0, y))
-        text_width = max(1.0, float(label.getContentSize().width))
-        label.setScaleX(min(1.0, (width - 16.0) / text_width))
-
-    # Scale about the panel's bottom-center anchor as the teammate moves away.
-    scale = max(0.50, 65.0 / (65.0 + max(0.0, meters - 12.0)))
-    normal.setScaleX(scale)
-    normal.setScaleY(scale)
 
 
 def _dh_rich_sync_teammates(mates):
@@ -10197,7 +10168,7 @@ def _dh_rich_sync_teammates(mates):
     died = _dh_player_state('Died')
     wounded = _dh_player_state('Wounded')
     valid_mates = []
-    for index, (client_id, entity_id, name, alive, hp, max_hp, down) in enumerate(mates):
+    for index, (client_id, entity_id, name, alive, hp, max_hp, down, flag) in enumerate(mates):
         mate_gid = 20000000 + int(entity_id or (index + 2))
         if mate_gid == own_gid:
             mate_gid += 1000
@@ -10215,7 +10186,7 @@ def _dh_rich_sync_teammates(mates):
             isAlive=_DhAliveFlag(alive),
             hp=hp,
             maxHp=max_hp,
-            nationalFlag='',
+            nationalFlag=flag,
             baseCharacterType=DEFAULT_CHARACTER_TYPE,
             characterType=DEFAULT_CHARACTER_TYPE,
             index=index + 1,
@@ -10294,9 +10265,6 @@ def _dh_rich_sync_teammates(mates):
                     if callable(show_name) and not callable(getattr(type(plate), 'getDistance', None)):
                         native_show_name = getattr(show_name, 'im_func', show_name)
                         native_show_name(avatar, record.nickname, '', record.nationalFlag)
-                    _dh_layout_detailed_teammate_plate(
-                        getattr(avatar, '_ui3DName', None),
-                        distance(_point(player.position), _point(avatar.position)))
                 except Exception:
                     if not _dh_mates.get('prep_marker_warned'):
                         _dh_mates['prep_marker_warned'] = True

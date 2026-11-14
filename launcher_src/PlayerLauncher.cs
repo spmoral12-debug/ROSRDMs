@@ -399,6 +399,24 @@ if not result.get('ok'):
         return psi;
     }
 
+    private ProcessStartInfo OnlineCommand(string username)
+    {
+        // Older player packages can use the current online launcher without a second download.
+        string encoded;
+        using (var stream = typeof(PlayerLauncher).Assembly.GetManifestResourceStream("connect_online.py"))
+        using (var script = new MemoryStream())
+        {
+            stream.CopyTo(script);
+            encoded = Convert.ToBase64String(script.ToArray());
+        }
+        const string bootstrap = "import base64, os, sys; " +
+            "source = base64.b64decode(sys.argv.pop(1)); " +
+            "sys.argv[0] = os.path.abspath('connect_online.py'); " +
+            "exec(compile(source, sys.argv[0], 'exec'), {'__name__': '__main__', '__file__': sys.argv[0]})";
+        return Command("-c \"" + bootstrap + "\" " + encoded + " --launcher-input" +
+                       (username.Length == 0 ? "" : " --username \"" + username + "\""));
+    }
+
     private static int Run(ProcessStartInfo command, string input, string logPath, out string lastMessage)
     {
         using (var process = Process.Start(command))
@@ -470,8 +488,7 @@ if not result.get('ok'):
         string report = Path.Combine(Game, "local_update", "logs", "launcher.log");
         try
         {
-            var command = Command("connect_online.py --launcher-input" +
-                                  (username.Length == 0 ? "" : " --username \"" + username + "\""));
+            var command = OnlineCommand(username);
             command.RedirectStandardInput = true;
             Directory.CreateDirectory(Path.GetDirectoryName(report));
             string message = "";

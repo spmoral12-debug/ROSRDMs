@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 
@@ -49,13 +50,39 @@ def http_get(url):
         return {"ok": False, "error": msg, "message": msg}
 
 
+def prepare_online_identity(root, username, account_id):
+    path = root / "local_update" / "local_identity.json"
+    if path.is_file():
+        return
+    identity = {
+        "aid": str(100000000 + int(account_id or 0)),
+        "sdkuid": username,
+        "gas_token": "local-offline-token",
+        "username": username,
+        "chl_sdk_json": "{}",
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         prefix=".local-identity-", delete=False) as file:
+            temporary = Path(file.name)
+            json.dump(identity, file)
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Connect to ROS Redemption VPS")
     parser.add_argument("--api", default=DEFAULT_API_URL, help="VPS API URL (default: %(default)s)")
     parser.add_argument("--username", "-u", help="Username")
     parser.add_argument("--password", "-p", help="Password")
     parser.add_argument("--register", action="store_true", help="Register a new account")
+    parser.add_argument("--launcher-input", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    supplied_password = sys.stdin.readline().rstrip("\r\n") if args.launcher_input else args.password
 
     root = Path(__file__).resolve().parent
     config_file = root / ".online_session.json"
@@ -67,6 +94,8 @@ def main():
             pass
 
     username = args.username or (session_data.get("username") if not args.register else None)
+    if not username and args.launcher_input:
+        sys.exit("[-] Sign in with your ROS Redemption username and password.")
     if not username:
         print("=== ROS Redemption Online Login ===")
         username = input("Username: ").strip()
@@ -116,13 +145,15 @@ def main():
         pass
 
     # Check if we have a saved valid token
-    if session_data.get("username") == username and session_data.get("token") and not args.password and not args.register:
+    if session_data.get("username") == username and session_data.get("token") and not supplied_password and not args.register:
         token = session_data.get("token")
         account_id = session_data.get("account_id")
         print(f"Using saved session for {username}.")
 
     if not token:
-        password = args.password
+        password = supplied_password
+        if not password and args.launcher_input:
+            sys.exit("[-] Sign in with your ROS Redemption username and password.")
         if not password:
             password = getpass.getpass("Password (minimum 8 characters): ")
 
@@ -157,6 +188,10 @@ def main():
             "token": token
         }, indent=2), encoding="utf-8")
         print("Login successful! Session saved.")
+
+    # The packaged game needs a local UniSDK bootstrap identity. Lobby login
+    # separately uses the signed session returned by the online server.
+    prepare_online_identity(root, username, account_id)
 
     # Launch the game with start_diehard_local.py
     python_exe = root / "runtime" / "python" / "python.exe"

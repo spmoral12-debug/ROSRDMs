@@ -10189,6 +10189,8 @@ def _dh_rich_sync_teammates(mates):
                         create_marker(record, False)
                         continue
                     marker = markers[record.entID]
+                    if isinstance(marker, dict):
+                        marker = marker.get('clientID')
                     if isinstance(marker, (int, long_type)):
                         marker = BigWorld.entities.get(marker)
                     show_name = getattr(type(marker), 'showName', None)

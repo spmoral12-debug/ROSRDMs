@@ -9631,7 +9631,31 @@ def _dh_bind_return_scene(scene):
     import world
     world.set_active_scene(scene)
     _lobby['return_scene_bound'] = id(scene)
+    call_later(0.3, _dh_reveal_return_backdrop, scene, 0)
     log('local-lobby-return-render-scene-bound')
+
+
+def _dh_reveal_return_backdrop(scene, attempt):
+    import Globals
+    if getattr(Globals, 'loginScene', None) is not scene:
+        return
+    if _dh_in_lobby() and not _lobby.get('backdrop_hidden'):
+        native = _lobby.get('native_hall_models') or []
+        retired = _lobby.get('retired_hall_models') or []
+        restored = 0
+        for model, name in scene_models(scene):
+            if (is_backdrop_name(name) and 'motor' not in name.lower()
+                    and not same_model(model, native) and not same_model(model, retired)):
+                try:
+                    if not model.visible:
+                        model.visible = True
+                        restored += 1
+                except Exception:
+                    continue
+        if restored:
+            log('local-lobby-return-backdrop-revealed', models=restored)
+    if attempt < 12:
+        call_later(0.3, _dh_reveal_return_backdrop, scene, attempt + 1)
 
 
 def _dh_entry_gate_wrapper(Globals, lobby_player, scene_attempt=0, _retry=0):

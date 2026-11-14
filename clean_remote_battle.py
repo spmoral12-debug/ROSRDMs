@@ -8490,33 +8490,48 @@ except Exception:
 
 # 5. Shift+1 Bicycle & In-Game Tango / Emote
 try:
-    _redemption_bike_state = {'last_summon': 0.0}
+    _redemption_bike_state = globals().get('_redemption_bike_state') or {}
 
     def redemption_summon_bike(player=None):
         now = time.time()
-        if now - _redemption_bike_state['last_summon'] < 2.0:
-            return None
-        _redemption_bike_state['last_summon'] = now
         player = player or current_player()
-        if player is None:
-            return None
+        if (player is None or player is not current_player() or BATTLE.get('phase') != 'fighting'
+                or not _flight.get('landed_once') or getattr(player, 'inLandVehicle', False)
+                or getattr(player, 'isSwimming', False) or getattr(player, 'hp', 0) <= 0):
+            log('local-bicycle-rejected', reason='player state', stage=_flight.get('stage'))
+            return False
+        match = BATTLE.get('matching_started')
+        if _redemption_bike_state.get('match') == match and now - _redemption_bike_state.get('last_summon', 0) < 2:
+            return False
         try:
-            if getattr(player, 'inLandVehicle', False):
-                get_off(player, getattr(player, 'vehicleEntID', 0))
-                return True
             x, y, z = _point(player.position)
+            floor = ground_height(x, z)
+            if not character_on_ground(player) and (floor is None or abs(y - floor) > 2.0):
+                log('local-bicycle-rejected', reason='not on ground')
+                return False
             yaw = float(getattr(player, 'yaw', 0.0) or 0.0)
             cx = x + 2.5 * math.sin(yaw)
             cz = z + 2.5 * math.cos(yaw)
-            ground = ground_height(cx, cz) or y
-            # 25102 is LandVehicle ID, 140073 is Summer Bicycle appearance
-            bike_id = spawn_vehicle('LandCar', 25102, 140073, cx, cz, ground, yaw)
+            ground = ground_height(cx, cz)
+            if ground is None or abs(ground - y) > 2.0:
+                log('local-bicycle-rejected', reason='no nearby ground')
+                return False
+            import dts_appearance_utils
+            appearance = 140073
+            land = int(dts_appearance_utils.getVehicleAppearanceLandVehicleID(appearance) or 0)
+            if not land:
+                log('local-bicycle-rejected', reason='vehicle data missing', appearance=appearance)
+                return False
+            data = _properties_module().getLandVehicleData(land)
+            class_name = getattr(data, 'entityClass', None) or getattr(data, 'ENTITY_CLASS', None) or 'LandCar'
+            # Keep deployment separate from boarding so a failed attach cannot trap the player.
+            bike_id = spawn_vehicle(class_name, land, appearance, cx, cz, ground, yaw)
             if bike_id is not None:
-                get_on(player, bike_id, True)
-                log('local-bicycle-summoned', bike=bike_id)
+                _redemption_bike_state.update(match=match, last_summon=now)
+                log('local-bicycle-summoned', bike=bike_id, land=land, appearance=appearance)
                 return True
         except Exception:
-            pass
+            log_error('local-bicycle-summon-error')
         return False
 
     def redemption_play_tango(player=None):
@@ -8573,21 +8588,30 @@ try:
         pass
 
     # Hotkey listener: Check Shift+1 via GetAsyncKeyState
-    import ctypes
-    _u32 = ctypes.windll.user32
-
-    def redemption_hotkey_tick():
+    def redemption_hotkey_tick(token):
+        if token is not _redemption_bike_state.get('input_token'):
+            return
         try:
-            # VK_SHIFT is 0x10, '1' is 0x31
-            shift_down = bool(_u32.GetAsyncKeyState(0x10) & 0x8000)
-            one_down = bool(_u32.GetAsyncKeyState(0x31) & 0x8000)
-            if shift_down and one_down:
+            import BigWorld
+            key_down = getattr(BigWorld, 'isKeyDown', None)
+            try:
+                import Keys
+                pressed = key_down(Keys.KEY_1) and (key_down(Keys.KEY_LSHIFT) or key_down(Keys.KEY_RSHIFT))
+            except (ImportError, AttributeError, TypeError):
+                import ctypes
+                user32 = ctypes.windll.user32
+                pressed = bool(user32.GetAsyncKeyState(0x10) & user32.GetAsyncKeyState(0x31) & 0x8000)
+            previous = _redemption_bike_state.get('pressed')
+            _redemption_bike_state['pressed'] = pressed
+            if pressed and not previous and BATTLE.get('phase') == 'fighting':
                 redemption_summon_bike()
         except Exception:
-            pass
-        call_later(0.15, redemption_hotkey_tick)
+            if once('bike-hotkey'):
+                log_error('local-bicycle-hotkey-error')
+        call_later(0.08, redemption_hotkey_tick, token)
 
-    call_later(2.0, redemption_hotkey_tick)
+    _redemption_bike_state['input_token'] = object()
+    call_later(2.0, redemption_hotkey_tick, _redemption_bike_state['input_token'])
 
     # Chat commands: /bike and /tango
     _orig_icc = globals().get('install_chat_commands')
@@ -8595,10 +8619,10 @@ try:
         if callable(_orig_icc):
             _orig_icc(player)
         try:
-            _cmds = globals().get('_chat_commands')
+            _cmds = globals().get('CHAT_COMMANDS')
             if isinstance(_cmds, dict):
-                _cmds['bike'] = lambda p, a: redemption_summon_bike(p) or 'Summer Bicycle summoned!'
-                _cmds['bicycle'] = lambda p, a: redemption_summon_bike(p) or 'Summer Bicycle summoned!'
+                _cmds['bike'] = lambda p, a: 'Summer Bicycle summoned!' if redemption_summon_bike(p) else 'Cannot summon the bicycle here.'
+                _cmds['bicycle'] = _cmds['bike']
                 _cmds['tango'] = lambda p, a: redemption_play_tango(p) or 'Dancing Tango!'
                 _cmds['dance'] = lambda p, a: redemption_play_tango(p) or 'Dancing Tango!'
         except Exception:
@@ -9001,12 +9025,6 @@ def redemption_vehicle_skin(player, car):
     return None
 
 
-def redemption_apply_boarding_skin(player, car, appearance_id):
-    if (current_player() is player and getattr(player, 'isLandDriver', False)
-            and getattr(player, 'vehicleEntID', None) == car.id and vehicle_entity(car.id) is not None):
-        redemption_apply_car_skin(car, appearance_id)
-
-
 try:
     def redemption_apply_car_skin(car, appearance_id):
         if car is None:
@@ -9018,6 +9036,9 @@ try:
             old_aid = getattr(car, 'tpsVehicleID', 0)
             if old_aid == aid:
                 return True
+            if getattr(car, 'usedHangSockets', None):
+                log('local-battle-car-skin-deferred', vehicle=car.id, skin=aid)
+                return False
             car.tpsVehicleID = aid
 
             veh_dict = globals().get('_vehicles')
@@ -9069,7 +9090,8 @@ try:
                 except Exception:
                     car = None
             if car is not None and aid:
-                redemption_apply_car_skin(car, aid)
+                if not redemption_apply_car_skin(car, aid):
+                    return False
                 if hasattr(player, 'dyeingVehicle'):
                     try:
                         player.dyeingVehicle(vid, aid)
@@ -9095,16 +9117,15 @@ try:
     _orig_seat_player = globals().get('seat_player')
     if callable(_orig_seat_player):
         def redemption_seat_player_skin(player, car, socket, *args, **kwargs):
-            res = _orig_seat_player(player, car, socket, *args, **kwargs)
             try:
                 driver_socket = globals().get('VEHICLE_DRIVER_SOCKET', 'Driver')
-                if socket == driver_socket and car is not None:
+                if socket == driver_socket and car is not None and not getattr(car, 'usedHangSockets', None):
                     chosen_skin = redemption_vehicle_skin(player, car)
                     if chosen_skin:
-                        call_later(0.2, redemption_apply_boarding_skin, player, car, chosen_skin)
+                        redemption_apply_car_skin(car, chosen_skin)
             except Exception:
-                pass
-            return res
+                log_error('local-battle-boarding-skin-error')
+            return _orig_seat_player(player, car, socket, *args, **kwargs)
 
         globals()['seat_player'] = redemption_seat_player_skin
 

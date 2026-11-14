@@ -8432,6 +8432,7 @@ try:
                 class_name, land, tps = BOAT
             else:
                 class_name, land, tps = VEHICLE_FLEET[index % len(VEHICLE_FLEET)]
+                tps = redemption_stock_vehicle_id(land, tps)
             car_id = spawn_vehicle(class_name, land, tps, spot[0], spot[2], spot[1], spot[4] if len(spot) > 4 else 0.0)
             if car_id is not None:
                 share_car(car_id, ('w%d' if is_water else 'c%d') % index)
@@ -8587,28 +8588,50 @@ try:
     except Exception:
         pass
 
-    # Hotkey listener: Check Shift+1 via GetAsyncKeyState
+    def redemption_portable_input(inner):
+        def activate(self, *args, **kwargs):
+            if BATTLE.get('phase') == 'fighting':
+                player = current_player()
+                if player is not None and not getattr(player, 'inLandVehicle', False):
+                    if redemption_summon_bike(player):
+                        return True
+            return inner(self, *args, **kwargs)
+        activate.__dict__.update(getattr(inner, '__dict__', {}))
+        activate._dh_portable_input = True
+        return activate
+
+    def redemption_bind_portable_input():
+        module = sys.modules.get('player.logic_ctrls.InputInterpred')
+        if module is None:
+            return
+        candidates = []
+        for cls in vars(module).values():
+            if not isinstance(cls, type) or cls.__module__ != module.__name__:
+                continue
+            for name, method in list(vars(cls).items()):
+                lower = name.lower()
+                if not lower.startswith('pcop') or not callable(method):
+                    continue
+                code = getattr(method, 'func_code', None)
+                symbols = (lower,) + tuple(symbol.lower() for symbol in getattr(code, 'co_names', ()))
+                if any('carryvehicle' in symbol or 'portablevehicle' in symbol for symbol in symbols):
+                    if not getattr(method, '_dh_portable_input', False):
+                        setattr(cls, name, redemption_portable_input(method))
+                        log('local-bicycle-input-bound', method=name)
+                elif 'vehicle' in lower or 'bike' in lower:
+                    candidates.append(name)
+        if candidates and once('bike-input-candidates'):
+            log('local-bicycle-input-candidates', methods=sorted(set(candidates)))
+
     def redemption_hotkey_tick(token):
         if token is not _redemption_bike_state.get('input_token'):
             return
         try:
-            import BigWorld
-            key_down = getattr(BigWorld, 'isKeyDown', None)
-            try:
-                import Keys
-                pressed = key_down(Keys.KEY_1) and (key_down(Keys.KEY_LSHIFT) or key_down(Keys.KEY_RSHIFT))
-            except (ImportError, AttributeError, TypeError):
-                import ctypes
-                user32 = ctypes.windll.user32
-                pressed = bool(user32.GetAsyncKeyState(0x10) & user32.GetAsyncKeyState(0x31) & 0x8000)
-            previous = _redemption_bike_state.get('pressed')
-            _redemption_bike_state['pressed'] = pressed
-            if pressed and not previous and BATTLE.get('phase') == 'fighting':
-                redemption_summon_bike()
+            redemption_bind_portable_input()
         except Exception:
             if once('bike-hotkey'):
                 log_error('local-bicycle-hotkey-error')
-        call_later(0.08, redemption_hotkey_tick, token)
+        call_later(0.5, redemption_hotkey_tick, token)
 
     _redemption_bike_state['input_token'] = object()
     call_later(2.0, redemption_hotkey_tick, _redemption_bike_state['input_token'])
@@ -9009,6 +9032,33 @@ _car_turbo_state = {}
 _car_empty_gas = set()
 
 # --- 1. CAR SKIN SYSTEM ---
+def redemption_stock_vehicle_id(land, fallback):
+    # Ordinary map cars use the native vehicle record, not Depot appearances.
+    properties = _properties_module()
+    if properties is not None:
+        try:
+            if properties.getVehicleData(land) is not None:
+                return land
+        except (KeyError, ValueError, AttributeError):
+            pass
+    return fallback
+
+
+def redemption_owns_vehicle_skin(player, appearance):
+    owns = getattr(LOBBY, 'owns_appearance', None)
+    if callable(owns) and owns(player, appearance):
+        return True
+    cache = getattr(LOBBY, '_items_cache', None) or {}
+    local_gid = getattr(LOBBY, 'local_gid', None)
+    if not callable(local_gid) or str(cache.get('gid') or '') != str(local_gid()):
+        return False
+    now = time.time()
+    return any(isinstance(item, dict) and str(item.get('item')) == str(appearance)
+               and int(item.get('count') or 0) > 0
+               and (not item.get('expires') or int(item['expires']) > now)
+               for item in cache.get('items') or [])
+
+
 def redemption_vehicle_skin(player, car):
     land = int(getattr(car, 'characterType', 0) or 0)
     if not land:
@@ -9020,7 +9070,9 @@ def redemption_vehicle_skin(player, car):
     if candidates:
         import dts_appearance_utils
         for appearance in candidates:
-            if int(dts_appearance_utils.getVehicleAppearanceLandVehicleID(appearance) or 0) == land:
+            appearance = int(appearance)
+            if (int(dts_appearance_utils.getVehicleAppearanceLandVehicleID(appearance) or 0) == land
+                    and redemption_owns_vehicle_skin(player, appearance)):
                 return appearance
     return None
 
@@ -9039,38 +9091,15 @@ try:
             if getattr(car, 'usedHangSockets', None):
                 log('local-battle-car-skin-deferred', vehicle=car.id, skin=aid)
                 return False
+            setter = getattr(car, 'set_tpsVehicleID', None)
+            if not callable(setter):
+                return False
             car.tpsVehicleID = aid
-
-            veh_dict = globals().get('_vehicles')
-            if isinstance(veh_dict, dict) and getattr(car, 'id', None) in veh_dict:
-                veh_dict[car.id]['tps'] = aid
-
-            if hasattr(car, 'set_tpsVehicleID'):
-                try:
-                    car.set_tpsVehicleID(old_aid)
-                except Exception:
-                    pass
-
-            for method in ('onVehicleAppearanceChanged', 'changeAppearance', 'onDyeingVehicle', 'dyeingVehicle'):
-                fn = getattr(car, method, None)
-                if callable(fn):
-                    try:
-                        fn(aid)
-                    except Exception:
-                        pass
-
             try:
-                assemble = car.gameObject.GetComponent('VehiclePhysicAssemble')
-                if assemble is not None:
-                    for assem_fn in ('resetAppearance', 'initAppearance', 'changeAppearance'):
-                        m = getattr(assemble, assem_fn, None)
-                        if callable(m):
-                            try:
-                                m(aid)
-                            except Exception:
-                                pass
+                setter(old_aid)
             except Exception:
-                pass
+                car.tpsVehicleID = old_aid
+                raise
 
             log('local-battle-car-skin-applied', vehicle=getattr(car, 'id', 0), skin=aid)
             return True
@@ -9089,21 +9118,8 @@ try:
                     car = BigWorld.entities.get(vid)
                 except Exception:
                     car = None
-            if car is not None and aid:
-                if not redemption_apply_car_skin(car, aid):
-                    return False
-                if hasattr(player, 'dyeingVehicle'):
-                    try:
-                        player.dyeingVehicle(vid, aid)
-                    except Exception:
-                        pass
-                elif hasattr(player, 'onDyeingVehicle'):
-                    try:
-                        player.onDyeingVehicle(vid, aid)
-                    except Exception:
-                        pass
-                tip_text('#c00e5ffCar skin applied!#n')
-                return True
+            if car is not None and player is current_player():
+                return aid == redemption_vehicle_skin(player, car) and aid == car.tpsVehicleID
         except Exception:
             pass
         return True
@@ -9114,20 +9130,78 @@ try:
         _rh['reqPlayVehicleTransformExitEff'] = lambda *a, **k: True
         _rh['reqWearVehicleTransformCloth'] = lambda *a, **k: True
 
-    _orig_seat_player = globals().get('seat_player')
-    if callable(_orig_seat_player):
-        def redemption_seat_player_skin(player, car, socket, *args, **kwargs):
+    _redemption_base_get_on = globals().get('get_on')
+    while getattr(_redemption_base_get_on, '_dh_skin_inner', None) is not None:
+        _redemption_base_get_on = _redemption_base_get_on._dh_skin_inner
+
+    def redemption_finish_boarding(player, vehicle_id, request, tries=0):
+        car = vehicle_entity(vehicle_id)
+        record = _vehicles.get(vehicle_id, {})
+        if record.get('skin_boarding') is not request:
+            return False
+        if (BATTLE.get('phase') != 'fighting' or current_player() is not player or car is None
+                or getattr(player, 'inLandVehicle', False) or record.get('dead')
+                or getattr(car, 'usedHangSockets', None)):
+            record.pop('skin_boarding', None)
+            return False
+        if getattr(car, 'gameObject', None) is not None and vehicle_engine(car) is not None:
+            record.pop('skin_boarding', None)
+            return _redemption_base_get_on(player, vehicle_id, True)
+        if tries == 20:
+            redemption_apply_car_skin(car, record['tps'])
+        if tries < 40:
+            call_later(0.1, redemption_finish_boarding, player, vehicle_id, request, tries + 1)
+        else:
+            record.pop('skin_boarding', None)
+            log('local-battle-boarding-model-timeout', vehicle=vehicle_id)
+            tip_text('Vehicle is still loading. Try again.')
+        return False
+
+    def redemption_get_on(player, vehicle_id, driver):
+        car = vehicle_entity(vehicle_id)
+        record = _vehicles.get(vehicle_id)
+        if (driver and current_player() is player and car is not None and record is not None
+                and BATTLE.get('phase') == 'fighting' and not record.get('dead')
+                and not getattr(player, 'inLandVehicle', False)
+                and not getattr(car, 'usedHangSockets', None)):
+            if record.get('skin_boarding') is not None:
+                return False
             try:
-                driver_socket = globals().get('VEHICLE_DRIVER_SOCKET', 'Driver')
-                if socket == driver_socket and car is not None and not getattr(car, 'usedHangSockets', None):
-                    chosen_skin = redemption_vehicle_skin(player, car)
-                    if chosen_skin:
-                        redemption_apply_car_skin(car, chosen_skin)
+                appearance = redemption_vehicle_skin(player, car) or record['tps']
+                if appearance != car.tpsVehicleID and redemption_apply_car_skin(car, appearance):
+                    request = object()
+                    record['skin_boarding'] = request
+                    call_later(0.1, redemption_finish_boarding, player, vehicle_id, request)
+                    return False
             except Exception:
                 log_error('local-battle-boarding-skin-error')
-            return _orig_seat_player(player, car, socket, *args, **kwargs)
+        return _redemption_base_get_on(player, vehicle_id, driver)
 
-        globals()['seat_player'] = redemption_seat_player_skin
+    if callable(_redemption_base_get_on):
+        redemption_get_on._dh_skin_inner = _redemption_base_get_on
+        globals()['get_on'] = redemption_get_on
+
+    def redemption_restore_parked_skin(vehicle_id, record, tries=0):
+        car = vehicle_entity(vehicle_id)
+        if (BATTLE.get('phase') != 'fighting' or _vehicles.get(vehicle_id) is not record
+                or car is None or record.get('dead') or record.get('skin_boarding')
+                or getattr(car, 'usedHangSockets', None)):
+            return
+        if vehicle_speed(car) <= 1.0:
+            redemption_apply_car_skin(car, record['tps'])
+        elif tries < 30:
+            call_later(0.3, redemption_restore_parked_skin, vehicle_id, record, tries + 1)
+
+    _redemption_base_get_off = globals().get('get_off')
+    if callable(_redemption_base_get_off):
+        def redemption_get_off(player, vehicle_id):
+            vehicle_id = vehicle_id or getattr(player, 'vehicleEntID', 0)
+            record = _vehicles.get(vehicle_id)
+            result = _redemption_base_get_off(player, vehicle_id)
+            if result and record is not None:
+                call_later(0.3, redemption_restore_parked_skin, vehicle_id, record)
+            return result
+        globals()['get_off'] = redemption_get_off
 
     log('ros-redemption-fix', fix='car skin system installed')
 except Exception:

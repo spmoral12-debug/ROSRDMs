@@ -9661,11 +9661,13 @@ def _dh_leave_battle_purge_wrapper(*a, **k):
         try:
             res = _dh_orig_leave_battle_purge(*a, **k)
         except Exception:
-            pass
+            log_error('local-battle-quit-handler-error')
+    log('local-battle-quit-cleanup-start')
     try:
         _dh_purge_client_teammates()
     except Exception:
-        pass
+        log_error('local-battle-quit-cleanup-error')
+    log('local-battle-quit-cleanup-end')
     return res
 
 
@@ -9700,6 +9702,24 @@ def _dh_drop_battle_world_wrapper(*a, **k):
 if callable(_dh_orig_drop_battle_world):
     _dh_drop_battle_world_wrapper._dh_purge_inner = _dh_orig_drop_battle_world
     globals()['drop_battle_world'] = _dh_drop_battle_world_wrapper
+
+
+_dh_quit_back_to_login = globals().get('back_to_login')
+while getattr(_dh_quit_back_to_login, '_dh_quit_trace_inner', None) is not None:
+    _dh_quit_back_to_login = _dh_quit_back_to_login._dh_quit_trace_inner
+
+
+def _dh_trace_back_to_login(*args, **kwargs):
+    log('local-battle-quit-back-to-login-start')
+    try:
+        return _dh_quit_back_to_login(*args, **kwargs)
+    finally:
+        log('local-battle-quit-back-to-login-end')
+
+
+if callable(_dh_quit_back_to_login):
+    _dh_trace_back_to_login._dh_quit_trace_inner = _dh_quit_back_to_login
+    globals()['back_to_login'] = _dh_trace_back_to_login
 
 
 # 6D. ClientTeammate Plumbing: Hide White Stand-in Mesh & Support Lifecycle
@@ -10071,9 +10091,15 @@ def _dh_layout_detailed_teammate_plate(plate, meters):
         background = cc.LayerColor.create(cc.Color4B(12, 17, 23, 145), width, 28.0)
         background.setName('redemption_name_bg')
         normal.addChild(background, 10)
-        clear_fill = getattr(normal, 'setBackGroundColorType', None)
-        if callable(clear_fill):
-            clear_fill(0)
+    # Layout background images are rendered internally by Cocos and
+    # do not appear among the named children.
+    remove_image = getattr(normal, 'removeBackGroundImage', None)
+    if callable(remove_image):
+        remove_image()
+    clear_fill = getattr(normal, 'setBackGroundColorType', None)
+    if callable(clear_fill):
+        clear_fill(0)
+    background.setAnchorPoint(cc.Vec2(0.0, 0.0))
     background.setPosition(cc.Vec2(0.0, 22.0))
     background.setContentSize(cc.Size(width, 28.0))
 

@@ -238,8 +238,8 @@ def install_session_checks():
         return session
 
     def start(self):
-        backfill_character_flags(self.db)
         game_start(self)
+        backfill_character_flags(self.db)
         if self.sessions.accounts is None:
             self.sessions.accounts = Accounts(self.db)
         for server in self.listening:

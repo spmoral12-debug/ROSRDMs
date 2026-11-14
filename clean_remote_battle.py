@@ -10182,7 +10182,8 @@ def _dh_rich_sync_teammates(mates):
         markers = getattr(player, 'clientTeammates', None)
         if callable(create_marker) and isinstance(markers, dict):
             for record in valid_mates:
-                if BigWorld.entities.get(record.entID) is None:
+                avatar = BigWorld.entities.get(record.entID)
+                if avatar is None or avatar is player:
                     continue
                 try:
                     if record.entID not in markers:
@@ -10194,9 +10195,12 @@ def _dh_rich_sync_teammates(mates):
                     if isinstance(marker, (int, long_type)):
                         marker = BigWorld.entities.get(marker)
                     show_name = getattr(type(marker), 'showName', None)
-                    plate = getattr(marker, '_ui3DName', None)
+                    # Anchor the native nameplate to the visible remote avatar.
+                    # The stand-in marker can exist without a renderable scene node.
+                    plate = getattr(avatar, '_ui3DName', None)
                     if callable(show_name) and not callable(getattr(type(plate), 'getDistance', None)):
-                        show_name(marker, record.nickname, '', record.nationalFlag)
+                        native_show_name = getattr(show_name, 'im_func', show_name)
+                        native_show_name(avatar, record.nickname, '', record.nationalFlag)
                 except Exception:
                     if not _dh_mates.get('prep_marker_warned'):
                         _dh_mates['prep_marker_warned'] = True

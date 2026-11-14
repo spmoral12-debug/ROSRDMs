@@ -9640,22 +9640,45 @@ def _dh_reveal_return_backdrop(scene, attempt):
     if getattr(Globals, 'loginScene', None) is not scene:
         return
     if _dh_in_lobby() and not _lobby.get('backdrop_hidden'):
-        native = _lobby.get('native_hall_models') or []
+        player = BigWorld.player()
+        hall = getattr(player, 'hallScene', None)
+        render_scene = getattr(hall, '_native_scene', None) or scene
+        native = _lobby.get('return_native_floor_candidates') or []
         retired = _lobby.get('retired_hall_models') or []
-        restored = 0
-        for model, name in scene_models(scene):
-            if (is_backdrop_name(name) and 'motor' not in name.lower()
-                    and not same_model(model, native) and not same_model(model, retired)):
-                try:
-                    if not model.visible:
-                        model.visible = True
-                        restored += 1
-                except Exception:
-                    continue
-        if restored:
-            log('local-lobby-return-backdrop-revealed', models=restored)
-    if attempt < 12:
+        if _dh_recover_return_floor(scene_models(render_scene), native, retired):
+            return
+    if attempt < 32:
         call_later(0.3, _dh_reveal_return_backdrop, scene, attempt + 1)
+
+
+def _dh_recover_return_floor(models, native, retired):
+    stock = []
+    theme = []
+    for model, path in models:
+        if path.replace('\\', '/').rsplit('/', 1)[-1] not in ('plane_bg1.gim', 'plane_bg_1.gim'):
+            continue
+        if same_model(model, retired):
+            continue
+        if same_model(model, native):
+            stock.append(model)
+        else:
+            theme.append(model)
+    ready = False
+    for model in theme:
+        try:
+            if not model.visible:
+                model.visible = True
+            ready = bool(model.visible) or ready
+        except Exception:
+            continue
+    for model in stock:
+        try:
+            if bool(model.visible) == ready:
+                model.visible = not ready
+                log('local-lobby-return-floor', source='theme' if ready else 'native-fallback')
+        except Exception:
+            continue
+    return ready
 
 
 def _dh_entry_gate_wrapper(Globals, lobby_player, scene_attempt=0, _retry=0):
@@ -9673,6 +9696,9 @@ def _dh_entry_gate_wrapper(Globals, lobby_player, scene_attempt=0, _retry=0):
             if waits:
                 log('local-lobby-level-ready', progress=round(prog, 3), waited_s=round(waits * 0.2, 1))
             _dh_entry_gate['waits'] = 0
+            if _lobby.get('returned') and _lobby.get('return_scene_bound') != id(scene):
+                _lobby['return_native_floor_candidates'] = [model for model, path in scene_models(scene)
+                                                           if is_backdrop_name(path)]
             _dh_bind_return_scene(scene)
     except Exception:
         log_error('local-lobby-level-wait-error')
